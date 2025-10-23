@@ -182,17 +182,17 @@
 
 ### US2: Routing Decision Logic
 
-- [ ] T082 [US2] Write tests for node-provided Next routing in graph/engine_test.go
-- [ ] T083 [US2] Implement NodeResult.Route handling in Engine.Run in graph/engine.go
-- [ ] T084 [US2] Write tests for edge-based routing fallback in graph/engine_test.go
-- [ ] T085 [US2] Implement edge predicate fallback when Next.To is empty in graph/engine.go
+- [X] T082 [US2] Write tests for node-provided Next routing in graph/engine_test.go
+- [X] T083 [US2] Implement NodeResult.Route handling in Engine.Run in graph/engine.go
+- [X] T084 [US2] Write tests for edge-based routing fallback in graph/engine_test.go
+- [X] T085 [US2] Implement edge predicate fallback when Next.To is empty in graph/engine.go
 
 ### US2: Error Cases
 
-- [ ] T086 [US2] Write tests for no matching route error in graph/engine_test.go
-- [ ] T087 [US2] Implement clear error when no route found in graph/engine.go
-- [ ] T088 [P] [US2] Write tests for routing to nonexistent node in graph/engine_test.go
-- [ ] T089 [P] [US2] Implement validation for target node existence in graph/engine.go
+- [X] T086 [US2] Write tests for no matching route error in graph/engine_test.go
+- [X] T087 [US2] Implement clear error when no route found in graph/engine.go
+- [X] T088 [P] [US2] Write tests for routing to nonexistent node in graph/engine_test.go
+- [X] T089 [P] [US2] Implement validation for target node existence in graph/engine.go
 
 ### US2: Loop Support
 

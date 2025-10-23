@@ -1600,6 +1600,43 @@ func TestEngine_PredicateEvaluation(t *testing.T) {
 			t.Errorf("expected Counter = 3, got %d", final.Counter)
 		}
 	})
+
+	t.Run("routing to nonexistent node returns error", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Node routes to a node that doesn't exist
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "source", Counter: 1},
+				Route: Goto("nonexistent-node"),
+			}
+		})
+
+		if err := engine.Add("source", sourceNode); err != nil {
+			t.Fatalf("Failed to add source node: %v", err)
+		}
+		if err := engine.StartAt("source"); err != nil {
+			t.Fatalf("Failed to set start node: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "nonexist-run-001", TestState{})
+
+		// Should error with NODE_NOT_FOUND
+		if err == nil {
+			t.Fatalf("expected error when routing to nonexistent node")
+		}
+
+		// Verify error is EngineError with NODE_NOT_FOUND code
+		var engineErr *EngineError
+		if !errors.As(err, &engineErr) {
+			t.Fatalf("expected EngineError, got %T: %v", err, err)
+		}
+
+		if engineErr.Code != "NODE_NOT_FOUND" {
+			t.Errorf("expected error code NODE_NOT_FOUND, got %q", engineErr.Code)
+		}
+	})
 }
 
 // TestEngine_MultiplePredicates verifies priority order when multiple predicates match (T080).
