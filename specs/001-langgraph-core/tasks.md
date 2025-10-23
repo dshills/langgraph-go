@@ -53,36 +53,36 @@
 
 ### Core Type Definitions (Foundational)
 
-- [ ] T012 Write tests for Node[S] interface contract in graph/node_test.go
-- [ ] T013 Define Node[S] interface with Run(ctx, state) method in graph/node.go
-- [ ] T014 [P] Write tests for NodeResult[S] struct validation in graph/node_test.go
-- [ ] T015 [P] Define NodeResult[S] struct (Delta, Route, Events, Err) in graph/node.go
-- [ ] T016 [P] Write tests for Next struct routing scenarios in graph/node_test.go
-- [ ] T017 [P] Define Next struct (To, Many, Terminal) in graph/node.go
-- [ ] T018 Write tests for Stop() and Goto() helpers in graph/node_test.go
-- [ ] T019 Implement Stop() and Goto(string) routing helpers in graph/node.go
-- [ ] T020 [P] Write tests for NodeFunc[S] wrapper in graph/node_test.go
-- [ ] T021 [P] Implement NodeFunc[S] functional node wrapper in graph/node.go
+- [X] T012 Write tests for Node[S] interface contract in graph/node_test.go
+- [X] T013 Define Node[S] interface with Run(ctx, state) method in graph/node.go
+- [X] T014 [P] Write tests for NodeResult[S] struct validation in graph/node_test.go
+- [X] T015 [P] Define NodeResult[S] struct (Delta, Route, Events, Err) in graph/node.go
+- [X] T016 [P] Write tests for Next struct routing scenarios in graph/node_test.go
+- [X] T017 [P] Define Next struct (To, Many, Terminal) in graph/node.go
+- [X] T018 Write tests for Stop() and Goto() helpers in graph/node_test.go
+- [X] T019 Implement Stop() and Goto(string) routing helpers in graph/node.go
+- [X] T020 [P] Write tests for NodeFunc[S] wrapper in graph/node_test.go
+- [X] T021 [P] Implement NodeFunc[S] functional node wrapper in graph/node.go
 
 ### State Management Types (Foundational)
 
-- [ ] T022 Write tests for Reducer[S] function examples in graph/state_test.go
-- [ ] T023 Define Reducer[S] function type in graph/state.go
-- [ ] T024 [P] Write tests for Edge[S] struct and predicates in graph/edge_test.go
-- [ ] T025 [P] Define Edge[S] struct (From, To, When) in graph/edge.go
-- [ ] T026 [P] Define Predicate[S] function type in graph/edge.go
+- [X] T022 Write tests for Reducer[S] function examples in graph/state_test.go
+- [X] T023 Define Reducer[S] function type in graph/state.go
+- [X] T024 [P] Write tests for Edge[S] struct and predicates in graph/edge_test.go
+- [X] T025 [P] Define Edge[S] struct (From, To, When) in graph/edge.go
+- [X] T026 [P] Define Predicate[S] function type in graph/edge.go
 
 ### Storage Interface (Foundational)
 
-- [ ] T027 Write tests for Store[S] interface contract in graph/store/store_test.go
-- [ ] T028 Define Store[S] interface (SaveStep, LoadLatest, SaveCheckpoint, LoadCheckpoint) in graph/store/store.go
+- [X] T027 Write tests for Store[S] interface contract in graph/store/store_test.go
+- [X] T028 Define Store[S] interface (SaveStep, LoadLatest, SaveCheckpoint, LoadCheckpoint) in graph/store/store.go
 
 ### Event System (Foundational)
 
-- [ ] T029 Write tests for Event struct in graph/emit/event_test.go
-- [ ] T030 Define Event struct (RunID, Step, NodeID, Msg, Meta) in graph/emit/event.go
-- [ ] T031 [P] Write tests for Emitter interface in graph/emit/emitter_test.go
-- [ ] T032 [P] Define Emitter interface with Emit(Event) in graph/emit/emitter.go
+- [X] T029 Write tests for Event struct in graph/emit/event_test.go
+- [X] T030 Define Event struct (RunID, Step, NodeID, Msg, Meta) in graph/emit/event.go
+- [X] T031 [P] Write tests for Emitter interface in graph/emit/emitter_test.go
+- [X] T032 [P] Define Emitter interface with Emit(Event) in graph/emit/emitter.go
 
 ---
 
