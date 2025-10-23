@@ -109,21 +109,21 @@
 
 ### US1: Engine Core Construction
 
-- [ ] T043 [US1] Write tests for Engine[S] construction in graph/engine_test.go
-- [ ] T044 [US1] Define Engine[S] struct (reducer, nodes, edges, store, emitter, opts) in graph/engine.go
-- [ ] T045 [US1] Write tests for Options struct (MaxSteps, Retries) in graph/engine_test.go
-- [ ] T046 [US1] Define Options struct in graph/engine.go
-- [ ] T047 [US1] Write tests for New[S]() constructor validation in graph/engine_test.go
-- [ ] T048 [US1] Implement New[S](reducer, store, emitter, opts) constructor in graph/engine.go
+- [X] T043 [US1] Write tests for Engine[S] construction in graph/engine_test.go
+- [X] T044 [US1] Define Engine[S] struct (reducer, nodes, edges, store, emitter, opts) in graph/engine.go
+- [X] T045 [US1] Write tests for Options struct (MaxSteps, Retries) in graph/engine_test.go
+- [X] T046 [US1] Define Options struct in graph/engine.go
+- [X] T047 [US1] Write tests for New[S]() constructor validation in graph/engine_test.go
+- [X] T048 [US1] Implement New[S](reducer, store, emitter, opts) constructor in graph/engine.go
 
 ### US1: Engine Workflow Building
 
-- [ ] T049 [US1] Write tests for Engine.Add(nodeID, node) in graph/engine_test.go
-- [ ] T050 [US1] Implement Engine.Add with duplicate detection in graph/engine.go
-- [ ] T051 [P] [US1] Write tests for Engine.StartAt(nodeID) validation in graph/engine_test.go
-- [ ] T052 [P] [US1] Implement Engine.StartAt with node existence check in graph/engine.go
-- [ ] T053 [P] [US1] Write tests for Engine.Connect(from, to, predicate) in graph/engine_test.go
-- [ ] T054 [P] [US1] Implement Engine.Connect for edge wiring in graph/engine.go
+- [X] T049 [US1] Write tests for Engine.Add(nodeID, node) in graph/engine_test.go
+- [X] T050 [US1] Implement Engine.Add with duplicate detection in graph/engine.go
+- [X] T051 [P] [US1] Write tests for Engine.StartAt(nodeID) validation in graph/engine_test.go
+- [X] T052 [P] [US1] Implement Engine.StartAt with node existence check in graph/engine.go
+- [X] T053 [P] [US1] Write tests for Engine.Connect(from, to, predicate) in graph/engine_test.go
+- [X] T054 [P] [US1] Implement Engine.Connect for edge wiring in graph/engine.go
 
 ### US1: Engine Linear Execution
 
