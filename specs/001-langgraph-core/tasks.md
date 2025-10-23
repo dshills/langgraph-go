@@ -286,18 +286,18 @@
 
 ### US4: Tool Interface
 
-- [ ] T130 [P] [US4] Write tests for Tool interface contract in graph/tool/tool_test.go
-- [ ] T131 [P] [US4] Define Tool interface with Name(), Call(ctx, input) in graph/tool/tool.go
-- [ ] T132 [P] [US4] Create MockTool for testing in graph/tool/mock.go
-- [ ] T133 [P] [US4] Write tests for MockTool behavior in graph/tool/mock_test.go
+- [X] T130 [P] [US4] Write tests for Tool interface contract in graph/tool/tool_test.go
+- [X] T131 [P] [US4] Define Tool interface with Name(), Call(ctx, input) in graph/tool/tool.go
+- [X] T132 [P] [US4] Create MockTool for testing in graph/tool/mock.go
+- [X] T133 [P] [US4] Write tests for MockTool behavior in graph/tool/mock_test.go
 
 ### US4: OpenAI Adapter
 
-- [ ] T134 [US4] Create graph/model/openai sub-package
-- [ ] T135 [US4] Write tests for OpenAIChatModel in graph/model/openai/openai_test.go
-- [ ] T136 [US4] Implement OpenAIChatModel wrapping openai-go SDK in graph/model/openai/openai.go
-- [ ] T137 [US4] Write tests for OpenAI error handling (rate limits) in graph/model/openai/openai_test.go
-- [ ] T138 [US4] Implement retry logic for transient errors in graph/model/openai/openai.go
+- [X] T134 [US4] Create graph/model/openai sub-package
+- [X] T135 [US4] Write tests for OpenAIChatModel in graph/model/openai/openai_test.go
+- [X] T136 [US4] Implement OpenAIChatModel wrapping openai-go SDK in graph/model/openai/openai.go
+- [X] T137 [US4] Write tests for OpenAI error handling (rate limits) in graph/model/openai/openai_test.go
+- [X] T138 [US4] Implement retry logic for transient errors in graph/model/openai/openai.go
 
 ### US4: Anthropic Adapter
 
