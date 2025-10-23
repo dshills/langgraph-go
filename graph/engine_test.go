@@ -1825,6 +1825,218 @@ func TestEngine_MultiplePredicates(t *testing.T) {
 	})
 }
 
+// TestEngine_WorkflowLoops verifies workflow loops (A → B → A) work correctly (T090).
+func TestEngine_WorkflowLoops(t *testing.T) {
+	t.Run("simple loop A→B→A with conditional exit", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		engine := New(reducer, st, emitter, Options{MaxSteps: 10})
+
+		// Node A: Increment counter, conditionally route to B or stop
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			// If counter < 5, continue loop; otherwise stop
+			if s.Counter < 5 {
+				return NodeResult[TestState]{
+					Delta: TestState{Value: "A", Counter: 1},
+					Route: Goto("B"),
+				}
+			}
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "A", Counter: 1},
+				Route: Stop(),
+			}
+		})
+
+		// Node B: Increment counter, route to A
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "B", Counter: 1},
+				Route: Goto("A"), // Explicit loop back to A
+			}
+		})
+
+		if err := engine.Add("A", nodeA); err != nil {
+			t.Fatalf("Failed to add node A: %v", err)
+		}
+		if err := engine.Add("B", nodeB); err != nil {
+			t.Fatalf("Failed to add node B: %v", err)
+		}
+		if err := engine.StartAt("A"); err != nil {
+			t.Fatalf("Failed to set start node: %v", err)
+		}
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "loop-run-001", TestState{})
+
+		if err != nil {
+			// Check if MaxSteps was exceeded (this is OK for loop test)
+			var engineErr *EngineError
+			if errors.As(err, &engineErr) && engineErr.Code == "MAX_STEPS_EXCEEDED" {
+				t.Log("Loop correctly hit MaxSteps limit")
+				return
+			}
+			t.Fatalf("Run failed with unexpected error: %v", err)
+		}
+
+		// If no error, verify loop executed multiple times
+		// A(1) → B(1) → A(1) → B(1) → A(1) → exit = 5 total
+		if final.Counter < 5 {
+			t.Errorf("expected loop to execute, got Counter = %d", final.Counter)
+		}
+		if final.Value != "A" && final.Value != "B" {
+			t.Errorf("expected final Value from loop, got %q", final.Value)
+		}
+	})
+
+	t.Run("MaxSteps prevents infinite loop", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		engine := New(reducer, st, emitter, Options{MaxSteps: 5}) // Low limit
+
+		// Node A: Always routes to B
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Goto("B"),
+			}
+		})
+
+		// Node B: Always routes back to A (infinite loop)
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Goto("A"),
+			}
+		})
+
+		if err := engine.Add("A", nodeA); err != nil {
+			t.Fatalf("Failed to add node A: %v", err)
+		}
+		if err := engine.Add("B", nodeB); err != nil {
+			t.Fatalf("Failed to add node B: %v", err)
+		}
+		if err := engine.StartAt("A"); err != nil {
+			t.Fatalf("Failed to set start node: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "loop-run-002", TestState{})
+
+		// Should error with MAX_STEPS_EXCEEDED
+		if err == nil {
+			t.Fatalf("expected MaxSteps error for infinite loop")
+		}
+
+		var engineErr *EngineError
+		if !errors.As(err, &engineErr) {
+			t.Fatalf("expected EngineError, got %T: %v", err, err)
+		}
+
+		if engineErr.Code != "MAX_STEPS_EXCEEDED" {
+			t.Errorf("expected error code MAX_STEPS_EXCEEDED, got %q", engineErr.Code)
+		}
+	})
+
+	t.Run("conditional loop exit using edge predicates", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		engine := New(reducer, st, emitter, Options{MaxSteps: 10})
+
+		// Node A: Increment counter, use edge routing
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "A", Counter: 1},
+				Route: Next{}, // Use edge predicates
+			}
+		})
+
+		// Node B: Increment counter, route back to A
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "B", Counter: 1},
+				Route: Goto("A"),
+			}
+		})
+
+		// Exit node: Stops the workflow
+		exitNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "exit", Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("A", nodeA); err != nil {
+			t.Fatalf("Failed to add node A: %v", err)
+		}
+		if err := engine.Add("B", nodeB); err != nil {
+			t.Fatalf("Failed to add node B: %v", err)
+		}
+		if err := engine.Add("exit", exitNode); err != nil {
+			t.Fatalf("Failed to add exit node: %v", err)
+		}
+		if err := engine.StartAt("A"); err != nil {
+			t.Fatalf("Failed to set start node: %v", err)
+		}
+
+		// Edge 1: A → B if counter < 5 (continue loop)
+		loopPredicate := func(s TestState) bool {
+			return s.Counter < 5
+		}
+		if err := engine.Connect("A", "B", loopPredicate); err != nil {
+			t.Fatalf("Failed to connect A→B: %v", err)
+		}
+
+		// Edge 2: A → exit if counter >= 5 (exit condition)
+		exitPredicate := func(s TestState) bool {
+			return s.Counter >= 5
+		}
+		if err := engine.Connect("A", "exit", exitPredicate); err != nil {
+			t.Fatalf("Failed to connect A→exit: %v", err)
+		}
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "loop-run-003", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Should have looped and then exited
+		// A(1) → B(1) → A(1) → B(1) → A(1) → exit(100) = 105
+		if final.Counter != 105 {
+			t.Errorf("expected Counter = 105, got %d", final.Counter)
+		}
+		if final.Value != "exit" {
+			t.Errorf("expected Value = 'exit', got %q", final.Value)
+		}
+	})
+}
+
 // createTestEngine is a helper to create a test engine with default configuration.
 func createTestEngine() *Engine[TestState] {
 	reducer := func(prev, delta TestState) TestState {

@@ -71,7 +71,23 @@ type Engine[S any] struct {
 type Options struct {
 	// MaxSteps limits workflow execution to prevent infinite loops.
 	// If 0, no limit is enforced (use with caution).
-	// Recommended: Set based on expected workflow depth (e.g., 100 for most workflows).
+	//
+	// Workflow loops (A → B → A) are fully supported. Use MaxSteps to prevent
+	// infinite loops when a conditional exit is missing or misconfigured.
+	//
+	// Loop patterns:
+	//   1. Node-based conditional loop:
+	//        nodeA returns Goto("B") if shouldContinue(state), else Stop()
+	//   2. Edge predicate loop:
+	//        Connect("A", "B", loopPredicate)
+	//        Connect("A", "exit", exitPredicate)
+	//
+	// Recommended values:
+	//   - Simple workflows (3-5 nodes): MaxSteps = 20
+	//   - Workflows with loops: MaxSteps = depth × max_iterations (e.g., 5 nodes × 10 iterations = 50)
+	//   - Complex multi-loop workflows: MaxSteps = 100-200
+	//
+	// When MaxSteps is exceeded, Run() returns EngineError with code "MAX_STEPS_EXCEEDED".
 	MaxSteps int
 
 	// Retries specifies how many times to retry a node on transient errors.

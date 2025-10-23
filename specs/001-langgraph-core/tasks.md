@@ -196,10 +196,10 @@
 
 ### US2: Loop Support
 
-- [ ] T090 [US2] Write tests for workflow loops (A → B → A) in graph/engine_test.go
-- [ ] T091 [US2] Ensure MaxSteps prevents infinite loops in graph/engine.go
-- [ ] T092 [US2] Write tests for conditional loop exit in graph/engine_test.go
-- [ ] T093 [US2] Document loop patterns and MaxSteps usage in graph/engine.go
+- [X] T090 [US2] Write tests for workflow loops (A → B → A) in graph/engine_test.go
+- [X] T091 [US2] Ensure MaxSteps prevents infinite loops in graph/engine.go
+- [X] T092 [US2] Write tests for conditional loop exit in graph/engine_test.go
+- [X] T093 [US2] Document loop patterns and MaxSteps usage in graph/engine.go
 
 ### US2: Termination
 
