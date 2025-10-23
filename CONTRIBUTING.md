@@ -125,6 +125,206 @@ golangci-lint run
 go fmt ./...
 ```
 
+### 8. Pre-Commit Code Review (MANDATORY)
+
+**REQUIRED**: All code changes MUST be reviewed using `mcp-pr` before committing, as mandated by our [Constitution v1.1.0](./.specify/memory/constitution.md).
+
+#### What is mcp-pr?
+
+`mcp-pr` is a code review tool provided by the [Model Context Protocol (MCP)](https://github.com/modelcontextprotocol/servers) servers project. It runs **locally on your machine** with no external data transmission, providing automated analysis for:
+
+- **Security vulnerabilities** (injection attacks, unsafe patterns, auth issues)
+- **Bugs** (null pointer risks, race conditions, logic errors)
+- **Performance** (inefficient algorithms, memory leaks, bottlenecks)
+- **Style** (code consistency, naming conventions, formatting)
+- **Best practices** (error handling, type safety, TDD compliance)
+
+#### Installation
+
+1. **Install Claude Desktop** (if not already installed)
+   - Download from [claude.ai/download](https://claude.ai/download)
+   - The MCP server runs within Claude Desktop's sandboxed environment
+
+2. **Configure MCP server** in Claude Desktop settings:
+   ```json
+   {
+     "mcpServers": {
+       "mcp-pr": {
+         "command": "npx",
+         "args": ["-y", "@modelcontextprotocol/server-pr"]
+       }
+     }
+   }
+   ```
+
+3. **Verify installation** by checking available tools in Claude Desktop
+
+**Provenance & Trust**:
+- Source: [github.com/modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers)
+- Open source, auditable code
+- Runs in Claude Desktop's MCP sandbox (no arbitrary code execution)
+- No external network calls or data transmission
+
+#### How to Use
+
+**For unstaged changes** (recommended workflow):
+```bash
+# After making changes but before staging
+# Use Claude Desktop with the command:
+/review-precommit
+
+# Or manually trigger:
+mcp-pr review_unstaged --repository-path . --review-depth quick
+```
+
+**For staged changes** (before final commit):
+```bash
+# After staging with 'git add'
+git add <files>
+
+# Review staged changes:
+mcp-pr review_staged --repository-path . --review-depth quick
+```
+
+**Review depth options**:
+- `quick` - Focus on critical/high severity issues (5-30 seconds)
+- `thorough` - Comprehensive analysis including suggestions (30-90 seconds)
+
+#### Addressing Findings
+
+Review findings are categorized by severity:
+
+| Severity | Action Required |
+|----------|----------------|
+| **critical** | MUST fix before commit |
+| **high** | MUST fix or document deviation |
+| **medium** | SHOULD fix or document |
+| **low** | Consider fixing or ignore with reason |
+| **info** | Informational only |
+
+**Fix-commit cycle**:
+1. Run pre-commit review
+2. Address critical/high findings
+3. Re-run review to verify fixes
+4. Commit when clean or deviations documented
+
+#### Exception & Appeal Process
+
+**When you can proceed despite findings**:
+- False positive (tool misunderstood code)
+- Time-sensitive hotfix (security patch, critical bug)
+- Technical debt accepted with plan
+- Performance optimization that looks "unsafe" but is correct
+
+**How to document deviations**:
+1. Add inline comment explaining why the flagged code is correct:
+   ```go
+   // REVIEW_DEVIATION: Using unsafe pointer for performance in hot path.
+   // Benchmarked 10x speedup. Memory safety verified in TestPointerSafety.
+   ptr := (*Type)(unsafe.Pointer(&data))
+   ```
+
+2. Include deviation rationale in commit message:
+   ```
+   fix: optimize state serialization (performance critical path)
+
+   REVIEW DEVIATION: mcp-pr flagged unsafe pointer usage as high severity.
+   This is intentional - benchmarks show 10x speedup for hot path.
+   Safety verified with extensive tests in TestSerializationSafety.
+   ```
+
+3. For hotfixes, commit with `[HOTFIX]` prefix and create follow-up task:
+   ```bash
+   git commit -m "[HOTFIX] patch critical auth bypass (CVE-2024-XXXX)
+
+   mcp-pr review will be done post-commit due to severity.
+   Follow-up task: Review and refactor auth module."
+   ```
+
+**Escalation**:
+- If uncertain, ask in PR review
+- Maintainers can approve documented deviations
+- Security findings always require explicit acknowledgment
+
+#### Common False Positives
+
+**Generic type constraints**:
+```go
+// May be flagged as "too complex" but is idiomatic Go 1.25
+func Process[S any, constraint interface{ Method() }](s S) {}
+```
+→ Document: "Generic constraint required by interface design"
+
+**Table-driven tests with many cases**:
+```go
+// May be flagged as "function too long"
+tests := []struct{ /* 50 test cases */ }
+```
+→ Acceptable: Test comprehensiveness is valued
+
+**Intentional panics in examples**:
+```go
+// Example code may panic for brevity
+func ExampleEngine() {
+    engine := New(nil, nil, nil, Options{}) // Will panic - example only
+}
+```
+→ Document: "Example code, not production"
+
+#### Integration with CI
+
+**Local enforcement** (recommended):
+- Pre-commit hook runs `mcp-pr review_staged` automatically
+- Setup: `cp .git/hooks/pre-commit.sample .git/hooks/pre-commit`
+- Customize hook to call mcp-pr
+
+**CI enforcement** (future):
+- GitHub Action to verify commits were reviewed
+- Audit log of mcp-pr findings and resolutions
+- Block merge if critical findings unaddressed
+
+#### Privacy & Security
+
+**Data handling**:
+- ✅ Runs entirely locally (no cloud API calls)
+- ✅ Code never leaves your machine
+- ✅ No telemetry or usage tracking
+- ✅ Sandboxed in MCP environment
+
+**What mcp-pr analyzes**:
+- Git diffs (staged or unstaged changes)
+- File contents in repository
+- AST and syntax patterns
+
+**What mcp-pr does NOT access**:
+- Network resources
+- Files outside repository
+- Environment variables or secrets
+- System processes or memory
+
+#### Troubleshooting
+
+**"mcp-pr command not found"**:
+- Verify Claude Desktop is running
+- Check MCP server configuration
+- Restart Claude Desktop
+
+**"Review taking too long"**:
+- Use `quick` depth instead of `thorough`
+- Review specific files instead of all changes
+- Large diffs (>1000 lines) may timeout - break into smaller commits
+
+**"Can't connect to MCP server"**:
+- Ensure Claude Desktop is open
+- Check MCP server logs in Claude Desktop settings
+- Reinstall MCP server: `npx -y @modelcontextprotocol/server-pr@latest`
+
+#### Questions?
+
+- **Tool issues**: [MCP Servers Issues](https://github.com/modelcontextprotocol/servers/issues)
+- **Policy questions**: Open discussion or ask in PR review
+- **False positives**: Document in commit message and proceed
+
 ## Code Standards
 
 ### Go Idioms
@@ -208,6 +408,8 @@ func TestReducer(t *testing.T) {
 
 ### Before Submitting
 
+- [ ] **Pre-commit review completed** (`/review-precommit` or `mcp-pr review_staged`)
+- [ ] Critical/high severity findings addressed or documented
 - [ ] All tests pass (`go test ./...`)
 - [ ] Linter passes (`golangci-lint run`)
 - [ ] Code is formatted (`go fmt ./...`)
