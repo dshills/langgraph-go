@@ -49,10 +49,16 @@ type MockTool struct {
 
 	// Calls tracks the history of all Call() invocations.
 	// Useful for verifying that tools were called with expected inputs.
+	// Each recorded input is a defensive copy, preventing external mutations
+	// from affecting test assertions on call history.
 	Calls []MockToolCall
 
-	mu        sync.Mutex // Protects concurrent access to Calls and response index
-	callIndex int        // Tracks which response to return next
+	mu sync.Mutex // Protects concurrent access to Calls and callIndex
+
+	// callIndex tracks which response from Responses to return next.
+	// It increments with each Call() and, once it exceeds the length of Responses,
+	// repeatedly returns the last element of Responses.
+	callIndex int
 }
 
 // MockToolCall records a single invocation of Call().
@@ -81,9 +87,18 @@ func (m *MockTool) Call(ctx context.Context, input map[string]interface{}) (map[
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Record the call
+	// Record the call with defensive copy of input
+	// This prevents external mutations from affecting recorded history
+	var inputCopy map[string]interface{}
+	if input != nil {
+		inputCopy = make(map[string]interface{}, len(input))
+		for k, v := range input {
+			inputCopy[k] = v
+		}
+	}
+
 	m.Calls = append(m.Calls, MockToolCall{
-		Input: input,
+		Input: inputCopy,
 	})
 
 	// Return error if configured

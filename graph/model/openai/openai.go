@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/dshills/langgraph-go/graph/model"
@@ -137,7 +138,7 @@ func isTransientError(err error) bool {
 	}
 
 	// Check for common transient error patterns
-	msg := err.Error()
+	msgLower := strings.ToLower(err.Error())
 	transientPatterns := []string{
 		"timeout",
 		"network",
@@ -149,7 +150,7 @@ func isTransientError(err error) bool {
 	}
 
 	for _, pattern := range transientPatterns {
-		if contains(msg, pattern) {
+		if strings.Contains(msgLower, pattern) {
 			return true
 		}
 	}
@@ -161,36 +162,6 @@ func isTransientError(err error) bool {
 func isRateLimitError(err error) bool {
 	var rateLimitErr *rateLimitError
 	return errors.As(err, &rateLimitErr)
-}
-
-// contains checks if a string contains a substring (case-insensitive).
-func contains(s, substr string) bool {
-	// Simple case-insensitive check
-	return len(s) >= len(substr) && (s == substr ||
-		(len(s) > len(substr) && findSubstring(s, substr)))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		match := true
-		for j := 0; j < len(substr); j++ {
-			if toLower(s[i+j]) != toLower(substr[j]) {
-				match = false
-				break
-			}
-		}
-		if match {
-			return true
-		}
-	}
-	return false
-}
-
-func toLower(c byte) byte {
-	if c >= 'A' && c <= 'Z' {
-		return c + ('a' - 'A')
-	}
-	return c
 }
 
 // defaultClient is a placeholder for the actual OpenAI SDK client.

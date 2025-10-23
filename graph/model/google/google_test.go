@@ -121,7 +121,7 @@ func TestGoogleChatModel_Chat(t *testing.T) {
 func TestGoogleChatModel_SafetyFilters(t *testing.T) {
 	t.Run("handles blocked content", func(t *testing.T) {
 		mockClient := &mockGoogleClient{
-			err: &safetyFilterError{
+			err: &SafetyFilterError{
 				reason:   "SAFETY",
 				category: "HARM_CATEGORY_DANGEROUS_CONTENT",
 			},
@@ -141,13 +141,13 @@ func TestGoogleChatModel_SafetyFilters(t *testing.T) {
 			t.Fatal("expected safety filter error, got nil")
 		}
 
-		var safetyErr *safetyFilterError
+		var safetyErr *SafetyFilterError
 		if !errors.As(err, &safetyErr) {
-			t.Errorf("expected safetyFilterError type, got %T", err)
+			t.Errorf("expected SafetyFilterError type, got %T", err)
 		}
 
-		if safetyErr.category != "HARM_CATEGORY_DANGEROUS_CONTENT" {
-			t.Errorf("expected specific category, got %q", safetyErr.category)
+		if safetyErr.Category() != "HARM_CATEGORY_DANGEROUS_CONTENT" {
+			t.Errorf("expected specific category, got %q", safetyErr.Category())
 		}
 	})
 
@@ -161,7 +161,7 @@ func TestGoogleChatModel_SafetyFilters(t *testing.T) {
 
 		for _, category := range categories {
 			mockClient := &mockGoogleClient{
-				err: &safetyFilterError{
+				err: &SafetyFilterError{
 					reason:   "SAFETY",
 					category: category,
 				},
@@ -182,9 +182,9 @@ func TestGoogleChatModel_SafetyFilters(t *testing.T) {
 				continue
 			}
 
-			var safetyErr *safetyFilterError
+			var safetyErr *SafetyFilterError
 			if !errors.As(err, &safetyErr) {
-				t.Errorf("expected safetyFilterError for %s, got %T", category, err)
+				t.Errorf("expected SafetyFilterError for %s, got %T", category, err)
 			}
 		}
 	})
@@ -208,9 +208,9 @@ func TestGoogleChatModel_SafetyFilters(t *testing.T) {
 			t.Fatal("expected error, got nil")
 		}
 
-		var safetyErr *safetyFilterError
+		var safetyErr *SafetyFilterError
 		if errors.As(err, &safetyErr) {
-			t.Error("expected non-safety error, got safetyFilterError")
+			t.Error("expected non-safety error, got SafetyFilterError")
 		}
 	})
 }
@@ -274,25 +274,25 @@ func TestGoogleChatModel_ErrorHandling(t *testing.T) {
 // TestGoogleChatModel_SafetyFilterHandling verifies filter processing (T148).
 func TestGoogleChatModel_SafetyFilterHandling(t *testing.T) {
 	t.Run("wraps safety filter errors with context", func(t *testing.T) {
-		err := &safetyFilterError{
+		err := &SafetyFilterError{
 			reason:   "SAFETY",
 			category: "HARM_CATEGORY_HATE_SPEECH",
 		}
 
 		wrapped := handleSafetyFilterError(err)
 
-		var safetyErr *safetyFilterError
+		var safetyErr *SafetyFilterError
 		if !errors.As(wrapped, &safetyErr) {
-			t.Fatalf("expected safetyFilterError, got %T", wrapped)
+			t.Fatalf("expected SafetyFilterError, got %T", wrapped)
 		}
 
-		if safetyErr.category != "HARM_CATEGORY_HATE_SPEECH" {
-			t.Errorf("expected preserved category, got %q", safetyErr.category)
+		if safetyErr.Category() != "HARM_CATEGORY_HATE_SPEECH" {
+			t.Errorf("expected preserved category, got %q", safetyErr.Category())
 		}
 	})
 
 	t.Run("provides user-friendly error messages", func(t *testing.T) {
-		err := &safetyFilterError{
+		err := &SafetyFilterError{
 			reason:   "SAFETY",
 			category: "HARM_CATEGORY_DANGEROUS_CONTENT",
 		}

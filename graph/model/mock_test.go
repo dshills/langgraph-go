@@ -375,6 +375,46 @@ func TestMockChatModel_ToolCalls(t *testing.T) {
 	})
 }
 
+// TestMockChatModel_ContextCancellation verifies context handling (T129).
+func TestMockChatModel_ContextCancellation(t *testing.T) {
+	t.Run("respects context cancellation", func(t *testing.T) {
+		mock := &MockChatModel{
+			Responses: []ChatOut{{Text: "Should not return"}},
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel before calling
+
+		messages := []Message{{Role: RoleUser, Content: "Test"}}
+
+		_, err := mock.Chat(ctx, messages, nil)
+		if err == nil {
+			t.Fatal("expected context.Canceled error, got nil")
+		}
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("expected context.Canceled error, got %v", err)
+		}
+	})
+
+	t.Run("does not record call when context cancelled", func(t *testing.T) {
+		mock := &MockChatModel{
+			Responses: []ChatOut{{Text: "Response"}},
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		messages := []Message{{Role: RoleUser, Content: "Test"}}
+
+		_, _ = mock.Chat(ctx, messages, nil)
+
+		// Call should not be recorded when context is cancelled
+		if mock.CallCount() != 0 {
+			t.Errorf("expected 0 calls when context cancelled, got %d", mock.CallCount())
+		}
+	})
+}
+
 // TestMockChatModel_Concurrency verifies thread-safety (T129).
 func TestMockChatModel_Concurrency(t *testing.T) {
 	t.Run("handles concurrent calls safely", func(t *testing.T) {

@@ -87,7 +87,7 @@ func (m *ChatModel) Chat(ctx context.Context, messages []model.Message, tools []
 	out, err := m.client.generateContent(ctx, messages, tools)
 	if err != nil {
 		// Handle safety filter errors specially
-		var safetyErr *safetyFilterError
+		var safetyErr *SafetyFilterError
 		if errors.As(err, &safetyErr) {
 			return model.ChatOut{}, handleSafetyFilterError(safetyErr)
 		}
@@ -106,7 +106,7 @@ func (m *ChatModel) Chat(ctx context.Context, messages []model.Message, tools []
 //   - HARM_CATEGORY_HARASSMENT
 //
 // Returns an error that can be checked with errors.As for the specific category.
-func handleSafetyFilterError(err *safetyFilterError) error {
+func handleSafetyFilterError(err *SafetyFilterError) error {
 	// Pass through with context preserved
 	return err
 }
@@ -149,27 +149,34 @@ func (c *defaultClient) generateContent(ctx context.Context, messages []model.Me
 	return model.ChatOut{}, errors.New("Google client not implemented - use mocked client for testing")
 }
 
-// safetyFilterError represents a Google safety filter block.
+// SafetyFilterError represents a Google safety filter block.
 //
 // Provides information about why content was blocked:
 //   - Reason: Why the block occurred (e.g., "SAFETY")
 //   - Category: Which safety category was triggered
-type safetyFilterError struct {
+//
+// Use errors.As to check for this error type:
+//
+//	var safetyErr *google.SafetyFilterError
+//	if errors.As(err, &safetyErr) {
+//	    log.Printf("Content blocked: %s", safetyErr.Category())
+//	}
+type SafetyFilterError struct {
 	reason   string
 	category string
 }
 
 // Error implements the error interface.
-func (e *safetyFilterError) Error() string {
+func (e *SafetyFilterError) Error() string {
 	return "content blocked by safety filter: " + e.category
 }
 
 // Category returns the safety category that triggered the block.
-func (e *safetyFilterError) Category() string {
+func (e *SafetyFilterError) Category() string {
 	return e.category
 }
 
 // Reason returns why the content was blocked.
-func (e *safetyFilterError) Reason() string {
+func (e *SafetyFilterError) Reason() string {
 	return e.reason
 }

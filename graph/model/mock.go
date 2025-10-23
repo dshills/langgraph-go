@@ -63,6 +63,11 @@ type MockChatCall struct {
 //
 // Always records the call in Calls history regardless of success/failure.
 func (m *MockChatModel) Chat(ctx context.Context, messages []Message, tools []ToolSpec) (ChatOut, error) {
+	// Check context cancellation first (before acquiring lock)
+	if ctx.Err() != nil {
+		return ChatOut{}, ctx.Err()
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
