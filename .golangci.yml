@@ -1,0 +1,224 @@
+# golangci-lint configuration for LangGraph-Go
+# Aligned with constitution.md principles: type safety, interfaces, TDD, observability
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  skip-dirs:
+    - vendor
+  go: '1.25'
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true
+
+linters:
+  enable:
+    # Core linters (always enabled)
+    - errcheck        # Check for unchecked errors
+    - govet           # Go vet examines code
+    - ineffassign     # Detect ineffectual assignments
+    - staticcheck     # Advanced static analysis (includes gosimple)
+    - unused          # Check for unused constants, variables, functions
+
+    # Code quality
+    - gocyclo         # Cyclomatic complexity
+    - misspell        # Finds commonly misspelled English words
+    - unconvert       # Remove unnecessary type conversions
+    - unparam         # Reports unused function parameters
+    - nakedret        # Finds naked returns
+    - prealloc        # Finds slice declarations that could be preallocated
+
+    # Bug detection
+    - bodyclose       # Checks whether HTTP response body is closed
+    - gocritic        # Provides many diagnostics
+    - gosec           # Security problems
+    - nilerr          # Returns nil even if error is not nil
+    - noctx           # Finds sending http request without context.Context
+    - rowserrcheck    # Checks whether Err of rows is checked
+    - sqlclosecheck   # Checks that sql.Rows and sql.Stmt are closed
+
+    # Style & best practices
+    - dogsled         # Checks assignments with too many blank identifiers
+    - errname         # Checks that sentinel errors are prefixed with Err
+    - errorlint       # Error wrapping with Go 1.13+
+    - copyloopvar     # Checks loop variable copying (replaces exportloopref)
+    - gochecknoinits  # Checks that no init functions are present
+    - goconst         # Finds repeated strings for constants
+    - godot           # Check if comments end in a period
+    - revive          # Fast, configurable linter
+    - whitespace      # Detection of leading and trailing whitespace
+
+    # Documentation
+    - godox           # Detect FIXME, TODO keywords
+
+  disable:
+    - exhaustive      # Too strict for switch statements
+    - funlen          # Function length - use gocyclo instead
+    - gochecknoglobals # Globals sometimes needed
+    - gocognit        # Covered by gocyclo
+    - mnd             # Magic number detector - too noisy
+    - lll             # Line length - formatters handle this
+    - nlreturn        # Too opinionated
+    - testpackage     # Separate test packages too strict
+    - wsl             # Whitespace linter - too opinionated
+    - wrapcheck       # Error wrapping - too strict
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - (io.Closer).Close
+
+  govet:
+    enable:
+      - atomic
+      - bool
+      - composites
+      - copylocks
+      - errorsas
+      - httpresponse
+      - ifaceassert
+      - loopclosure
+      - lostcancel
+      - nilfunc
+      - printf
+      - shift
+      - stdmethods
+      - stringintconv
+      - structtag
+      - tests
+      - unmarshal
+      - unreachable
+      - unsafeptr
+      - unusedresult
+    disable:
+      - shadow  # Too many false positives with generics
+
+  gocyclo:
+    min-complexity: 15
+
+  misspell:
+    locale: US
+    ignore-words:
+      - som
+      - colour
+
+  nakedret:
+    max-func-lines: 30
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+      - experimental
+    disabled-checks:
+      - commentedOutCode
+      - whyNoLint
+
+  gosec:
+    excludes:
+      - G104  # Duplicate of errcheck
+      - G307  # Defer close - covered by errcheck
+    severity: medium
+    confidence: medium
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+    ignore-tests: true
+
+  godot:
+    scope: declarations
+    capital: true
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+        arguments:
+          - checkPrivateReceivers
+          - sayRepetitiveInsteadOfStutters
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  errorlint:
+    errorf: true
+    asserts: true
+    comparison: true
+
+  unused:
+    field-writes-are-uses: true
+    post-statements-are-reads: true
+    exported-is-used: true
+    exported-fields-are-used: true
+    parameters-are-used: true
+    local-variables-are-used: true
+
+  unparam:
+    check-exported: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+
+  exclude-rules:
+    # Exclude some linters from test files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - gosec
+        - goconst
+        - funlen
+        - gocognit
+
+    # Exclude godot from test function comments
+    - path: _test\.go
+      text: "comment should end in a period"
+      linters:
+        - godot
+
+    # Generic type parameters can be single letters
+    - text: "parameter name '\\w' is too short"
+      linters:
+        - revive
+
+    # Context.Context as first parameter is idiomatic
+    - text: "context.Context should be the first parameter"
+      linters:
+        - revive
+
+  exclude-use-default: false
+
+severity:
+  default-severity: error
+  case-sensitive: false
