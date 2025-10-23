@@ -317,9 +317,9 @@
 
 ### US4: Example & Integration Test
 
-- [ ] T149 [US4] Create example workflow with multi-provider LLM calls in examples/llm/main.go
-- [ ] T150 [US4] Write integration test with mocked LLM providers in graph/integration_test.go
-- [ ] T151 [US4] Document provider switching patterns in graph/model/chat.go
+- [X] T149 [US4] Create example workflow with multi-provider LLM calls in examples/llm/main.go
+- [X] T150 [US4] Write integration test with mocked LLM providers in graph/integration_test.go
+- [X] T151 [US4] Document provider switching patterns in graph/model/chat.go
 
 ---
 
