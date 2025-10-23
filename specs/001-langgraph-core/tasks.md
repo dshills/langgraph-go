@@ -127,12 +127,12 @@
 
 ### US1: Engine Linear Execution
 
-- [ ] T055 [US1] Write tests for Engine.Run(ctx, runID, initialState) basic execution in graph/engine_test.go
-- [ ] T056 [US1] Implement Engine.Run core execution loop in graph/engine.go
-- [ ] T057 [US1] Write tests for state persistence after each node in graph/engine_test.go
-- [ ] T058 [US1] Implement Store.SaveStep calls in execution loop in graph/engine.go
-- [ ] T059 [US1] Write tests for MaxSteps limit enforcement in graph/engine_test.go
-- [ ] T060 [US1] Implement MaxSteps checking and error in graph/engine.go
+- [X] T055 [US1] Write tests for Engine.Run(ctx, runID, initialState) basic execution in graph/engine_test.go
+- [X] T056 [US1] Implement Engine.Run core execution loop in graph/engine.go
+- [X] T057 [US1] Write tests for state persistence after each node in graph/engine_test.go
+- [X] T058 [US1] Implement Store.SaveStep calls in execution loop in graph/engine.go
+- [X] T059 [US1] Write tests for MaxSteps limit enforcement in graph/engine_test.go
+- [X] T060 [US1] Implement MaxSteps checking and error in graph/engine.go
 
 ### US1: Checkpoint & Resume
 

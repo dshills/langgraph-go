@@ -1,26 +1,23 @@
 <!--
 Sync Impact Report:
-Version: 0.0.0 → 1.0.0
-Reason: Initial constitution ratification (MAJOR version - establishes foundational governance)
+Version: 1.0.0 → 1.1.0
+Reason: MINOR version bump - Added mandatory pre-commit code review requirement
 
 Modified Principles:
-- [NEW] I. Type Safety & Determinism
-- [NEW] II. Interface-First Design
-- [NEW] III. Test-Driven Development (NON-NEGOTIABLE)
-- [NEW] IV. Observability & Debugging
-- [NEW] V. Dependency Minimalism
+- No core principles modified
 
 Added Sections:
-- Core Principles (5 principles defined)
-- Go Idioms & Best Practices
-- Development Workflow
-- Governance
+- Development Workflow > Code Review: Added mandatory mcp-pr review before commits
+
+Removed Sections:
+- None
 
 Templates Requiring Updates:
-✅ plan-template.md - Constitution Check section exists, will reference principles
+✅ plan-template.md - No changes needed (generic template, constitution check references principles)
 ✅ spec-template.md - No changes needed (generic template)
-✅ tasks-template.md - Test-first discipline reflected in phase ordering
-⚠ CLAUDE.md - Already documents design principles, consistent with constitution
+✅ tasks-template.md - No changes needed (already emphasizes tests before commits)
+✅ CLAUDE.md - No changes needed (references constitution for compliance)
+✅ README.md - No changes needed (high-level overview only)
 
 Follow-up TODOs:
 - None - all placeholders resolved
@@ -148,10 +145,25 @@ Code MUST follow official Go guidelines:
 
 ### Code Review
 
-- All changes MUST go through PR review
+**Pre-Commit Review (MANDATORY)**:
+- ALL code changes MUST be reviewed using `mcp-pr` before committing
+- Run automated review: `mcp-pr review_unstaged` for unstaged changes or `mcp-pr review_staged` for staged changes
+- Address all issues flagged by automated review (security, bugs, performance, style)
+- Document any intentional deviations with clear rationale
+
+**Pull Request Review**:
+- All changes MUST go through PR review after local review
 - PRs MUST reference tests that verify the change
 - Breaking changes MUST be called out explicitly
 - Constitution compliance MUST be verified in review
+
+**Review Focus Areas**:
+- Type safety and error handling
+- Test coverage and TDD compliance
+- Interface usage and dependency injection
+- Observability (event emission)
+- Performance and resource usage
+- Security vulnerabilities
 
 ### Testing Gates
 
@@ -185,4 +197,4 @@ All PRs and reviews MUST verify compliance with these principles. Complexity MUS
 against the principle of simplicity. Use CLAUDE.md for runtime development guidance and quick
 reference.
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-23 | **Last Amended**: 2025-10-23
+**Version**: 1.1.0 | **Ratified**: 2025-10-23 | **Last Amended**: 2025-10-23
