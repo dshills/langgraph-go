@@ -210,9 +210,9 @@
 
 ### US2: Example & Integration Test
 
-- [ ] T098 [US2] Create example workflow with conditional routing in examples/routing/main.go
-- [ ] T099 [US2] Write integration test for confidence-based routing in graph/integration_test.go
-- [ ] T100 [US2] Write integration test for loop with exit condition in graph/integration_test.go
+- [X] T098 [US2] Create example workflow with conditional routing in examples/routing/main.go
+- [X] T099 [US2] Write integration test for confidence-based routing in graph/integration_test.go
+- [X] T100 [US2] Write integration test for loop with exit condition in graph/integration_test.go
 
 ---
 

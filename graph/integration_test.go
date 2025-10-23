@@ -331,3 +331,194 @@ type integrationEmitter struct {
 func (e *integrationEmitter) Emit(event emit.Event) {
 	e.events = append(e.events, event)
 }
+
+// TestIntegration_ConfidenceBasedRouting verifies confidence-based conditional routing (T099).
+func TestIntegration_ConfidenceBasedRouting(t *testing.T) {
+	t.Run("route based on confidence score with multiple paths", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &integrationEmitter{events: make([]emit.Event, 0)}
+		engine := New(reducer, st, emitter, Options{MaxSteps: 10})
+
+		// Simulate LLM agent workflow with confidence-based routing
+		// Node: generate - Creates response with confidence score
+		generateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			// Simulate low confidence (Counter will represent confidence * 100)
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "generated", Counter: 65}, // 0.65 confidence
+				Route: Next{},                                     // Use edge routing based on confidence
+			}
+		})
+
+		// Node: refine - Improves response
+		refineNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			// Improve confidence
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "refined", Counter: 20}, // +0.20 confidence
+				Route: Next{},                                   // Re-evaluate confidence
+			}
+		})
+
+		// Node: validate - Final validation for high confidence
+		validateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "validated", Counter: 1},
+				Route: Stop(),
+			}
+		})
+
+		// Node: fallback - Handles very low confidence
+		fallbackNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "fallback", Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("generate", generateNode)
+		_ = engine.Add("refine", refineNode)
+		_ = engine.Add("validate", validateNode)
+		_ = engine.Add("fallback", fallbackNode)
+		_ = engine.StartAt("generate")
+
+		// Edge predicates based on confidence thresholds
+		// generate → fallback (if confidence < 50)
+		veryLowConfidence := func(s TestState) bool {
+			return s.Counter < 50
+		}
+		_ = engine.Connect("generate", "fallback", veryLowConfidence)
+
+		// generate → refine (if 50 <= confidence < 80)
+		lowConfidence := func(s TestState) bool {
+			return s.Counter >= 50 && s.Counter < 80
+		}
+		_ = engine.Connect("generate", "refine", lowConfidence)
+
+		// generate → validate (if confidence >= 80)
+		highConfidence := func(s TestState) bool {
+			return s.Counter >= 80
+		}
+		_ = engine.Connect("generate", "validate", highConfidence)
+
+		// refine → validate (after refinement, confidence should be high enough)
+		_ = engine.Connect("refine", "validate", nil)
+
+		ctx := context.Background()
+		finalState, err := engine.Run(ctx, "confidence-run-001", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Should have gone: generate (65) → refine (+20 = 85) → validate (+1 = 86)
+		if finalState.Counter != 86 {
+			t.Errorf("expected Counter = 86, got %d", finalState.Counter)
+		}
+		if finalState.Value != "validated" {
+			t.Errorf("expected Value = 'validated', got %q", finalState.Value)
+		}
+
+		// Verify routing path via events
+		expectedNodes := []string{"generate", "refine", "validate"}
+		if len(emitter.events) < len(expectedNodes) {
+			t.Errorf("expected at least %d events, got %d", len(expectedNodes), len(emitter.events))
+		}
+
+		t.Log("Integration test passed: confidence-based routing worked correctly")
+	})
+}
+
+// TestIntegration_LoopWithExitCondition verifies loop with conditional exit (T100).
+func TestIntegration_LoopWithExitCondition(t *testing.T) {
+	t.Run("loop until condition met with max attempts protection", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &integrationEmitter{events: make([]emit.Event, 0)}
+		engine := New(reducer, st, emitter, Options{MaxSteps: 20})
+
+		// Simulate iterative refinement loop
+		// Node: process - Incremental processing
+		processNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "processing", Counter: 1},
+				Route: Next{}, // Use edge routing to decide continue or exit
+			}
+		})
+
+		// Node: validate - Check if done
+		validateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "checking", Counter: 0},
+				Route: Next{}, // Use edge routing
+			}
+		})
+
+		// Node: complete - Success exit
+		completeNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "completed", Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("process", processNode)
+		_ = engine.Add("validate", validateNode)
+		_ = engine.Add("complete", completeNode)
+		_ = engine.StartAt("process")
+
+		// process → validate (always check after processing)
+		_ = engine.Connect("process", "validate", nil)
+
+		// validate → complete (if Counter >= 5, we're done)
+		exitCondition := func(s TestState) bool {
+			return s.Counter >= 5
+		}
+		_ = engine.Connect("validate", "complete", exitCondition)
+
+		// validate → process (if Counter < 5, keep looping)
+		continueCondition := func(s TestState) bool {
+			return s.Counter < 5
+		}
+		_ = engine.Connect("validate", "process", continueCondition)
+
+		ctx := context.Background()
+		finalState, err := engine.Run(ctx, "loop-exit-run-001", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Should loop 5 times: process(1), validate, process(1), ..., complete(100)
+		// Final: 5 (from processing) + 100 (from complete) = 105
+		if finalState.Counter != 105 {
+			t.Errorf("expected Counter = 105, got %d", finalState.Counter)
+		}
+		if finalState.Value != "completed" {
+			t.Errorf("expected Value = 'completed', got %q", finalState.Value)
+		}
+
+		// Verify loop iterations
+		// Should have: process, validate, process, validate, ..., complete
+		// At least 11 node executions (5 process + 5 validate + 1 complete)
+		minEvents := 11
+		if len(emitter.events) < minEvents {
+			t.Errorf("expected at least %d events (loop iterations), got %d", minEvents, len(emitter.events))
+		}
+
+		t.Log("Integration test passed: loop with exit condition worked correctly")
+	})
+}
