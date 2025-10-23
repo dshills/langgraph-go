@@ -164,6 +164,15 @@ func isRateLimitError(err error) bool {
 	return errors.As(err, &rateLimitErr)
 }
 
+// rateLimitError represents an OpenAI rate limit error.
+type rateLimitError struct {
+	message string
+}
+
+func (e *rateLimitError) Error() string {
+	return e.message
+}
+
 // defaultClient is a placeholder for the actual OpenAI SDK client.
 // In a real implementation, this would wrap the official openai-go SDK.
 type defaultClient struct {

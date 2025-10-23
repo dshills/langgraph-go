@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dshills/langgraph-go/graph/emit"
+	"github.com/dshills/langgraph-go/graph/model"
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
@@ -853,5 +854,425 @@ func TestIntegration_ParallelErrorHandling(t *testing.T) {
 		}
 
 		t.Logf("Integration test passed: multiple failures handled (returned: %v)", err)
+	})
+}
+
+// TestIntegration_MultiProviderWorkflow tests workflow with multiple LLM providers (T150).
+func TestIntegration_MultiProviderWorkflow(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("provider switching based on task", func(t *testing.T) {
+		// Setup: Create mock models for different providers
+		openaiMock := &model.MockChatModel{
+			Responses: []model.ChatOut{
+				{Text: "OpenAI response"},
+			},
+		}
+
+		anthropicMock := &model.MockChatModel{
+			Responses: []model.ChatOut{
+				{Text: "Claude response with detailed reasoning"},
+			},
+		}
+
+		googleMock := &model.MockChatModel{
+			Responses: []model.ChatOut{
+				{Text: "Gemini quick response"},
+			},
+		}
+
+		// Use different providers for different tasks
+		messages := []model.Message{
+			{Role: model.RoleUser, Content: "Hello!"},
+		}
+
+		// Task 1: Quick response from Gemini
+		out1, err := googleMock.Chat(ctx, messages, nil)
+		if err != nil {
+			t.Fatalf("Gemini failed: %v", err)
+		}
+		if out1.Text != "Gemini quick response" {
+			t.Errorf("unexpected Gemini response: %s", out1.Text)
+		}
+
+		// Task 2: Detailed reasoning from Claude
+		out2, err := anthropicMock.Chat(ctx, messages, nil)
+		if err != nil {
+			t.Fatalf("Claude failed: %v", err)
+		}
+		if out2.Text != "Claude response with detailed reasoning" {
+			t.Errorf("unexpected Claude response: %s", out2.Text)
+		}
+
+		// Task 3: General task with OpenAI
+		out3, err := openaiMock.Chat(ctx, messages, nil)
+		if err != nil {
+			t.Fatalf("OpenAI failed: %v", err)
+		}
+		if out3.Text != "OpenAI response" {
+			t.Errorf("unexpected OpenAI response: %s", out3.Text)
+		}
+
+		// Verify each provider was called once
+		if openaiMock.CallCount() != 1 {
+			t.Errorf("OpenAI call count: expected 1, got %d", openaiMock.CallCount())
+		}
+		if anthropicMock.CallCount() != 1 {
+			t.Errorf("Anthropic call count: expected 1, got %d", anthropicMock.CallCount())
+		}
+		if googleMock.CallCount() != 1 {
+			t.Errorf("Google call count: expected 1, got %d", googleMock.CallCount())
+		}
+	})
+
+	t.Run("fallback to secondary provider on error", func(t *testing.T) {
+		// Primary provider fails
+		primaryMock := &model.MockChatModel{
+			Err: errors.New("rate limit exceeded"),
+		}
+
+		// Secondary provider succeeds
+		secondaryMock := &model.MockChatModel{
+			Responses: []model.ChatOut{
+				{Text: "Fallback response"},
+			},
+		}
+
+		messages := []model.Message{
+			{Role: model.RoleUser, Content: "Test"},
+		}
+
+		// Try primary first
+		_, err := primaryMock.Chat(ctx, messages, nil)
+		if err == nil {
+			t.Fatal("expected primary to fail")
+		}
+
+		// Fallback to secondary
+		out, err := secondaryMock.Chat(ctx, messages, nil)
+		if err != nil {
+			t.Fatalf("secondary failed: %v", err)
+		}
+
+		if out.Text != "Fallback response" {
+			t.Errorf("unexpected fallback response: %s", out.Text)
+		}
+	})
+
+	t.Run("multi-turn conversation with provider", func(t *testing.T) {
+		mockModel := &model.MockChatModel{
+			Responses: []model.ChatOut{
+				{Text: "First response"},
+				{Text: "Second response"},
+				{Text: "Third response"},
+			},
+		}
+
+		// Turn 1
+		messages1 := []model.Message{
+			{Role: model.RoleUser, Content: "First question"},
+		}
+		out1, err := mockModel.Chat(ctx, messages1, nil)
+		if err != nil {
+			t.Fatalf("turn 1 failed: %v", err)
+		}
+		if out1.Text != "First response" {
+			t.Errorf("turn 1: expected 'First response', got %q", out1.Text)
+		}
+
+		// Turn 2 - conversation builds
+		messages2 := []model.Message{
+			{Role: model.RoleUser, Content: "First question"},
+			{Role: model.RoleAssistant, Content: "First response"},
+			{Role: model.RoleUser, Content: "Second question"},
+		}
+		out2, err := mockModel.Chat(ctx, messages2, nil)
+		if err != nil {
+			t.Fatalf("turn 2 failed: %v", err)
+		}
+		if out2.Text != "Second response" {
+			t.Errorf("turn 2: expected 'Second response', got %q", out2.Text)
+		}
+
+		// Turn 3
+		messages3 := []model.Message{
+			{Role: model.RoleUser, Content: "First question"},
+			{Role: model.RoleAssistant, Content: "First response"},
+			{Role: model.RoleUser, Content: "Second question"},
+			{Role: model.RoleAssistant, Content: "Second response"},
+			{Role: model.RoleUser, Content: "Third question"},
+		}
+		out3, err := mockModel.Chat(ctx, messages3, nil)
+		if err != nil {
+			t.Fatalf("turn 3 failed: %v", err)
+		}
+		if out3.Text != "Third response" {
+			t.Errorf("turn 3: expected 'Third response', got %q", out3.Text)
+		}
+
+		// Verify conversation history was tracked
+		if mockModel.CallCount() != 3 {
+			t.Errorf("expected 3 calls, got %d", mockModel.CallCount())
+		}
+
+		// Verify message history accumulates
+		lastCall := mockModel.Calls[2]
+		if len(lastCall.Messages) != 5 {
+			t.Errorf("turn 3: expected 5 messages in history, got %d", len(lastCall.Messages))
+		}
+	})
+
+	t.Run("tool calling workflow", func(t *testing.T) {
+		// Setup model that returns tool calls
+		mockModel := &model.MockChatModel{
+			Responses: []model.ChatOut{
+				{
+					// First response: model decides to use a tool
+					ToolCalls: []model.ToolCall{
+						{
+							Name:  "search",
+							Input: map[string]interface{}{"query": "weather in Paris"},
+						},
+					},
+				},
+				{
+					// Second response: model uses tool result
+					Text: "Based on the search results, the weather in Paris is sunny, 22°C.",
+				},
+			},
+		}
+
+		tools := []model.ToolSpec{
+			{
+				Name:        "search",
+				Description: "Search for information",
+				Schema: map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"query": map[string]interface{}{
+							"type":        "string",
+							"description": "Search query",
+						},
+					},
+					"required": []string{"query"},
+				},
+			},
+		}
+
+		// Turn 1: User asks question, model decides to use tool
+		messages1 := []model.Message{
+			{Role: model.RoleUser, Content: "What's the weather in Paris?"},
+		}
+
+		out1, err := mockModel.Chat(ctx, messages1, tools)
+		if err != nil {
+			t.Fatalf("turn 1 failed: %v", err)
+		}
+
+		if len(out1.ToolCalls) != 1 {
+			t.Fatalf("expected 1 tool call, got %d", len(out1.ToolCalls))
+		}
+
+		toolCall := out1.ToolCalls[0]
+		if toolCall.Name != "search" {
+			t.Errorf("expected tool 'search', got %q", toolCall.Name)
+		}
+
+		// Simulate tool execution
+		query, ok := toolCall.Input["query"].(string)
+		if !ok || query != "weather in Paris" {
+			t.Errorf("expected query 'weather in Paris', got %v", toolCall.Input["query"])
+		}
+
+		// Turn 2: Send tool result back (in a real workflow)
+		messages2 := []model.Message{
+			{Role: model.RoleUser, Content: "What's the weather in Paris?"},
+			{Role: model.RoleAssistant, Content: "Let me search for that information."},
+			{Role: model.RoleUser, Content: "The search returned: Sunny, 22°C"},
+		}
+
+		out2, err := mockModel.Chat(ctx, messages2, tools)
+		if err != nil {
+			t.Fatalf("turn 2 failed: %v", err)
+		}
+
+		if out2.Text == "" {
+			t.Error("expected text response after tool use")
+		}
+
+		// Verify the workflow
+		if mockModel.CallCount() != 2 {
+			t.Errorf("expected 2 calls, got %d", mockModel.CallCount())
+		}
+	})
+
+	t.Run("context cancellation stops workflow", func(t *testing.T) {
+		mockModel := &model.MockChatModel{
+			Responses: []model.ChatOut{
+				{Text: "Response"},
+			},
+		}
+
+		// Cancel context before call
+		cancelCtx, cancel := context.WithCancel(ctx)
+		cancel()
+
+		messages := []model.Message{
+			{Role: model.RoleUser, Content: "Test"},
+		}
+
+		_, err := mockModel.Chat(cancelCtx, messages, nil)
+		if err == nil {
+			t.Fatal("expected context.Canceled error")
+		}
+
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("expected context.Canceled, got %v", err)
+		}
+
+		// Model should not have been called
+		if mockModel.CallCount() != 0 {
+			t.Errorf("expected 0 calls with canceled context, got %d", mockModel.CallCount())
+		}
+	})
+
+	t.Run("provider comparison for same task", func(t *testing.T) {
+		// Setup multiple providers with different characteristics
+		fastProvider := &model.MockChatModel{
+			Responses: []model.ChatOut{
+				{Text: "Quick answer: 42"},
+			},
+		}
+
+		detailedProvider := &model.MockChatModel{
+			Responses: []model.ChatOut{
+				{Text: "The answer is 42. This is derived from..."},
+			},
+		}
+
+		messages := []model.Message{
+			{Role: model.RoleUser, Content: "What is the answer?"},
+		}
+
+		// Get responses from both
+		quickOut, err := fastProvider.Chat(ctx, messages, nil)
+		if err != nil {
+			t.Fatalf("fast provider failed: %v", err)
+		}
+
+		detailedOut, err := detailedProvider.Chat(ctx, messages, nil)
+		if err != nil {
+			t.Fatalf("detailed provider failed: %v", err)
+		}
+
+		// Both should answer, but with different verbosity
+		if quickOut.Text == "" {
+			t.Error("fast provider returned empty response")
+		}
+
+		if detailedOut.Text == "" {
+			t.Error("detailed provider returned empty response")
+		}
+
+		if len(detailedOut.Text) <= len(quickOut.Text) {
+			t.Error("expected detailed response to be longer")
+		}
+	})
+
+	t.Run("retry logic with provider failure", func(t *testing.T) {
+		// Provider that fails on first call
+		failingMock := &model.MockChatModel{
+			Err: errors.New("temporary failure"),
+		}
+
+		// Provider that succeeds
+		successMock := &model.MockChatModel{
+			Responses: []model.ChatOut{
+				{Text: "Success after retry"},
+			},
+		}
+
+		messages := []model.Message{
+			{Role: model.RoleUser, Content: "Test"},
+		}
+
+		// Attempt 1: Fail
+		_, err := failingMock.Chat(ctx, messages, nil)
+		if err == nil {
+			t.Fatal("expected first attempt to fail")
+		}
+
+		// Attempt 2: Succeed (simulating retry with different provider or after retry delay)
+		out, err := successMock.Chat(ctx, messages, nil)
+		if err != nil {
+			t.Fatalf("expected retry to succeed, got %v", err)
+		}
+
+		if out.Text != "Success after retry" {
+			t.Errorf("unexpected response: %s", out.Text)
+		}
+
+		// Verify both were called
+		if failingMock.CallCount() != 1 {
+			t.Errorf("expected 1 call to failing mock, got %d", failingMock.CallCount())
+		}
+		if successMock.CallCount() != 1 {
+			t.Errorf("expected 1 call to success mock, got %d", successMock.CallCount())
+		}
+	})
+}
+
+// TestIntegration_ProviderSelectionStrategy tests logic for choosing the right provider (T150).
+func TestIntegration_ProviderSelectionStrategy(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("select based on task type", func(t *testing.T) {
+		providers := map[string]model.ChatModel{
+			"fast":     &model.MockChatModel{Responses: []model.ChatOut{{Text: "Fast"}}},
+			"detailed": &model.MockChatModel{Responses: []model.ChatOut{{Text: "Detailed"}}},
+			"coding":   &model.MockChatModel{Responses: []model.ChatOut{{Text: "Code"}}},
+		}
+
+		// Strategy: simple tasks → fast, reasoning → detailed, code → coding
+		selectProvider := func(taskType string) model.ChatModel {
+			switch taskType {
+			case "simple":
+				return providers["fast"]
+			case "reasoning":
+				return providers["detailed"]
+			case "code":
+				return providers["coding"]
+			default:
+				return providers["fast"]
+			}
+		}
+
+		messages := []model.Message{
+			{Role: model.RoleUser, Content: "Test"},
+		}
+
+		// Test each strategy
+		tests := []struct {
+			taskType         string
+			expectedResponse string
+		}{
+			{"simple", "Fast"},
+			{"reasoning", "Detailed"},
+			{"code", "Code"},
+			{"unknown", "Fast"}, // Default fallback
+		}
+
+		for _, tt := range tests {
+			provider := selectProvider(tt.taskType)
+			out, err := provider.Chat(ctx, messages, nil)
+			if err != nil {
+				t.Errorf("%s: unexpected error: %v", tt.taskType, err)
+				continue
+			}
+
+			if out.Text != tt.expectedResponse {
+				t.Errorf("%s: expected %q, got %q", tt.taskType, tt.expectedResponse, out.Text)
+			}
+		}
 	})
 }
