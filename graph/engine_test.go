@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/dshills/langgraph-go/graph/emit"
@@ -415,6 +416,395 @@ func TestEngine_Connect(t *testing.T) {
 
 		// Both connections should succeed
 	})
+}
+
+// TestEngine_Run verifies Engine.Run(ctx, runID, initialState) execution (T055).
+func TestEngine_Run(t *testing.T) {
+	t.Run("run single node workflow", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Create a simple node that increments counter and stops
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("process", node)
+		_ = engine.StartAt("process")
+
+		ctx := context.Background()
+		initial := TestState{Value: "start", Counter: 0}
+
+		final, err := engine.Run(ctx, "run-001", initial)
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify state was updated
+		if final.Counter != 1 {
+			t.Errorf("expected Counter = 1, got %d", final.Counter)
+		}
+		if final.Value != "start" {
+			t.Errorf("expected Value = 'start', got %q", final.Value)
+		}
+	})
+
+	t.Run("run multi-node workflow", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Node 1: Set value and route to node2
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node1", Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+
+		// Node 2: Increment counter and route to node3
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 10},
+				Route: Goto("node3"),
+			}
+		})
+
+		// Node 3: Set final value and stop
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "complete"},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node1)
+		_ = engine.Add("node2", node2)
+		_ = engine.Add("node3", node3)
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+		initial := TestState{Value: "initial", Counter: 0}
+
+		final, err := engine.Run(ctx, "run-002", initial)
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify final state reflects all node updates
+		if final.Value != "complete" {
+			t.Errorf("expected Value = 'complete', got %q", final.Value)
+		}
+		if final.Counter != 11 {
+			t.Errorf("expected Counter = 11 (0+1+10), got %d", final.Counter)
+		}
+	})
+
+	t.Run("run with no start node", func(t *testing.T) {
+		engine := createTestEngine()
+
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{Route: Stop()}
+		})
+
+		_ = engine.Add("node1", node)
+		// Don't call StartAt
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "run-003", TestState{})
+
+		// Should return error if start node not set
+		if err == nil {
+			t.Error("expected error when start node not set")
+		}
+	})
+
+	t.Run("run with nonexistent start node", func(t *testing.T) {
+		engine := createTestEngine()
+		engine.startNode = "nonexistent" // Manually set invalid start node
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "run-004", TestState{})
+
+		// Should return error if start node doesn't exist
+		if err == nil {
+			t.Error("expected error for nonexistent start node")
+		}
+	})
+}
+
+// TestEngine_StatePersistence verifies state is saved after each node (T057).
+func TestEngine_StatePersistence(t *testing.T) {
+	t.Run("state persisted after each node", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Create 3-node workflow
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node1", Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node2", Counter: 10},
+				Route: Goto("node3"),
+			}
+		})
+
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node3", Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node1)
+		_ = engine.Add("node2", node2)
+		_ = engine.Add("node3", node3)
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+		initial := TestState{Value: "initial", Counter: 0}
+
+		_, err := engine.Run(ctx, "persist-test", initial)
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify all steps were persisted
+		// Step 1 should have node1 result
+		state1, step1, err := st.LoadLatest(ctx, "persist-test")
+		if err != nil {
+			t.Fatalf("LoadLatest failed: %v", err)
+		}
+
+		// Latest should be step 3 with all accumulated updates
+		if step1 != 3 {
+			t.Errorf("expected step = 3, got %d", step1)
+		}
+		if state1.Value != "node3" {
+			t.Errorf("expected Value = 'node3', got %q", state1.Value)
+		}
+		if state1.Counter != 111 {
+			t.Errorf("expected Counter = 111 (0+1+10+100), got %d", state1.Counter)
+		}
+	})
+
+	t.Run("state persistence with store error", func(t *testing.T) {
+		// Create a failing store for error testing
+		failingStore := &failingStore[TestState]{}
+
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 10}
+		engine := New(reducer, failingStore, emitter, opts)
+
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node)
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "fail-test", TestState{})
+
+		// Should return store error
+		if err == nil {
+			t.Error("expected error from failing store")
+		}
+	})
+}
+
+// TestEngine_MaxSteps verifies MaxSteps limit enforcement (T059).
+func TestEngine_MaxSteps(t *testing.T) {
+	t.Run("workflow stops at MaxSteps limit", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 3} // Limit to 3 steps
+		engine := New(reducer, st, emitter, opts)
+
+		// Create workflow with 5 nodes (should stop at step 3)
+		for i := 1; i <= 5; i++ {
+			nextNode := ""
+			if i < 5 {
+				nextNode = nodeID(i + 1)
+			}
+
+			node := createCounterNode(i, nextNode)
+			_ = engine.Add(nodeID(i), node)
+		}
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "maxsteps-test", TestState{})
+
+		// Should return MaxSteps error
+		if err == nil {
+			t.Fatal("expected MaxSteps error")
+		}
+
+		var engineErr *EngineError
+		if !errors.As(err, &engineErr) {
+			t.Fatalf("expected EngineError, got %T", err)
+		}
+
+		if engineErr.Code != "MAX_STEPS_EXCEEDED" {
+			t.Errorf("expected MAX_STEPS_EXCEEDED error code, got %q", engineErr.Code)
+		}
+	})
+
+	t.Run("workflow completes within MaxSteps", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 10} // Generous limit
+		engine := New(reducer, st, emitter, opts)
+
+		// Create 3-node workflow (will complete at step 3)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Goto("node3"),
+			}
+		})
+
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node1)
+		_ = engine.Add("node2", node2)
+		_ = engine.Add("node3", node3)
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "within-limit", TestState{})
+
+		// Should complete successfully
+		if err != nil {
+			t.Fatalf("Run should succeed within MaxSteps: %v", err)
+		}
+
+		if final.Counter != 3 {
+			t.Errorf("expected Counter = 3, got %d", final.Counter)
+		}
+	})
+
+	t.Run("MaxSteps zero means no limit", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 0} // No limit
+		engine := New(reducer, st, emitter, opts)
+
+		// Create 100-node chain
+		for i := 1; i <= 100; i++ {
+			nextNode := ""
+			if i < 100 {
+				nextNode = nodeID(i + 1)
+			}
+
+			node := createCounterNode(i, nextNode)
+			_ = engine.Add(nodeID(i), node)
+		}
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "no-limit", TestState{})
+
+		// Should complete all 100 nodes
+		if err != nil {
+			t.Fatalf("Run with MaxSteps=0 should not fail: %v", err)
+		}
+
+		expectedSum := 100 * 101 / 2 // Sum of 1..100
+		if final.Counter != expectedSum {
+			t.Errorf("expected Counter = %d, got %d", expectedSum, final.Counter)
+		}
+	})
+}
+
+// Helper functions for MaxSteps tests
+func nodeID(i int) string {
+	return "node" + string(rune('0'+i))
+}
+
+func createCounterNode(value int, nextNode string) Node[TestState] {
+	return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		route := Stop()
+		if nextNode != "" {
+			route = Goto(nextNode)
+		}
+		return NodeResult[TestState]{
+			Delta: TestState{Counter: value},
+			Route: route,
+		}
+	})
+}
+
+// failingStore is a test store that always fails SaveStep
+type failingStore[S any] struct{}
+
+func (f *failingStore[S]) SaveStep(ctx context.Context, runID string, step int, nodeID string, state S) error {
+	return &EngineError{Message: "simulated store failure", Code: "STORE_FAIL"}
+}
+
+func (f *failingStore[S]) LoadLatest(ctx context.Context, runID string) (S, int, error) {
+	var zero S
+	return zero, 0, store.ErrNotFound
+}
+
+func (f *failingStore[S]) SaveCheckpoint(ctx context.Context, cpID string, state S, step int) error {
+	return &EngineError{Message: "simulated store failure", Code: "STORE_FAIL"}
+}
+
+func (f *failingStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (S, int, error) {
+	var zero S
+	return zero, 0, store.ErrNotFound
 }
 
 // createTestEngine is a helper to create a test engine with default configuration.

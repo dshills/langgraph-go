@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"sync"
 
 	"github.com/dshills/langgraph-go/graph/emit"
@@ -62,12 +63,6 @@ type Engine[S any] struct {
 
 	// opts contains execution configuration
 	opts Options
-
-	// currentState tracks the most recent state during execution
-	currentState S
-
-	// currentStep tracks the current step number during execution
-	currentStep int
 }
 
 // Options configures Engine execution behavior.
@@ -244,6 +239,153 @@ func (e *Engine[S]) Connect(from, to string, predicate Predicate[S]) error {
 
 	e.edges = append(e.edges, edge)
 	return nil
+}
+
+// Run executes the workflow from start to completion or error.
+//
+// Workflow execution:
+//  1. Validates engine configuration (reducer, store, startNode)
+//  2. Initializes state with initial value
+//  3. Executes nodes starting from startNode
+//  4. Follows routing decisions (Stop, Goto, Many)
+//  5. Applies reducer to merge state updates
+//  6. Persists state after each node
+//  7. Emits observability events
+//  8. Enforces MaxSteps limit
+//  9. Respects context cancellation
+//
+// Parameters:
+//   - ctx: Context for cancellation and request-scoped values
+//   - runID: Unique identifier for this workflow execution
+//   - initial: Starting state value
+//
+// Returns:
+//   - Final state after workflow completion
+//   - Error if validation fails, node execution fails, or limits exceeded
+//
+// Example:
+//
+//	ctx := context.Background()
+//	final, err := engine.Run(ctx, "run-001", MyState{Query: "hello"})
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	fmt.Printf("Final state: %+v\n", final)
+func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error) {
+	var zero S
+
+	// Validate configuration
+	if e.reducer == nil {
+		return zero, &EngineError{
+			Message: "reducer is required",
+			Code:    "MISSING_REDUCER",
+		}
+	}
+	if e.store == nil {
+		return zero, &EngineError{
+			Message: "store is required",
+			Code:    "MISSING_STORE",
+		}
+	}
+	if e.startNode == "" {
+		return zero, &EngineError{
+			Message: "start node not set (call StartAt before Run)",
+			Code:    "NO_START_NODE",
+		}
+	}
+
+	// Validate start node exists
+	e.mu.RLock()
+	_, exists := e.nodes[e.startNode]
+	e.mu.RUnlock()
+
+	if !exists {
+		return zero, &EngineError{
+			Message: "start node does not exist: " + e.startNode,
+			Code:    "NODE_NOT_FOUND",
+		}
+	}
+
+	// Initialize execution state
+	currentState := initial
+	currentNode := e.startNode
+	step := 0
+
+	// Execution loop
+	for {
+		step++
+
+		// Check MaxSteps limit (T060)
+		if e.opts.MaxSteps > 0 && step > e.opts.MaxSteps {
+			return zero, &EngineError{
+				Message: "workflow exceeded MaxSteps limit",
+				Code:    "MAX_STEPS_EXCEEDED",
+			}
+		}
+
+		// Check context cancellation
+		select {
+		case <-ctx.Done():
+			return zero, ctx.Err()
+		default:
+		}
+
+		// Get current node implementation
+		e.mu.RLock()
+		nodeImpl, exists := e.nodes[currentNode]
+		e.mu.RUnlock()
+
+		if !exists {
+			return zero, &EngineError{
+				Message: "node not found during execution: " + currentNode,
+				Code:    "NODE_NOT_FOUND",
+			}
+		}
+
+		// Execute node
+		result := nodeImpl.Run(ctx, currentState)
+
+		// Handle node error
+		if result.Err != nil {
+			return zero, result.Err
+		}
+
+		// Merge state update
+		currentState = e.reducer(currentState, result.Delta)
+
+		// Persist state after node execution (T058)
+		if err := e.store.SaveStep(ctx, runID, step, currentNode, currentState); err != nil {
+			return zero, &EngineError{
+				Message: "failed to save step: " + err.Error(),
+				Code:    "STORE_ERROR",
+			}
+		}
+
+		// Emit observability event
+		if e.emitter != nil {
+			e.emitter.Emit(emit.Event{
+				RunID:  runID,
+				Step:   step,
+				NodeID: currentNode,
+				Msg:    "node completed",
+			})
+		}
+
+		// Determine next node from routing decision
+		if result.Route.Terminal {
+			// Workflow complete
+			return currentState, nil
+		}
+
+		if result.Route.To != "" {
+			// Single next node (Goto)
+			currentNode = result.Route.To
+			continue
+		}
+
+		// If no explicit route, workflow ends
+		return currentState, nil
+	}
 }
 
 // EngineError represents an error from Engine operations.
