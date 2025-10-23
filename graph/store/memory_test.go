@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"testing"
 )
@@ -327,6 +328,242 @@ func TestMemStore_LoadCheckpoint_Errors(t *testing.T) {
 		_, _, err := store.LoadCheckpoint(ctx, "cp-001")
 		if err != ErrNotFound {
 			t.Errorf("expected ErrNotFound, got %v", err)
+		}
+	})
+}
+
+// TestMemStore_JSONSerialization verifies JSON marshaling of MemStore (T071).
+func TestMemStore_JSONSerialization(t *testing.T) {
+	t.Run("marshal empty store to JSON", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+
+		data, err := store.MarshalJSON()
+		if err != nil {
+			t.Fatalf("MarshalJSON failed: %v", err)
+		}
+
+		// Should produce valid JSON
+		if len(data) == 0 {
+			t.Error("expected non-empty JSON data")
+		}
+
+		// Should be parseable as JSON
+		var result map[string]interface{}
+		if err := json.Unmarshal(data, &result); err != nil {
+			t.Errorf("produced invalid JSON: %v", err)
+		}
+	})
+
+	t.Run("marshal store with steps to JSON", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Add some steps
+		_ = store.SaveStep(ctx, "run-001", 1, "node1", TestState{Value: "v1", Counter: 10})
+		_ = store.SaveStep(ctx, "run-001", 2, "node2", TestState{Value: "v2", Counter: 20})
+		_ = store.SaveStep(ctx, "run-002", 1, "node1", TestState{Value: "v3", Counter: 30})
+
+		data, err := store.MarshalJSON()
+		if err != nil {
+			t.Fatalf("MarshalJSON failed: %v", err)
+		}
+
+		// Should contain step data
+		jsonStr := string(data)
+		if !contains(jsonStr, "run-001") {
+			t.Error("JSON should contain runID 'run-001'")
+		}
+		if !contains(jsonStr, "node1") {
+			t.Error("JSON should contain nodeID 'node1'")
+		}
+	})
+
+	t.Run("marshal store with checkpoints to JSON", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Add checkpoint
+		_ = store.SaveCheckpoint(ctx, "cp-001", TestState{Value: "checkpoint", Counter: 100}, 5)
+
+		data, err := store.MarshalJSON()
+		if err != nil {
+			t.Fatalf("MarshalJSON failed: %v", err)
+		}
+
+		// Should contain checkpoint data
+		jsonStr := string(data)
+		if !contains(jsonStr, "cp-001") {
+			t.Error("JSON should contain checkpointID 'cp-001'")
+		}
+		if !contains(jsonStr, "checkpoint") {
+			t.Error("JSON should contain checkpoint value")
+		}
+	})
+
+	t.Run("marshal store with both steps and checkpoints", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Add steps and checkpoints
+		_ = store.SaveStep(ctx, "run-001", 1, "node1", TestState{Value: "step1", Counter: 1})
+		_ = store.SaveCheckpoint(ctx, "cp-001", TestState{Value: "cp1", Counter: 50}, 10)
+
+		data, err := store.MarshalJSON()
+		if err != nil {
+			t.Fatalf("MarshalJSON failed: %v", err)
+		}
+
+		// Should be valid JSON
+		if len(data) == 0 {
+			t.Error("expected non-empty JSON data")
+		}
+	})
+}
+
+// contains is a helper to check if a string contains a substring.
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
+		(s[:len(substr)] == substr || contains(s[1:], substr)))
+}
+
+// TestMemStore_JSONDeserialization verifies JSON unmarshaling of MemStore (T073).
+func TestMemStore_JSONDeserialization(t *testing.T) {
+	t.Run("unmarshal empty store from JSON", func(t *testing.T) {
+		// Marshal empty store
+		original := NewMemStore[TestState]()
+		data, _ := original.MarshalJSON()
+
+		// Unmarshal into new store
+		restored := NewMemStore[TestState]()
+		err := restored.UnmarshalJSON(data)
+		if err != nil {
+			t.Fatalf("UnmarshalJSON failed: %v", err)
+		}
+
+		// Verify empty
+		ctx := context.Background()
+		_, _, loadErr := restored.LoadLatest(ctx, "any-run")
+		if loadErr != ErrNotFound {
+			t.Error("expected empty store after unmarshaling empty JSON")
+		}
+	})
+
+	t.Run("unmarshal store with steps from JSON", func(t *testing.T) {
+		// Create original store with steps
+		original := NewMemStore[TestState]()
+		ctx := context.Background()
+		_ = original.SaveStep(ctx, "run-001", 1, "node1", TestState{Value: "v1", Counter: 10})
+		_ = original.SaveStep(ctx, "run-001", 2, "node2", TestState{Value: "v2", Counter: 20})
+
+		// Marshal
+		data, _ := original.MarshalJSON()
+
+		// Unmarshal into new store
+		restored := NewMemStore[TestState]()
+		err := restored.UnmarshalJSON(data)
+		if err != nil {
+			t.Fatalf("UnmarshalJSON failed: %v", err)
+		}
+
+		// Verify steps were restored
+		state, step, err := restored.LoadLatest(ctx, "run-001")
+		if err != nil {
+			t.Fatalf("LoadLatest failed after unmarshal: %v", err)
+		}
+
+		if step != 2 {
+			t.Errorf("expected step = 2, got %d", step)
+		}
+		if state.Value != "v2" {
+			t.Errorf("expected Value = 'v2', got %q", state.Value)
+		}
+		if state.Counter != 20 {
+			t.Errorf("expected Counter = 20, got %d", state.Counter)
+		}
+	})
+
+	t.Run("unmarshal store with checkpoints from JSON", func(t *testing.T) {
+		// Create original store with checkpoint
+		original := NewMemStore[TestState]()
+		ctx := context.Background()
+		_ = original.SaveCheckpoint(ctx, "cp-001", TestState{Value: "checkpoint", Counter: 100}, 5)
+
+		// Marshal
+		data, _ := original.MarshalJSON()
+
+		// Unmarshal into new store
+		restored := NewMemStore[TestState]()
+		err := restored.UnmarshalJSON(data)
+		if err != nil {
+			t.Fatalf("UnmarshalJSON failed: %v", err)
+		}
+
+		// Verify checkpoint was restored
+		state, step, err := restored.LoadCheckpoint(ctx, "cp-001")
+		if err != nil {
+			t.Fatalf("LoadCheckpoint failed after unmarshal: %v", err)
+		}
+
+		if step != 5 {
+			t.Errorf("expected step = 5, got %d", step)
+		}
+		if state.Value != "checkpoint" {
+			t.Errorf("expected Value = 'checkpoint', got %q", state.Value)
+		}
+		if state.Counter != 100 {
+			t.Errorf("expected Counter = 100, got %d", state.Counter)
+		}
+	})
+
+	t.Run("round-trip serialization preserves data", func(t *testing.T) {
+		// Create complex store
+		original := NewMemStore[TestState]()
+		ctx := context.Background()
+		_ = original.SaveStep(ctx, "run-001", 1, "node1", TestState{Value: "s1", Counter: 1})
+		_ = original.SaveStep(ctx, "run-001", 2, "node2", TestState{Value: "s2", Counter: 2})
+		_ = original.SaveStep(ctx, "run-002", 1, "node1", TestState{Value: "s3", Counter: 3})
+		_ = original.SaveCheckpoint(ctx, "cp-001", TestState{Value: "cp1", Counter: 50}, 10)
+		_ = original.SaveCheckpoint(ctx, "cp-002", TestState{Value: "cp2", Counter: 60}, 20)
+
+		// Marshal
+		data, _ := original.MarshalJSON()
+
+		// Unmarshal
+		restored := NewMemStore[TestState]()
+		_ = restored.UnmarshalJSON(data)
+
+		// Verify all data preserved
+		// Check run-001
+		s1, step1, _ := restored.LoadLatest(ctx, "run-001")
+		if step1 != 2 || s1.Value != "s2" || s1.Counter != 2 {
+			t.Error("run-001 not preserved correctly")
+		}
+
+		// Check run-002
+		s2, step2, _ := restored.LoadLatest(ctx, "run-002")
+		if step2 != 1 || s2.Value != "s3" || s2.Counter != 3 {
+			t.Error("run-002 not preserved correctly")
+		}
+
+		// Check checkpoints
+		cp1, cpStep1, _ := restored.LoadCheckpoint(ctx, "cp-001")
+		if cpStep1 != 10 || cp1.Value != "cp1" || cp1.Counter != 50 {
+			t.Error("cp-001 not preserved correctly")
+		}
+
+		cp2, cpStep2, _ := restored.LoadCheckpoint(ctx, "cp-002")
+		if cpStep2 != 20 || cp2.Value != "cp2" || cp2.Counter != 60 {
+			t.Error("cp-002 not preserved correctly")
+		}
+	})
+
+	t.Run("unmarshal invalid JSON", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+
+		// Try to unmarshal invalid JSON
+		err := store.UnmarshalJSON([]byte("{invalid json"))
+		if err == nil {
+			t.Error("expected error for invalid JSON")
 		}
 	})
 }

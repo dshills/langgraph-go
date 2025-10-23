@@ -152,10 +152,10 @@
 
 ### US1: State Serialization
 
-- [ ] T071 [P] [US1] Write tests for JSON serialization of state in graph/store/memory_test.go
-- [ ] T072 [P] [US1] Implement JSON marshaling in MemStore in graph/store/memory.go
-- [ ] T073 [P] [US1] Write tests for JSON deserialization in graph/store/memory_test.go
-- [ ] T074 [P] [US1] Implement JSON unmarshaling in MemStore in graph/store/memory.go
+- [X] T071 [P] [US1] Write tests for JSON serialization of state in graph/store/memory_test.go
+- [X] T072 [P] [US1] Implement JSON marshaling in MemStore in graph/store/memory.go
+- [X] T073 [P] [US1] Write tests for JSON deserialization in graph/store/memory_test.go
+- [X] T074 [P] [US1] Implement JSON unmarshaling in MemStore in graph/store/memory.go
 
 ### US1: Example & Integration Test
 

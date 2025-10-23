@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 )
 
@@ -120,4 +121,82 @@ func (m *MemStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (state S,
 	}
 
 	return cp.State, cp.Step, nil
+}
+
+// serializableMemStore is the JSON-serializable representation of MemStore.
+//
+// Used for persisting MemStore contents to disk or transmitting over network.
+// The generic type S must be JSON-serializable (implement json.Marshaler or have exported fields).
+type serializableMemStore[S any] struct {
+	Steps       map[string][]StepRecord[S] `json:"steps"`
+	Checkpoints map[string]Checkpoint[S]   `json:"checkpoints"`
+}
+
+// MarshalJSON serializes the MemStore to JSON (T072).
+//
+// The resulting JSON can be saved to disk, transmitted over network, or used for debugging.
+// All state values must be JSON-serializable.
+//
+// Thread-safe: acquires read lock during serialization.
+//
+// Example:
+//
+//	store := NewMemStore[MyState]()
+//	// ... add steps and checkpoints ...
+//	data, err := store.MarshalJSON()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	os.WriteFile("store.json", data, 0644)
+func (m *MemStore[S]) MarshalJSON() ([]byte, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	// Create serializable representation
+	s := serializableMemStore[S]{
+		Steps:       m.steps,
+		Checkpoints: m.checkpoints,
+	}
+
+	return json.Marshal(s)
+}
+
+// UnmarshalJSON deserializes JSON data into the MemStore (T074).
+//
+// Replaces the current contents of the MemStore with the deserialized data.
+// All existing steps and checkpoints are discarded.
+//
+// Thread-safe: acquires write lock during deserialization.
+//
+// Example:
+//
+//	data, _ := os.ReadFile("store.json")
+//	store := NewMemStore[MyState]()
+//	if err := store.UnmarshalJSON(data); err != nil {
+//	    log.Fatal(err)
+//	}
+//	// Store now contains data from JSON file
+func (m *MemStore[S]) UnmarshalJSON(data []byte) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Unmarshal into temporary struct
+	var s serializableMemStore[S]
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	// Replace store contents
+	m.steps = s.Steps
+	m.checkpoints = s.Checkpoints
+
+	// Initialize empty maps if nil (for empty JSON objects)
+	if m.steps == nil {
+		m.steps = make(map[string][]StepRecord[S])
+	}
+	if m.checkpoints == nil {
+		m.checkpoints = make(map[string]Checkpoint[S])
+	}
+
+	return nil
 }
