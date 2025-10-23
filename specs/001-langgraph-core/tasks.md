@@ -309,11 +309,11 @@
 
 ### US4: Google Adapter
 
-- [ ] T144 [P] [US4] Create graph/model/google sub-package
-- [ ] T145 [P] [US4] Write tests for GoogleChatModel in graph/model/google/google_test.go
-- [ ] T146 [P] [US4] Implement GoogleChatModel wrapping generative-ai-go in graph/model/google/google.go
-- [ ] T147 [P] [US4] Write tests for Google safety filter handling in graph/model/google/google_test.go
-- [ ] T148 [P] [US4] Implement safety filter error handling in graph/model/google/google.go
+- [X] T144 [P] [US4] Create graph/model/google sub-package
+- [X] T145 [P] [US4] Write tests for GoogleChatModel in graph/model/google/google_test.go
+- [X] T146 [P] [US4] Implement GoogleChatModel wrapping generative-ai-go in graph/model/google/google.go
+- [X] T147 [P] [US4] Write tests for Google safety filter handling in graph/model/google/google_test.go
+- [X] T148 [P] [US4] Implement safety filter error handling in graph/model/google/google.go
 
 ### US4: Example & Integration Test
 
