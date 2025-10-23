@@ -203,10 +203,10 @@
 
 ### US2: Termination
 
-- [ ] T094 [US2] Write tests for explicit Stop() termination in graph/engine_test.go
-- [ ] T095 [US2] Implement Next.Terminal checking in Engine.Run in graph/engine.go
-- [ ] T096 [P] [US2] Write tests for implicit termination (no edges) in graph/engine_test.go
-- [ ] T097 [P] [US2] Handle implicit termination in routing logic in graph/engine.go
+- [X] T094 [US2] Write tests for explicit Stop() termination in graph/engine_test.go
+- [X] T095 [US2] Implement Next.Terminal checking in Engine.Run in graph/engine.go
+- [X] T096 [P] [US2] Write tests for implicit termination (no edges) in graph/engine_test.go
+- [X] T097 [P] [US2] Handle implicit termination in routing logic in graph/engine.go (DESIGN: Returns NO_ROUTE error instead of implicit termination - safer and more explicit)
 
 ### US2: Example & Integration Test
 

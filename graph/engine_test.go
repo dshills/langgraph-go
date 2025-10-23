@@ -2037,6 +2037,154 @@ func TestEngine_WorkflowLoops(t *testing.T) {
 	})
 }
 
+// TestEngine_Termination verifies explicit Stop() and implicit termination (T094-T097).
+func TestEngine_Termination(t *testing.T) {
+	t.Run("explicit Stop() terminates workflow", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Node A: Processes and stops
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "completed", Counter: 42},
+				Route: Stop(), // Explicit termination
+			}
+		})
+
+		// Node B: Should never be reached
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "should-not-reach", Counter: 999},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("A", nodeA); err != nil {
+			t.Fatalf("Failed to add node A: %v", err)
+		}
+		if err := engine.Add("B", nodeB); err != nil {
+			t.Fatalf("Failed to add node B: %v", err)
+		}
+		if err := engine.StartAt("A"); err != nil {
+			t.Fatalf("Failed to set start node: %v", err)
+		}
+
+		// Add edge A→B (should not be traversed due to Stop())
+		if err := engine.Connect("A", "B", nil); err != nil {
+			t.Fatalf("Failed to connect A→B: %v", err)
+		}
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "term-run-001", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Should stop at A, never reach B
+		if final.Value != "completed" {
+			t.Errorf("expected termination at A, got Value = %q", final.Value)
+		}
+		if final.Counter != 42 {
+			t.Errorf("expected Counter = 42, got %d", final.Counter)
+		}
+	})
+
+	t.Run("NO_ROUTE error when no edges match", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Node A: Returns empty Route, no matching edges
+		// Design: Engine returns NO_ROUTE error instead of implicit termination (safer, more explicit)
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "A", Counter: 1},
+				Route: Next{}, // Empty route, will check edges
+			}
+		})
+
+		// Node B: Should not be reached
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "B", Counter: 10},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("A", nodeA); err != nil {
+			t.Fatalf("Failed to add node A: %v", err)
+		}
+		if err := engine.Add("B", nodeB); err != nil {
+			t.Fatalf("Failed to add node B: %v", err)
+		}
+		if err := engine.StartAt("A"); err != nil {
+			t.Fatalf("Failed to set start node: %v", err)
+		}
+
+		// Add edge A→B with predicate that will NOT match
+		falsePredicate := func(s TestState) bool {
+			return false // Never matches
+		}
+		if err := engine.Connect("A", "B", falsePredicate); err != nil {
+			t.Fatalf("Failed to connect A→B: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "term-run-002", TestState{})
+
+		// Should error with NO_ROUTE (explicit error instead of implicit termination)
+		if err == nil {
+			t.Fatal("expected NO_ROUTE error when no edges match")
+		}
+
+		var engineErr *EngineError
+		if !errors.As(err, &engineErr) {
+			t.Fatalf("expected EngineError, got %T: %v", err, err)
+		}
+
+		if engineErr.Code != "NO_ROUTE" {
+			t.Errorf("expected error code NO_ROUTE, got %q", engineErr.Code)
+		}
+	})
+
+	t.Run("NO_ROUTE error when node has no edges", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Node A: Returns empty Route, has no outgoing edges
+		// Design: Engine returns NO_ROUTE error instead of implicit termination (safer, more explicit)
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "A", Counter: 1},
+				Route: Next{}, // Empty route, no edges defined
+			}
+		})
+
+		if err := engine.Add("A", nodeA); err != nil {
+			t.Fatalf("Failed to add node A: %v", err)
+		}
+		if err := engine.StartAt("A"); err != nil {
+			t.Fatalf("Failed to set start node: %v", err)
+		}
+
+		// No edges connected from A
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "term-run-003", TestState{})
+
+		// Should error with NO_ROUTE (explicit error instead of implicit termination)
+		if err == nil {
+			t.Fatal("expected NO_ROUTE error when node has no edges")
+		}
+
+		var engineErr *EngineError
+		if !errors.As(err, &engineErr) {
+			t.Fatalf("expected EngineError, got %T: %v", err, err)
+		}
+
+		if engineErr.Code != "NO_ROUTE" {
+			t.Errorf("expected error code NO_ROUTE, got %q", engineErr.Code)
+		}
+	})
+}
+
 // createTestEngine is a helper to create a test engine with default configuration.
 func createTestEngine() *Engine[TestState] {
 	reducer := func(prev, delta TestState) TestState {
