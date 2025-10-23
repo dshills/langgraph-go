@@ -145,10 +145,10 @@
 
 ### US1: Context Cancellation
 
-- [ ] T067 [US1] Write tests for context cancellation during execution in graph/engine_test.go
-- [ ] T068 [US1] Implement context.Context checking in execution loop in graph/engine.go
-- [ ] T069 [US1] Write tests for graceful shutdown with state save in graph/engine_test.go
-- [ ] T070 [US1] Implement state persistence before cancellation exit in graph/engine.go
+- [X] T067 [US1] Write tests for context cancellation during execution in graph/engine_test.go
+- [X] T068 [US1] Implement context.Context checking in execution loop in graph/engine.go
+- [X] T069 [US1] Write tests for graceful shutdown with state save in graph/engine_test.go
+- [X] T070 [US1] Implement state persistence before cancellation exit in graph/engine.go
 
 ### US1: State Serialization
 

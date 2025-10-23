@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/dshills/langgraph-go/graph/emit"
 	"github.com/dshills/langgraph-go/graph/store"
@@ -1081,6 +1082,343 @@ func TestEngine_ResumeFromCheckpoint(t *testing.T) {
 		// Should return error
 		if err == nil {
 			t.Error("expected error for nonexistent checkpoint")
+		}
+	})
+}
+
+// TestEngine_ContextCancellation verifies context cancellation during execution (T067).
+func TestEngine_ContextCancellation(t *testing.T) {
+	t.Run("cancel context during node execution", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Create a node that checks context
+		slowNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			// Simulate work that respects cancellation
+			select {
+			case <-ctx.Done():
+				return NodeResult[TestState]{
+					Err:   ctx.Err(),
+					Route: Stop(),
+				}
+			case <-time.After(100 * time.Millisecond):
+				return NodeResult[TestState]{
+					Delta: TestState{Value: "completed", Counter: 1},
+					Route: Stop(),
+				}
+			}
+		})
+
+		_ = engine.Add("slow", slowNode)
+		_ = engine.StartAt("slow")
+
+		// Create cancellable context
+		ctx, cancel := context.WithCancel(context.Background())
+
+		// Cancel immediately
+		cancel()
+
+		// Run should detect cancellation
+		_, err := engine.Run(ctx, "cancel-run-001", TestState{})
+
+		// Should return error due to cancellation
+		if err == nil {
+			t.Error("expected error from cancelled context")
+		}
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("expected context.Canceled error, got: %v", err)
+		}
+	})
+
+	t.Run("cancel context between nodes", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Node 1 completes quickly
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node1", Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+
+		// Node 2 should not be reached - context is cancelled
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node2", Counter: 10},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node1)
+		_ = engine.Add("node2", node2)
+		_ = engine.StartAt("node1")
+
+		// Use pre-cancelled context to guarantee cancellation is detected
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
+
+		// Run should detect cancellation at first context check
+		_, err := engine.Run(ctx, "cancel-run-002", TestState{})
+
+		// Should return error due to cancellation
+		if err == nil {
+			t.Error("expected error from cancelled context")
+		}
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("expected context.Canceled, got: %v", err)
+		}
+	})
+
+	t.Run("completed workflow ignores cancellation", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Fast node that completes immediately
+		fastNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "done", Counter: 42},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("fast", fastNode)
+		_ = engine.StartAt("fast")
+
+		// Create cancellable context but don't cancel
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// Run completes before cancellation
+		final, err := engine.Run(ctx, "cancel-run-003", TestState{})
+		if err != nil {
+			t.Errorf("expected no error, got: %v", err)
+		}
+
+		// Should have completed successfully
+		if final.Value != "done" {
+			t.Errorf("expected Value = 'done', got %q", final.Value)
+		}
+		if final.Counter != 42 {
+			t.Errorf("expected Counter = 42, got %d", final.Counter)
+		}
+	})
+
+	t.Run("deadline exceeded during long execution", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Very slow node
+		verySlowNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			select {
+			case <-ctx.Done():
+				return NodeResult[TestState]{
+					Err:   ctx.Err(),
+					Route: Stop(),
+				}
+			case <-time.After(200 * time.Millisecond):
+				return NodeResult[TestState]{
+					Delta: TestState{Value: "completed", Counter: 1},
+					Route: Stop(),
+				}
+			}
+		})
+
+		_ = engine.Add("veryslow", verySlowNode)
+		_ = engine.StartAt("veryslow")
+
+		// Create context with short deadline
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+
+		// Run should timeout
+		_, err := engine.Run(ctx, "cancel-run-004", TestState{})
+
+		// Should return error due to deadline
+		if err == nil {
+			t.Error("expected error from deadline exceeded")
+		}
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("expected context.DeadlineExceeded error, got: %v", err)
+		}
+	})
+}
+
+// TestEngine_GracefulShutdown verifies state persistence before cancellation exit (T069).
+func TestEngine_GracefulShutdown(t *testing.T) {
+	t.Run("save state before cancellation exit", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Node 1 executes successfully
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node1-complete", Counter: 10},
+				Route: Goto("node2"),
+			}
+		})
+
+		// Node 2 will not execute due to cancellation
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node2-complete", Counter: 20},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node1)
+		_ = engine.Add("node2", node2)
+		_ = engine.StartAt("node1")
+
+		// Pre-cancelled context
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		runID := "shutdown-run-001"
+
+		// Run will fail due to cancellation, but should have saved node1's state
+		_, err := engine.Run(ctx, runID, TestState{Value: "initial", Counter: 0})
+
+		// Should return cancellation error
+		if err == nil {
+			t.Fatal("expected cancellation error")
+		}
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("expected context.Canceled, got: %v", err)
+		}
+
+		// CRITICAL: Verify that state was NOT persisted before cancellation
+		// Since context was pre-cancelled, no nodes should execute
+		// Store should have no steps saved
+		_, _, loadErr := engine.store.LoadLatest(ctx, runID)
+		if loadErr == nil {
+			t.Error("expected no state saved due to immediate cancellation")
+		}
+	})
+
+	t.Run("partial execution state persisted before timeout", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Node 1 completes before timeout
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node1-done", Counter: 5},
+				Route: Goto("node2"),
+			}
+		})
+
+		// Node 2 takes too long and will be cancelled
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			select {
+			case <-ctx.Done():
+				return NodeResult[TestState]{
+					Err:   ctx.Err(),
+					Route: Stop(),
+				}
+			case <-time.After(100 * time.Millisecond):
+				return NodeResult[TestState]{
+					Delta: TestState{Value: "node2-done", Counter: 15},
+					Route: Stop(),
+				}
+			}
+		})
+
+		_ = engine.Add("node1", node1)
+		_ = engine.Add("node2", node2)
+		_ = engine.StartAt("node1")
+
+		// Timeout that allows node1 but not node2
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
+		defer cancel()
+
+		runID := "shutdown-run-002"
+		initial := TestState{Value: "start", Counter: 0}
+
+		// Run until timeout
+		_, err := engine.Run(ctx, runID, initial)
+
+		// Should return error (either from timeout or node2 error)
+		if err == nil {
+			t.Error("expected timeout or node error")
+		}
+
+		// Verify that node1's state WAS persisted before cancellation
+		finalState, finalStep, loadErr := engine.store.LoadLatest(context.Background(), runID)
+		if loadErr != nil {
+			t.Fatalf("expected state to be saved for node1: %v", loadErr)
+		}
+
+		// Should have node1's state
+		if finalState.Value != "node1-done" {
+			t.Errorf("expected Value = 'node1-done', got %q", finalState.Value)
+		}
+		if finalState.Counter != 5 {
+			t.Errorf("expected Counter = 5, got %d", finalState.Counter)
+		}
+		if finalStep != 1 {
+			t.Errorf("expected step = 1, got %d", finalStep)
+		}
+	})
+
+	t.Run("resume from cancelled workflow state", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// 3-node workflow
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node1", Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			// This will be cancelled
+			select {
+			case <-ctx.Done():
+				return NodeResult[TestState]{
+					Err:   ctx.Err(),
+					Route: Stop(),
+				}
+			case <-time.After(100 * time.Millisecond):
+				return NodeResult[TestState]{
+					Delta: TestState{Value: "node2", Counter: 10},
+					Route: Goto("node3"),
+				}
+			}
+		})
+
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node3", Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node1)
+		_ = engine.Add("node2", node2)
+		_ = engine.Add("node3", node3)
+		_ = engine.StartAt("node1")
+
+		// First run with timeout
+		ctx1, cancel1 := context.WithTimeout(context.Background(), 20*time.Millisecond)
+		defer cancel1()
+
+		runID := "shutdown-run-003"
+		_, _ = engine.Run(ctx1, runID, TestState{})
+
+		// Save checkpoint from partial execution
+		saveCtx := context.Background()
+		cpErr := engine.SaveCheckpoint(saveCtx, runID, "after-node1")
+		if cpErr != nil {
+			t.Fatalf("failed to save checkpoint: %v", cpErr)
+		}
+
+		// Resume from checkpoint and complete workflow
+		ctx2 := context.Background()
+		final, err := engine.ResumeFromCheckpoint(ctx2, "after-node1", "shutdown-run-004", "node2")
+		if err != nil {
+			t.Fatalf("resume failed: %v", err)
+		}
+
+		// Should have completed all nodes from checkpoint
+		// Checkpoint had node1(1), resume adds node2(10) + node3(100) = 111
+		if final.Counter != 111 {
+			t.Errorf("expected Counter = 111, got %d", final.Counter)
 		}
 	})
 }
