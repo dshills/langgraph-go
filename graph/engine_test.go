@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -2293,6 +2294,616 @@ func TestEngine_StateIsolationPerBranch(t *testing.T) {
 		if finalState.Counter != expectedFinal {
 			t.Errorf("expected final Counter = %d, got %d", expectedFinal, finalState.Counter)
 		}
+	})
+}
+
+// TestEngine_NextManyFanOut verifies Next.Many parallel fan-out (T105).
+func TestEngine_NextManyFanOut(t *testing.T) {
+	t.Run("fan-out to 4 parallel branches", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		engine := New(reducer, st, emitter, Options{MaxSteps: 10})
+
+		// Fanout node
+		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Next{Many: []string{"branch1", "branch2", "branch3", "branch4"}},
+			}
+		})
+
+		// 4 parallel branches, each adds a different amount
+		branch1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 10},
+				Route: Stop(),
+			}
+		})
+
+		branch2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 20},
+				Route: Stop(),
+			}
+		})
+
+		branch3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 30},
+				Route: Stop(),
+			}
+		})
+
+		branch4 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 40},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("fanout", fanout); err != nil {
+			t.Fatalf("Failed to add fanout: %v", err)
+		}
+		if err := engine.Add("branch1", branch1); err != nil {
+			t.Fatalf("Failed to add branch1: %v", err)
+		}
+		if err := engine.Add("branch2", branch2); err != nil {
+			t.Fatalf("Failed to add branch2: %v", err)
+		}
+		if err := engine.Add("branch3", branch3); err != nil {
+			t.Fatalf("Failed to add branch3: %v", err)
+		}
+		if err := engine.Add("branch4", branch4); err != nil {
+			t.Fatalf("Failed to add branch4: %v", err)
+		}
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("Failed to set start: %v", err)
+		}
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "fanout-run-001", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify all branches contributed: 1 + 10 + 20 + 30 + 40 = 101
+		expected := 1 + 10 + 20 + 30 + 40
+		if final.Counter != expected {
+			t.Errorf("expected Counter = %d, got %d", expected, final.Counter)
+		}
+	})
+}
+
+// TestEngine_ConcurrentTiming verifies parallel branches execute concurrently (T107).
+func TestEngine_ConcurrentTiming(t *testing.T) {
+	t.Run("4 branches with 100ms each complete in ~100ms total", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		engine := New(reducer, st, emitter, Options{MaxSteps: 10})
+
+		// Fanout to 4 branches
+		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Route: Next{Many: []string{"slow1", "slow2", "slow3", "slow4"}},
+			}
+		})
+
+		// Each branch sleeps 100ms (simulating slow operation)
+		slowBranch := func(id string) Node[TestState] {
+			return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+				time.Sleep(100 * time.Millisecond)
+				return NodeResult[TestState]{
+					Delta: TestState{Counter: 1},
+					Route: Stop(),
+				}
+			})
+		}
+
+		if err := engine.Add("fanout", fanout); err != nil {
+			t.Fatalf("Failed to add fanout: %v", err)
+		}
+		if err := engine.Add("slow1", slowBranch("slow1")); err != nil {
+			t.Fatalf("Failed to add slow1: %v", err)
+		}
+		if err := engine.Add("slow2", slowBranch("slow2")); err != nil {
+			t.Fatalf("Failed to add slow2: %v", err)
+		}
+		if err := engine.Add("slow3", slowBranch("slow3")); err != nil {
+			t.Fatalf("Failed to add slow3: %v", err)
+		}
+		if err := engine.Add("slow4", slowBranch("slow4")); err != nil {
+			t.Fatalf("Failed to add slow4: %v", err)
+		}
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("Failed to set start: %v", err)
+		}
+
+		ctx := context.Background()
+		start := time.Now()
+		final, err := engine.Run(ctx, "timing-run-001", TestState{})
+		elapsed := time.Since(start)
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify all 4 branches executed
+		if final.Counter != 4 {
+			t.Errorf("expected Counter = 4, got %d", final.Counter)
+		}
+
+		// If truly parallel: ~100ms. If sequential: ~400ms
+		// Allow some overhead but verify parallelism (< 250ms means parallel)
+		if elapsed > 250*time.Millisecond {
+			t.Errorf("parallel execution took %v, expected < 250ms (likely running sequentially)", elapsed)
+		}
+
+		t.Logf("4 branches (100ms each) completed in %v (parallel execution verified)", elapsed)
+	})
+}
+
+// TestEngine_ReducerBasedMerge verifies parallel branches merge via reducer (T109).
+func TestEngine_ReducerBasedMerge(t *testing.T) {
+	t.Run("reducer combines all parallel branch deltas", func(t *testing.T) {
+		// Custom reducer that accumulates values in a slice
+		type StateWithSlice struct {
+			Values []string
+		}
+
+		reducer := func(prev, delta StateWithSlice) StateWithSlice {
+			if len(delta.Values) > 0 {
+				prev.Values = append(prev.Values, delta.Values...)
+			}
+			return prev
+		}
+
+		st := store.NewMemStore[StateWithSlice]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Fanout node
+		fanout := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+			return NodeResult[StateWithSlice]{
+				Delta: StateWithSlice{Values: []string{"start"}},
+				Route: Next{Many: []string{"b1", "b2", "b3"}},
+			}
+		})
+
+		// Three branches that each add a unique value
+		branch1 := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+			return NodeResult[StateWithSlice]{
+				Delta: StateWithSlice{Values: []string{"b1-value"}},
+				Route: Stop(),
+			}
+		})
+
+		branch2 := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+			return NodeResult[StateWithSlice]{
+				Delta: StateWithSlice{Values: []string{"b2-value"}},
+				Route: Stop(),
+			}
+		})
+
+		branch3 := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+			return NodeResult[StateWithSlice]{
+				Delta: StateWithSlice{Values: []string{"b3-value"}},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("fanout", fanout); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("b1", branch1); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("b2", branch2); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("b3", branch3); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "reducer-merge-001", StateWithSlice{})
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify reducer was called for each branch
+		// Expected: ["start", "b1-value", "b2-value", "b3-value"]
+		if len(final.Values) != 4 {
+			t.Errorf("expected 4 values, got %d: %v", len(final.Values), final.Values)
+		}
+
+		// Verify "start" from fanout node
+		if final.Values[0] != "start" {
+			t.Errorf("expected first value = 'start', got %q", final.Values[0])
+		}
+
+		// Verify all branch values present (order verified in T111)
+		hasB1 := false
+		hasB2 := false
+		hasB3 := false
+		for _, v := range final.Values[1:] {
+			if v == "b1-value" {
+				hasB1 = true
+			}
+			if v == "b2-value" {
+				hasB2 = true
+			}
+			if v == "b3-value" {
+				hasB3 = true
+			}
+		}
+
+		if !hasB1 || !hasB2 || !hasB3 {
+			t.Errorf("missing branch values. b1=%v b2=%v b3=%v, values=%v",
+				hasB1, hasB2, hasB3, final.Values)
+		}
+	})
+}
+
+// TestEngine_DeterministicMergeOrder verifies lexicographic merge ordering (T111).
+func TestEngine_DeterministicMergeOrder(t *testing.T) {
+	t.Run("branches merge in lexicographic order by nodeID", func(t *testing.T) {
+		type OrderedState struct {
+			Sequence []string
+		}
+
+		reducer := func(prev, delta OrderedState) OrderedState {
+			if len(delta.Sequence) > 0 {
+				prev.Sequence = append(prev.Sequence, delta.Sequence...)
+			}
+			return prev
+		}
+
+		st := store.NewMemStore[OrderedState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Fanout with intentionally non-alphabetic routing order
+		fanout := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+			return NodeResult[OrderedState]{
+				Route: Next{
+					// Non-alphabetic order to test sorting
+					Many: []string{"nodeZ", "nodeA", "nodeM", "nodeB"},
+				},
+			}
+		})
+
+		// Branches with variable delays to ensure completion order != nodeID order
+		nodeA := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+			time.Sleep(40 * time.Millisecond) // Slower
+			return NodeResult[OrderedState]{
+				Delta: OrderedState{Sequence: []string{"A"}},
+				Route: Stop(),
+			}
+		})
+
+		nodeB := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+			time.Sleep(10 * time.Millisecond) // Fastest
+			return NodeResult[OrderedState]{
+				Delta: OrderedState{Sequence: []string{"B"}},
+				Route: Stop(),
+			}
+		})
+
+		nodeM := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+			time.Sleep(30 * time.Millisecond) // Medium
+			return NodeResult[OrderedState]{
+				Delta: OrderedState{Sequence: []string{"M"}},
+				Route: Stop(),
+			}
+		})
+
+		nodeZ := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+			time.Sleep(20 * time.Millisecond) // Medium-fast
+			return NodeResult[OrderedState]{
+				Delta: OrderedState{Sequence: []string{"Z"}},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("fanout", fanout); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("nodeA", nodeA); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("nodeB", nodeB); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("nodeM", nodeM); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("nodeZ", nodeZ); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "order-test-001", OrderedState{})
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Despite variable completion times (B finishes first, A finishes last),
+		// merge order should be lexicographic: nodeA, nodeB, nodeM, nodeZ
+		expected := []string{"A", "B", "M", "Z"}
+		if len(final.Sequence) != len(expected) {
+			t.Fatalf("expected %d items, got %d: %v", len(expected), len(final.Sequence), final.Sequence)
+		}
+
+		for i, exp := range expected {
+			if final.Sequence[i] != exp {
+				t.Errorf("position %d: expected %q, got %q (sequence: %v)",
+					i, exp, final.Sequence[i], final.Sequence)
+			}
+		}
+
+		t.Logf("Verified deterministic merge order: %v (regardless of completion timing)", final.Sequence)
+	})
+}
+
+// TestEngine_ParallelBranchError verifies error handling in one parallel branch (T113).
+func TestEngine_ParallelBranchError(t *testing.T) {
+	t.Run("error in one branch stops execution and returns error", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Fanout to 3 branches
+		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Route: Next{Many: []string{"branch1", "branch2", "branch3"}},
+			}
+		})
+
+		// Branch 1: succeeds
+		branch1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 10},
+				Route: Stop(),
+			}
+		})
+
+		// Branch 2: fails with error
+		branch2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Err: &EngineError{
+					Message: "branch2 processing failed",
+					Code:    "BRANCH_ERROR",
+				},
+			}
+		})
+
+		// Branch 3: succeeds
+		branch3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 30},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("fanout", fanout); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branch1", branch1); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branch2", branch2); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branch3", branch3); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "error-branch-001", TestState{})
+
+		// Verify error is returned
+		if err == nil {
+			t.Fatal("expected error from failed branch, got nil")
+		}
+
+		// Verify error message contains expected text
+		errMsg := err.Error()
+		if !strings.Contains(errMsg, "branch2 processing failed") {
+			t.Errorf("expected error containing 'branch2 processing failed', got %q", errMsg)
+		}
+
+		t.Logf("Successfully caught error from parallel branch: %v", err)
+	})
+}
+
+// TestEngine_MultipleBranchErrors verifies handling of multiple branch failures (T115).
+func TestEngine_MultipleBranchErrors(t *testing.T) {
+	t.Run("multiple branches fail - first error returned", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Fanout to 4 branches
+		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Route: Next{Many: []string{"branchA", "branchB", "branchC", "branchD"}},
+			}
+		})
+
+		// Branch A: succeeds
+		branchA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			time.Sleep(10 * time.Millisecond)
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Stop(),
+			}
+		})
+
+		// Branch B: fails
+		branchB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			time.Sleep(20 * time.Millisecond)
+			return NodeResult[TestState]{
+				Err: &EngineError{Message: "branchB error", Code: "ERR_B"},
+			}
+		})
+
+		// Branch C: fails
+		branchC := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			time.Sleep(15 * time.Millisecond)
+			return NodeResult[TestState]{
+				Err: &EngineError{Message: "branchC error", Code: "ERR_C"},
+			}
+		})
+
+		// Branch D: succeeds
+		branchD := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			time.Sleep(5 * time.Millisecond)
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 4},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("fanout", fanout); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branchA", branchA); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branchB", branchB); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branchC", branchC); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branchD", branchD); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "multi-error-001", TestState{})
+
+		// Verify at least one error is returned
+		if err == nil {
+			t.Fatal("expected error from failed branches, got nil")
+		}
+
+		// Verify it's one of the expected errors
+		errMsg := err.Error()
+		hasB := strings.Contains(errMsg, "branchB error")
+		hasC := strings.Contains(errMsg, "branchC error")
+		if !hasB && !hasC {
+			t.Errorf("expected error containing 'branchB error' or 'branchC error', got %q", errMsg)
+		}
+
+		t.Logf("Multiple branch failures handled correctly, returned: %v", err)
+	})
+}
+
+// TestEngine_ParallelNodeNotFound verifies error when parallel branch node doesn't exist (T113).
+func TestEngine_ParallelNodeNotFound(t *testing.T) {
+	t.Run("routing to nonexistent parallel branch returns error", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Fanout that references a nonexistent node
+		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Route: Next{Many: []string{"existing", "nonexistent", "another"}},
+			}
+		})
+
+		// Only add "existing" and "another", but not "nonexistent"
+		existing := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Stop(),
+			}
+		})
+
+		another := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 2},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("fanout", fanout); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("existing", existing); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("another", another); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		// Intentionally not adding "nonexistent"
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "notfound-001", TestState{})
+
+		// Verify error is returned
+		if err == nil {
+			t.Fatal("expected NODE_NOT_FOUND error, got nil")
+		}
+
+		// Verify error contains "nonexistent"
+		errMsg := err.Error()
+		if !strings.Contains(errMsg, "nonexistent") && !strings.Contains(errMsg, "not found") {
+			t.Errorf("expected error about 'nonexistent' node, got %q", errMsg)
+		}
+
+		t.Logf("Nonexistent parallel branch correctly detected: %v", err)
 	})
 }
 

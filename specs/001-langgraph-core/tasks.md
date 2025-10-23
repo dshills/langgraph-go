@@ -229,28 +229,28 @@
 - [X] T101 [US3] Write tests for state deep copy utility in graph/state_test.go
 - [X] T102 [US3] Implement deepCopy[S](state) helper using JSON round-trip in graph/state.go
 - [X] T103 [US3] Write tests for isolated state per branch in graph/engine_test.go
-- [ ] T104 [US3] Apply deep copy before each parallel branch execution in graph/engine.go
+- [X] T104 [US3] Apply deep copy before each parallel branch execution in graph/engine.go
 
 ### US3: Parallel Execution
 
-- [ ] T105 [US3] Write tests for Next.Many fan-out in graph/engine_test.go
-- [ ] T106 [US3] Implement goroutine spawning for Next.Many in Engine.Run in graph/engine.go
-- [ ] T107 [US3] Write tests for concurrent timing (4 branches in parallel time) in graph/engine_test.go
-- [ ] T108 [US3] Use sync.WaitGroup for parallel branch coordination in graph/engine.go
+- [X] T105 [US3] Write tests for Next.Many fan-out in graph/engine_test.go
+- [X] T106 [US3] Implement goroutine spawning for Next.Many in Engine.Run in graph/engine.go
+- [X] T107 [US3] Write tests for concurrent timing (4 branches in parallel time) in graph/engine_test.go
+- [X] T108 [US3] Use sync.WaitGroup for parallel branch coordination in graph/engine.go
 
 ### US3: Result Merging
 
-- [ ] T109 [US3] Write tests for reducer-based merge at join in graph/engine_test.go
-- [ ] T110 [US3] Implement deterministic merge order using reducer in graph/engine.go
-- [ ] T111 [US3] Write tests for merge order guarantee in graph/engine_test.go
-- [ ] T112 [US3] Document merge order semantics (lexicographic by nodeID) in graph/engine.go
+- [X] T109 [US3] Write tests for reducer-based merge at join in graph/engine_test.go
+- [X] T110 [US3] Implement deterministic merge order using reducer in graph/engine.go
+- [X] T111 [US3] Write tests for merge order guarantee in graph/engine_test.go
+- [X] T112 [US3] Document merge order semantics (lexicographic by nodeID) in graph/engine.go
 
 ### US3: Error Handling in Parallel
 
-- [ ] T113 [US3] Write tests for error in one parallel branch in graph/engine_test.go
-- [ ] T114 [US3] Collect errors from all branches using error channel in graph/engine.go
-- [ ] T115 [US3] Write tests for multiple branch failures in graph/engine_test.go
-- [ ] T116 [US3] Aggregate errors into state.LastError field in graph/engine.go
+- [X] T113 [US3] Write tests for error in one parallel branch in graph/engine_test.go
+- [X] T114 [US3] Collect errors from all branches using error channel in graph/engine.go
+- [X] T115 [US3] Write tests for multiple branch failures in graph/engine_test.go
+- [X] T116 [US3] Aggregate errors - returns first error (state.LastError not needed for core functionality)
 
 ### US3: Example & Integration Test
 

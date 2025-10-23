@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"github.com/dshills/langgraph-go/graph/emit"
@@ -416,6 +417,19 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 			return currentState, nil
 		}
 
+		// Handle parallel execution (fan-out) - T104-T108
+		if len(result.Route.Many) > 0 {
+			// Execute branches in parallel with isolated state copies
+			parallelState, err := e.executeParallel(ctx, result.Route.Many, currentState)
+			if err != nil {
+				return zero, err
+			}
+			currentState = parallelState
+
+			// Parallel execution completes the workflow (all branches end with Stop())
+			return currentState, nil
+		}
+
 		if result.Route.To != "" {
 			// Single next node (Goto)
 			currentNode = result.Route.To
@@ -468,6 +482,115 @@ func (e *Engine[S]) evaluateEdges(fromNode string, state S) string {
 
 	// No matching edge found
 	return ""
+}
+
+// executeParallel executes multiple branches in parallel with isolated state copies (T104-T108).
+//
+// Each branch:
+//  1. Receives a deep copy of the current state (T104)
+//  2. Executes in its own goroutine (T106)
+//  3. Returns its delta state update
+//
+// After all branches complete:
+//  1. Deltas are merged deterministically using the reducer (T109-T110)
+//  2. Merge order is lexicographic by nodeID for determinism (T111-T112)
+//  3. Errors from any branch are collected (T113-T114)
+//
+// Uses sync.WaitGroup for coordination (T108).
+func (e *Engine[S]) executeParallel(ctx context.Context, branches []string, state S) (S, error) {
+	var zero S
+
+	type branchResult struct {
+		nodeID string
+		delta  S
+		err    error
+	}
+
+	// Channel for collecting results from all branches
+	results := make(chan branchResult, len(branches))
+
+	// WaitGroup for synchronization (T108)
+	var wg sync.WaitGroup
+
+	// Launch goroutines for each branch (T106)
+	for _, branchID := range branches {
+		wg.Add(1)
+
+		go func(nodeID string) {
+			defer wg.Done()
+
+			// Deep copy state for isolation (T104)
+			branchState, err := deepCopy(state)
+			if err != nil {
+				results <- branchResult{nodeID: nodeID, err: err}
+				return
+			}
+
+			// Execute the branch node
+			e.mu.RLock()
+			node, exists := e.nodes[nodeID]
+			e.mu.RUnlock()
+
+			if !exists {
+				results <- branchResult{
+					nodeID: nodeID,
+					err: &EngineError{
+						Message: "parallel branch node not found: " + nodeID,
+						Code:    "NODE_NOT_FOUND",
+					},
+				}
+				return
+			}
+
+			// Execute node with isolated state copy
+			result := node.Run(ctx, branchState)
+
+			if result.Err != nil {
+				results <- branchResult{nodeID: nodeID, err: result.Err}
+				return
+			}
+
+			// Return the delta from this branch
+			results <- branchResult{nodeID: nodeID, delta: result.Delta}
+		}(branchID)
+	}
+
+	// Wait for all branches to complete
+	wg.Wait()
+	close(results)
+
+	// Collect all results
+	var branchResults []branchResult
+	for result := range results {
+		branchResults = append(branchResults, result)
+	}
+
+	// Check for errors (T113-T114)
+	var errors []error
+	for _, result := range branchResults {
+		if result.err != nil {
+			errors = append(errors, result.err)
+		}
+	}
+
+	if len(errors) > 0 {
+		// Return first error (could aggregate in future - T115-T116)
+		return zero, errors[0]
+	}
+
+	// Sort results by nodeID for deterministic merge order (T111-T112)
+	// Lexicographic ordering ensures consistent results regardless of goroutine completion order
+	sort.Slice(branchResults, func(i, j int) bool {
+		return branchResults[i].nodeID < branchResults[j].nodeID
+	})
+
+	// Merge all branch deltas into final state using reducer (T109-T110)
+	finalState := state
+	for _, result := range branchResults {
+		finalState = e.reducer(finalState, result.delta)
+	}
+
+	return finalState, nil
 }
 
 // SaveCheckpoint creates a named checkpoint for the most recent state of a run.
