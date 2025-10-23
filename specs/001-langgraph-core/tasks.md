@@ -270,19 +270,19 @@
 
 ### US4: LLM Abstractions
 
-- [ ] T120 [US4] Write tests for Message struct in graph/model/chat_test.go
-- [ ] T121 [US4] Define Message struct (Role, Content) in graph/model/chat.go
-- [ ] T122 [P] [US4] Write tests for ToolSpec struct in graph/model/chat_test.go
-- [ ] T123 [P] [US4] Define ToolSpec struct (Name, Description, Schema) in graph/model/chat.go
-- [ ] T124 [P] [US4] Write tests for ChatOut struct in graph/model/chat_test.go
-- [ ] T125 [P] [US4] Define ChatOut struct (Text, ToolCalls) in graph/model/chat.go
+- [X] T120 [US4] Write tests for Message struct in graph/model/chat_test.go
+- [X] T121 [US4] Define Message struct (Role, Content) in graph/model/chat.go
+- [X] T122 [P] [US4] Write tests for ToolSpec struct in graph/model/chat_test.go
+- [X] T123 [P] [US4] Define ToolSpec struct (Name, Description, Schema) in graph/model/chat.go
+- [X] T124 [P] [US4] Write tests for ChatOut struct in graph/model/chat_test.go
+- [X] T125 [P] [US4] Define ChatOut struct (Text, ToolCalls) in graph/model/chat.go
 
 ### US4: ChatModel Interface
 
-- [ ] T126 [US4] Write tests for ChatModel interface contract in graph/model/chat_test.go
-- [ ] T127 [US4] Define ChatModel interface with Chat(ctx, messages, tools) in graph/model/chat.go
-- [ ] T128 [US4] Create MockChatModel for testing in graph/model/mock.go
-- [ ] T129 [US4] Write tests for MockChatModel behavior in graph/model/mock_test.go
+- [X] T126 [US4] Write tests for ChatModel interface contract in graph/model/chat_test.go
+- [X] T127 [US4] Define ChatModel interface with Chat(ctx, messages, tools) in graph/model/chat.go
+- [X] T128 [US4] Create MockChatModel for testing in graph/model/mock.go
+- [X] T129 [US4] Write tests for MockChatModel behavior in graph/model/mock_test.go
 
 ### US4: Tool Interface
 
