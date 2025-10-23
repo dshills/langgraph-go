@@ -159,9 +159,9 @@
 
 ### US1: Example & Integration Test
 
-- [ ] T075 [US1] Create example 3-node workflow in examples/checkpoint/main.go
-- [ ] T076 [US1] Write integration test for checkpoint/resume cycle in graph/integration_test.go
-- [ ] T077 [US1] Write integration test for 5-node workflow crash scenario in graph/integration_test.go
+- [X] T075 [US1] Create example 3-node workflow in examples/checkpoint/main.go
+- [X] T076 [US1] Write integration test for checkpoint/resume cycle in graph/integration_test.go
+- [X] T077 [US1] Write integration test for 5-node workflow crash scenario in graph/integration_test.go
 
 ---
 
