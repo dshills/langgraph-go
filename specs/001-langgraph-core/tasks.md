@@ -96,16 +96,16 @@
 
 ### US1: In-Memory Store Implementation
 
-- [ ] T033 [US1] Write tests for MemStore[S] construction in graph/store/memory_test.go
-- [ ] T034 [US1] Implement MemStore[S] struct with maps in graph/store/memory.go
-- [ ] T035 [US1] Write tests for MemStore SaveStep with concurrent access in graph/store/memory_test.go
-- [ ] T036 [US1] Implement MemStore SaveStep method in graph/store/memory.go
-- [ ] T037 [P] [US1] Write tests for MemStore LoadLatest in graph/store/memory_test.go
-- [ ] T038 [P] [US1] Implement MemStore LoadLatest method in graph/store/memory.go
-- [ ] T039 [P] [US1] Write tests for MemStore SaveCheckpoint with labels in graph/store/memory_test.go
-- [ ] T040 [P] [US1] Implement MemStore SaveCheckpoint method in graph/store/memory.go
-- [ ] T041 [P] [US1] Write tests for MemStore LoadCheckpoint error cases in graph/store/memory_test.go
-- [ ] T042 [P] [US1] Implement MemStore LoadCheckpoint method in graph/store/memory.go
+- [X] T033 [US1] Write tests for MemStore[S] construction in graph/store/memory_test.go
+- [X] T034 [US1] Implement MemStore[S] struct with maps in graph/store/memory.go
+- [X] T035 [US1] Write tests for MemStore SaveStep with concurrent access in graph/store/memory_test.go
+- [X] T036 [US1] Implement MemStore SaveStep method in graph/store/memory.go
+- [X] T037 [P] [US1] Write tests for MemStore LoadLatest in graph/store/memory_test.go
+- [X] T038 [P] [US1] Implement MemStore LoadLatest method in graph/store/memory.go
+- [X] T039 [P] [US1] Write tests for MemStore SaveCheckpoint with labels in graph/store/memory_test.go
+- [X] T040 [P] [US1] Implement MemStore SaveCheckpoint method in graph/store/memory.go
+- [X] T041 [P] [US1] Write tests for MemStore LoadCheckpoint error cases in graph/store/memory_test.go
+- [X] T042 [P] [US1] Implement MemStore LoadCheckpoint method in graph/store/memory.go
 
 ### US1: Engine Core Construction
 
