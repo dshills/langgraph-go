@@ -175,10 +175,10 @@
 
 ### US2: Conditional Edge Evaluation
 
-- [ ] T078 [US2] Write tests for predicate evaluation in routing in graph/engine_test.go
-- [ ] T079 [US2] Implement predicate checking in Engine.Run routing logic in graph/engine.go
-- [ ] T080 [P] [US2] Write tests for multiple matching predicates (priority order) in graph/engine_test.go
-- [ ] T081 [P] [US2] Implement predicate priority (first match wins) in graph/engine.go
+- [X] T078 [US2] Write tests for predicate evaluation in routing in graph/engine_test.go
+- [X] T079 [US2] Implement predicate checking in Engine.Run routing logic in graph/engine.go
+- [X] T080 [P] [US2] Write tests for multiple matching predicates (priority order) in graph/engine_test.go
+- [X] T081 [P] [US2] Implement predicate priority (first match wins) in graph/engine.go
 
 ### US2: Routing Decision Logic
 

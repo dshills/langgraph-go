@@ -1423,6 +1423,371 @@ func TestEngine_GracefulShutdown(t *testing.T) {
 	})
 }
 
+// TestEngine_PredicateEvaluation verifies predicate-based routing (T078).
+func TestEngine_PredicateEvaluation(t *testing.T) {
+	t.Run("route via predicate when NodeResult has no explicit route", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Node returns empty Route (no explicit routing decision)
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "from-source", Counter: 10},
+				Route: Next{}, // Empty route - should use edge predicates
+			}
+		})
+
+		targetNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "reached-target", Counter: 20},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("source", sourceNode)
+		_ = engine.Add("target", targetNode)
+		_ = engine.StartAt("source")
+
+		// Add edge with predicate: route to target if Counter >= 10
+		predicate := func(s TestState) bool {
+			return s.Counter >= 10
+		}
+		_ = engine.Connect("source", "target", predicate)
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "pred-run-001", TestState{})
+
+		if err != nil {
+			t.Fatalf("expected successful routing via predicate, got error: %v", err)
+		}
+
+		// Should have routed to target via predicate
+		if final.Value != "reached-target" {
+			t.Errorf("expected routing to target, got Value = %q", final.Value)
+		}
+		if final.Counter != 30 { // initial 0 + source 10 + target 20
+			t.Errorf("expected Counter = 30, got %d", final.Counter)
+		}
+	})
+
+	t.Run("predicate returns false, no route taken", func(t *testing.T) {
+		engine := createTestEngine()
+
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "from-source", Counter: 5},
+				Route: Next{}, // No explicit route
+			}
+		})
+
+		targetNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "should-not-reach", Counter: 20},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("source", sourceNode)
+		_ = engine.Add("target", targetNode)
+		_ = engine.StartAt("source")
+
+		// Predicate requires Counter >= 10, but source only sets it to 5
+		predicate := func(s TestState) bool {
+			return s.Counter >= 10
+		}
+		_ = engine.Connect("source", "target", predicate)
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "pred-run-002", TestState{})
+
+		// Should error because no route matches
+		if err == nil {
+			t.Error("expected error when no predicate matches")
+		}
+		// Error should indicate no valid route found
+		if err != nil && err.Error() == "" {
+			t.Error("error should have descriptive message about routing failure")
+		}
+	})
+
+	t.Run("explicit NodeResult.Route overrides edge predicates", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Node explicitly routes to "explicit-target"
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "from-source", Counter: 10},
+				Route: Goto("explicit-target"), // Explicit route
+			}
+		})
+
+		explicitTarget := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "explicit", Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		predicateTarget := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "predicate", Counter: 200},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("source", sourceNode)
+		_ = engine.Add("explicit-target", explicitTarget)
+		_ = engine.Add("predicate-target", predicateTarget)
+		_ = engine.StartAt("source")
+
+		// Add edge with predicate (should be ignored since node has explicit route)
+		predicate := func(s TestState) bool {
+			return true // Always true
+		}
+		_ = engine.Connect("source", "predicate-target", predicate)
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "pred-run-003", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Should route to explicit-target, not predicate-target
+		if final.Value != "explicit" {
+			t.Errorf("expected explicit routing, got Value = %q", final.Value)
+		}
+		if final.Counter != 110 { // 0 + 10 + 100
+			t.Errorf("expected Counter = 110, got %d", final.Counter)
+		}
+	})
+
+	t.Run("unconditional edge (nil predicate)", func(t *testing.T) {
+		engine := createTestEngine()
+
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "source", Counter: 1},
+				Route: Next{}, // No explicit route
+			}
+		})
+
+		targetNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "target", Counter: 2},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("source", sourceNode)
+		_ = engine.Add("target", targetNode)
+		_ = engine.StartAt("source")
+
+		// Unconditional edge (nil predicate = always traverse)
+		_ = engine.Connect("source", "target", nil)
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "pred-run-004", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Should always route via unconditional edge
+		if final.Value != "target" {
+			t.Errorf("expected routing to target, got Value = %q", final.Value)
+		}
+		if final.Counter != 3 {
+			t.Errorf("expected Counter = 3, got %d", final.Counter)
+		}
+	})
+}
+
+// TestEngine_MultiplePredicates verifies priority order when multiple predicates match (T080).
+func TestEngine_MultiplePredicates(t *testing.T) {
+	t.Run("first matching predicate wins", func(t *testing.T) {
+		engine := createTestEngine()
+
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "source", Counter: 50},
+				Route: Next{}, // Use edge routing
+			}
+		})
+
+		target1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "target1", Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		target2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "target2", Counter: 200},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("source", sourceNode)
+		_ = engine.Add("target1", target1)
+		_ = engine.Add("target2", target2)
+		_ = engine.StartAt("source")
+
+		// Add two edges, both predicates will match
+		// First edge: Counter >= 10 (will match)
+		predicate1 := func(s TestState) bool {
+			return s.Counter >= 10
+		}
+		_ = engine.Connect("source", "target1", predicate1)
+
+		// Second edge: Counter >= 20 (also matches, but should not be used)
+		predicate2 := func(s TestState) bool {
+			return s.Counter >= 20
+		}
+		_ = engine.Connect("source", "target2", predicate2)
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "multi-pred-001", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Should route to target1 (first matching edge)
+		if final.Value != "target1" {
+			t.Errorf("expected first matching predicate to win, got Value = %q", final.Value)
+		}
+		if final.Counter != 150 { // 0 + 50 + 100
+			t.Errorf("expected Counter = 150, got %d", final.Counter)
+		}
+	})
+
+	t.Run("skip non-matching predicates until match found", func(t *testing.T) {
+		engine := createTestEngine()
+
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "source", Counter: 15},
+				Route: Next{},
+			}
+		})
+
+		target1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "target1", Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		target2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "target2", Counter: 200},
+				Route: Stop(),
+			}
+		})
+
+		target3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "target3", Counter: 300},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("source", sourceNode)
+		_ = engine.Add("target1", target1)
+		_ = engine.Add("target2", target2)
+		_ = engine.Add("target3", target3)
+		_ = engine.StartAt("source")
+
+		// First edge: Counter >= 50 (will NOT match)
+		pred1 := func(s TestState) bool {
+			return s.Counter >= 50
+		}
+		_ = engine.Connect("source", "target1", pred1)
+
+		// Second edge: Counter >= 30 (will NOT match)
+		pred2 := func(s TestState) bool {
+			return s.Counter >= 30
+		}
+		_ = engine.Connect("source", "target2", pred2)
+
+		// Third edge: Counter >= 10 (WILL match - first to match)
+		pred3 := func(s TestState) bool {
+			return s.Counter >= 10
+		}
+		_ = engine.Connect("source", "target3", pred3)
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "multi-pred-002", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Should route to target3 (first matching edge in order)
+		if final.Value != "target3" {
+			t.Errorf("expected routing to target3, got Value = %q", final.Value)
+		}
+		if final.Counter != 315 { // 0 + 15 + 300
+			t.Errorf("expected Counter = 315, got %d", final.Counter)
+		}
+	})
+
+	t.Run("unconditional edge matches before conditional", func(t *testing.T) {
+		engine := createTestEngine()
+
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "source", Counter: 10},
+				Route: Next{},
+			}
+		})
+
+		target1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "unconditional", Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		target2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "conditional", Counter: 200},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("source", sourceNode)
+		_ = engine.Add("target1", target1)
+		_ = engine.Add("target2", target2)
+		_ = engine.StartAt("source")
+
+		// First edge: Unconditional (nil predicate - always matches)
+		_ = engine.Connect("source", "target1", nil)
+
+		// Second edge: Conditional (would also match, but should not be evaluated)
+		predicate := func(s TestState) bool {
+			return s.Counter >= 5
+		}
+		_ = engine.Connect("source", "target2", predicate)
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "multi-pred-003", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Should route via unconditional edge (first in order)
+		if final.Value != "unconditional" {
+			t.Errorf("expected unconditional edge to win, got Value = %q", final.Value)
+		}
+		if final.Counter != 110 { // 0 + 10 + 100
+			t.Errorf("expected Counter = 110, got %d", final.Counter)
+		}
+	})
+}
+
 // createTestEngine is a helper to create a test engine with default configuration.
 func createTestEngine() *Engine[TestState] {
 	reducer := func(prev, delta TestState) TestState {

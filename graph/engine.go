@@ -383,9 +383,52 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 			continue
 		}
 
-		// If no explicit route, workflow ends
-		return currentState, nil
+		// If no explicit route, fall back to edge-based routing (T079)
+		nextNode := e.evaluateEdges(currentNode, currentState)
+		if nextNode == "" {
+			// No matching edge found - workflow cannot continue
+			return zero, &EngineError{
+				Message: "no valid route from node: " + currentNode,
+				Code:    "NO_ROUTE",
+			}
+		}
+
+		currentNode = nextNode
+		continue
 	}
+}
+
+// evaluateEdges finds the first matching edge from the given node based on predicates (T079, T081).
+//
+// Evaluates outgoing edges in order:
+//  1. If edge has nil predicate (unconditional), always matches
+//  2. If edge predicate returns true for current state, matches
+//  3. First matching edge wins (priority order)
+//
+// Returns empty string if no edges match.
+func (e *Engine[S]) evaluateEdges(fromNode string, state S) string {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	// Find all edges from this node
+	for _, edge := range e.edges {
+		if edge.From != fromNode {
+			continue
+		}
+
+		// Unconditional edge (nil predicate) always matches
+		if edge.When == nil {
+			return edge.To
+		}
+
+		// Evaluate predicate
+		if edge.When(state) {
+			return edge.To
+		}
+	}
+
+	// No matching edge found
+	return ""
 }
 
 // SaveCheckpoint creates a named checkpoint for the most recent state of a run.
@@ -623,8 +666,18 @@ func (e *Engine[S]) ResumeFromCheckpoint(ctx context.Context, cpID string, newRu
 			continue
 		}
 
-		// If no explicit route, workflow ends
-		return currentState, nil
+		// If no explicit route, fall back to edge-based routing
+		nextNode := e.evaluateEdges(currentNode, currentState)
+		if nextNode == "" {
+			// No matching edge found - workflow cannot continue
+			return zero, &EngineError{
+				Message: "no valid route from node: " + currentNode,
+				Code:    "NO_ROUTE",
+			}
+		}
+
+		currentNode = nextNode
+		continue
 	}
 }
 
