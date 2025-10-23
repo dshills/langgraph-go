@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -520,5 +521,337 @@ func TestIntegration_LoopWithExitCondition(t *testing.T) {
 		}
 
 		t.Log("Integration test passed: loop with exit condition worked correctly")
+	})
+}
+
+// TestIntegration_ParallelExecution tests 4-branch parallel execution workflow (T118).
+func TestIntegration_ParallelExecution(t *testing.T) {
+	t.Run("4-branch parallel fan-out workflow", func(t *testing.T) {
+		// State for parallel processing with result collection
+		type ParallelState struct {
+			Input    string
+			Results  []string
+			Count    int
+			Complete bool
+		}
+
+		// Reducer merges results from parallel branches
+		reducer := func(prev, delta ParallelState) ParallelState {
+			if delta.Input != "" {
+				prev.Input = delta.Input
+			}
+			if len(delta.Results) > 0 {
+				prev.Results = append(prev.Results, delta.Results...)
+			}
+			prev.Count += delta.Count
+			if delta.Complete {
+				prev.Complete = delta.Complete
+			}
+			return prev
+		}
+
+		st := store.NewMemStore[ParallelState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Fanout node routes to 4 parallel branches
+		fanout := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			return NodeResult[ParallelState]{
+				Route: Next{Many: []string{"branch1", "branch2", "branch3", "branch4"}},
+			}
+		})
+
+		// Branch 1: Fast processing (50ms)
+		branch1 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(50 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Delta: ParallelState{
+					Results: []string{"branch1-result"},
+					Count:   1,
+				},
+				Route: Stop(),
+			}
+		})
+
+		// Branch 2: Medium processing (75ms)
+		branch2 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(75 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Delta: ParallelState{
+					Results: []string{"branch2-result"},
+					Count:   1,
+				},
+				Route: Stop(),
+			}
+		})
+
+		// Branch 3: Slow processing (100ms)
+		branch3 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(100 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Delta: ParallelState{
+					Results: []string{"branch3-result"},
+					Count:   1,
+				},
+				Route: Stop(),
+			}
+		})
+
+		// Branch 4: Very fast processing (25ms)
+		branch4 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(25 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Delta: ParallelState{
+					Results: []string{"branch4-result"},
+					Count:   1,
+				},
+				Route: Stop(),
+			}
+		})
+
+		// Build workflow
+		if err := engine.Add("fanout", fanout); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branch1", branch1); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branch2", branch2); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branch3", branch3); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("branch4", branch4); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		// Execute workflow
+		ctx := context.Background()
+		start := time.Now()
+		finalState, err := engine.Run(ctx, "parallel-integration-001", ParallelState{Input: "test"})
+		elapsed := time.Since(start)
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify all 4 branches executed
+		if finalState.Count != 4 {
+			t.Errorf("expected Count = 4, got %d", finalState.Count)
+		}
+
+		// Verify all results collected
+		if len(finalState.Results) != 4 {
+			t.Fatalf("expected 4 results, got %d", len(finalState.Results))
+		}
+
+		// Verify deterministic merge order (lexicographic by nodeID)
+		expectedOrder := []string{"branch1-result", "branch2-result", "branch3-result", "branch4-result"}
+		for i, expected := range expectedOrder {
+			if finalState.Results[i] != expected {
+				t.Errorf("position %d: expected %q, got %q", i, expected, finalState.Results[i])
+			}
+		}
+
+		// Verify parallel execution (should take ~100ms, not ~250ms sequential)
+		if elapsed > 200*time.Millisecond {
+			t.Errorf("parallel execution took %v, expected < 200ms (likely ran sequentially)", elapsed)
+		}
+
+		t.Logf("Integration test passed: 4 parallel branches completed in %v", elapsed)
+	})
+}
+
+// TestIntegration_ParallelErrorHandling tests error handling in parallel branches (T119).
+func TestIntegration_ParallelErrorHandling(t *testing.T) {
+	t.Run("error in one parallel branch stops execution", func(t *testing.T) {
+		type ParallelState struct {
+			Results []string
+			Count   int
+		}
+
+		reducer := func(prev, delta ParallelState) ParallelState {
+			if len(delta.Results) > 0 {
+				prev.Results = append(prev.Results, delta.Results...)
+			}
+			prev.Count += delta.Count
+			return prev
+		}
+
+		st := store.NewMemStore[ParallelState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Fanout to 3 branches
+		fanout := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			return NodeResult[ParallelState]{
+				Route: Next{Many: []string{"success1", "failing", "success2"}},
+			}
+		})
+
+		// Success branch 1
+		success1 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(30 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Delta: ParallelState{Results: []string{"success1"}, Count: 1},
+				Route: Stop(),
+			}
+		})
+
+		// Failing branch
+		failing := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(50 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Err: &EngineError{
+					Message: "simulated branch failure",
+					Code:    "BRANCH_FAIL",
+				},
+			}
+		})
+
+		// Success branch 2
+		success2 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(40 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Delta: ParallelState{Results: []string{"success2"}, Count: 1},
+				Route: Stop(),
+			}
+		})
+
+		// Build workflow
+		if err := engine.Add("fanout", fanout); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("success1", success1); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("failing", failing); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("success2", success2); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		// Execute workflow (should fail)
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "parallel-error-001", ParallelState{})
+
+		// Verify error was returned
+		if err == nil {
+			t.Fatal("expected error from failing branch, got nil")
+		}
+
+		// Verify error message
+		if !strings.Contains(err.Error(), "simulated branch failure") {
+			t.Errorf("expected error about 'simulated branch failure', got %q", err.Error())
+		}
+
+		t.Logf("Integration test passed: parallel error handling works correctly (error: %v)", err)
+	})
+
+	t.Run("multiple parallel branches fail", func(t *testing.T) {
+		type ParallelState struct {
+			Count int
+		}
+
+		reducer := func(prev, delta ParallelState) ParallelState {
+			prev.Count += delta.Count
+			return prev
+		}
+
+		st := store.NewMemStore[ParallelState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Fanout to 4 branches
+		fanout := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			return NodeResult[ParallelState]{
+				Route: Next{Many: []string{"fail1", "success", "fail2", "fail3"}},
+			}
+		})
+
+		// Failing branch 1
+		fail1 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(20 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Err: &EngineError{Message: "error1", Code: "ERR1"},
+			}
+		})
+
+		// Success branch
+		success := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(30 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Delta: ParallelState{Count: 1},
+				Route: Stop(),
+			}
+		})
+
+		// Failing branch 2
+		fail2 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(40 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Err: &EngineError{Message: "error2", Code: "ERR2"},
+			}
+		})
+
+		// Failing branch 3
+		fail3 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+			time.Sleep(10 * time.Millisecond)
+			return NodeResult[ParallelState]{
+				Err: &EngineError{Message: "error3", Code: "ERR3"},
+			}
+		})
+
+		// Build workflow
+		if err := engine.Add("fanout", fanout); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("fail1", fail1); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("success", success); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("fail2", fail2); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("fail3", fail3); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		// Execute workflow (should fail with one of the errors)
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "multi-error-001", ParallelState{})
+
+		// Verify at least one error was returned
+		if err == nil {
+			t.Fatal("expected error from failing branches, got nil")
+		}
+
+		// Verify it's one of the expected errors
+		errMsg := err.Error()
+		hasErr1 := strings.Contains(errMsg, "error1")
+		hasErr2 := strings.Contains(errMsg, "error2")
+		hasErr3 := strings.Contains(errMsg, "error3")
+
+		if !hasErr1 && !hasErr2 && !hasErr3 {
+			t.Errorf("expected one of the branch errors, got %q", errMsg)
+		}
+
+		t.Logf("Integration test passed: multiple failures handled (returned: %v)", err)
 	})
 }

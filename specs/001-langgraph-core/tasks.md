@@ -254,9 +254,9 @@
 
 ### US3: Example & Integration Test
 
-- [ ] T117 [US3] Create example workflow with parallel fan-out in examples/parallel/main.go
-- [ ] T118 [US3] Write integration test for 4-branch parallel execution in graph/integration_test.go
-- [ ] T119 [US3] Write integration test for parallel error handling in graph/integration_test.go
+- [X] T117 [US3] Create example workflow with parallel fan-out in examples/parallel/main.go
+- [X] T118 [US3] Write integration test for 4-branch parallel execution in graph/integration_test.go
+- [X] T119 [US3] Write integration test for parallel error handling in graph/integration_test.go
 
 ---
 
