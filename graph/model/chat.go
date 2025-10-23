@@ -210,3 +210,237 @@ type ToolCall struct {
 	// May be nil for tools that take no parameters.
 	Input map[string]interface{}
 }
+
+// Provider Selection Patterns
+//
+// # Choosing the Right LLM Provider
+//
+// Different LLM providers have different strengths. Choose based on:
+//   - Task requirements (reasoning, speed, cost)
+//   - Feature needs (tools, vision, context length)
+//   - Provider capabilities and limitations
+//
+// Available providers:
+//   - OpenAI (GPT-4, GPT-3.5): General-purpose, strong tool calling
+//   - Anthropic (Claude 3): Long context, detailed reasoning
+//   - Google (Gemini): Fast responses, multimodal capabilities
+//
+// # Provider Selection Strategies
+//
+// ## 1. Task-Based Selection
+//
+// Select provider based on task type:
+//
+//	func selectModel(taskType string) ChatModel {
+//	    switch taskType {
+//	    case "reasoning":
+//	        return anthropic.NewChatModel(key, "claude-3-opus-20240229")
+//	    case "quick":
+//	        return google.NewChatModel(key, "gemini-pro")
+//	    case "tools":
+//	        return openai.NewChatModel(key, "gpt-4")
+//	    default:
+//	        return openai.NewChatModel(key, "gpt-3.5-turbo")
+//	    }
+//	}
+//
+// ## 2. Fallback Pattern
+//
+// Handle provider errors with fallback to secondary provider:
+//
+//	providers := []ChatModel{primaryModel, secondaryModel, tertiaryModel}
+//	var lastErr error
+//
+//	for _, model := range providers {
+//	    out, err := model.Chat(ctx, messages, tools)
+//	    if err == nil {
+//	        return out, nil
+//	    }
+//	    lastErr = err
+//	    log.Printf("Provider failed: %v, trying next...", err)
+//	}
+//	return ChatOut{}, fmt.Errorf("all providers failed: %w", lastErr)
+//
+// ## 3. Cost Optimization
+//
+// Use cheaper models for simple tasks, expensive for complex:
+//
+//	func selectByComplexity(complexity int) ChatModel {
+//	    if complexity > 8 {
+//	        return openai.NewChatModel(key, "gpt-4")           // High quality
+//	    } else if complexity > 5 {
+//	        return anthropic.NewChatModel(key, "claude-3-sonnet") // Balanced
+//	    } else {
+//	        return openai.NewChatModel(key, "gpt-3.5-turbo")  // Fast & cheap
+//	    }
+//	}
+//
+// ## 4. Feature-Based Selection
+//
+// Choose provider based on required features:
+//
+//	func selectByFeatures(needsTools, needsVision bool) ChatModel {
+//	    if needsVision {
+//	        return google.NewChatModel(key, "gemini-pro-vision")
+//	    }
+//	    if needsTools {
+//	        return openai.NewChatModel(key, "gpt-4")
+//	    }
+//	    return anthropic.NewChatModel(key, "claude-3-sonnet")
+//	}
+//
+// # Error Handling Patterns
+//
+// ## Provider-Specific Errors
+//
+// Handle provider-specific error types:
+//
+//	out, err := googleModel.Chat(ctx, messages, nil)
+//	if err != nil {
+//	    var safetyErr *google.SafetyFilterError
+//	    if errors.As(err, &safetyErr) {
+//	        log.Printf("Content blocked: %s", safetyErr.Category())
+//	        // Handle safety filter - maybe retry with different provider
+//	        return fallbackModel.Chat(ctx, messages, nil)
+//	    }
+//	    return ChatOut{}, err
+//	}
+//
+// ## Retry Logic
+//
+// Some providers (like OpenAI) implement automatic retries:
+//
+//	// OpenAI automatically retries transient errors
+//	model := openai.NewChatModel(key, "gpt-4")
+//	out, err := model.Chat(ctx, messages, nil)
+//	// Transient errors are retried up to 3 times with exponential backoff
+//
+// For other providers, implement your own retry logic:
+//
+//	var out ChatOut
+//	var err error
+//	for attempt := 0; attempt < 3; attempt++ {
+//	    out, err = model.Chat(ctx, messages, nil)
+//	    if err == nil {
+//	        break
+//	    }
+//	    if !isTransient(err) {
+//	        break // Don't retry non-transient errors
+//	    }
+//	    time.Sleep(time.Second * time.Duration(attempt+1))
+//	}
+//
+// ## Context Cancellation
+//
+// All providers respect context cancellation:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+//	defer cancel()
+//
+//	out, err := model.Chat(ctx, messages, nil)
+//	if errors.Is(err, context.DeadlineExceeded) {
+//	    log.Println("Request timed out")
+//	}
+//
+// # Multi-Provider Workflows
+//
+// ## Sequential Processing
+//
+// Use different providers for different stages:
+//
+//	// Stage 1: Fast initial processing with Gemini
+//	draft, _ := gemini.Chat(ctx, messages, nil)
+//
+//	// Stage 2: Detailed refinement with Claude
+//	refined := append(messages, Message{
+//	    Role:    RoleAssistant,
+//	    Content: draft.Text,
+//	})
+//	refined = append(refined, Message{
+//	    Role:    RoleUser,
+//	    Content: "Please refine and expand this response.",
+//	})
+//	final, _ := claude.Chat(ctx, refined, nil)
+//
+// ## Provider Comparison
+//
+// Get responses from multiple providers and choose best:
+//
+//	responses := make([]ChatOut, 0, 3)
+//	for _, model := range []ChatModel{gpt4, claude, gemini} {
+//	    out, err := model.Chat(ctx, messages, nil)
+//	    if err == nil {
+//	        responses = append(responses, out)
+//	    }
+//	}
+//	best := selectBestResponse(responses) // Custom selection logic
+//
+// # Best Practices
+//
+// 1. **Start Simple**: Begin with a single provider, add fallbacks when needed
+//
+// 2. **Monitor Costs**: Track API usage and costs per provider
+//
+// 3. **Handle Errors Gracefully**: Always have a fallback strategy
+//
+// 4. **Respect Rate Limits**: Implement backoff for rate limit errors
+//
+// 5. **Cache When Possible**: Cache responses for identical inputs
+//
+// 6. **Use Timeouts**: Set reasonable context deadlines
+//
+// 7. **Log Failures**: Track which providers fail and why
+//
+// 8. **Test Fallbacks**: Verify fallback logic works before production
+//
+// # Provider Capabilities Matrix
+//
+// Feature comparison:
+//
+//	| Feature           | OpenAI  | Anthropic | Google  |
+//	|-------------------|---------|-----------|---------|
+//	| Tool Calling      | ✓✓      | ✓         | ✓       |
+//	| Vision            | ✓       | ✓         | ✓✓      |
+//	| Long Context      | ✓       | ✓✓        | ✓       |
+//	| Speed             | ✓       | ✓         | ✓✓      |
+//	| System Prompts    | ✓       | ✓✓        | ✓       |
+//	| JSON Mode         | ✓       | ✗         | ✓       |
+//	| Automatic Retry   | ✓       | ✗         | ✗       |
+//
+// ✓✓ = Excellent, ✓ = Good, ✗ = Not Available
+//
+// # Example: Production-Ready Multi-Provider Setup
+//
+//	type ModelSelector struct {
+//	    primary    ChatModel
+//	    fallback   ChatModel
+//	    costSaver  ChatModel
+//	}
+//
+//	func NewModelSelector(openaiKey, anthropicKey, googleKey string) *ModelSelector {
+//	    return &ModelSelector{
+//	        primary:   openai.NewChatModel(openaiKey, "gpt-4"),
+//	        fallback:  anthropic.NewChatModel(anthropicKey, "claude-3-sonnet"),
+//	        costSaver: google.NewChatModel(googleKey, "gemini-pro"),
+//	    }
+//	}
+//
+//	func (s *ModelSelector) Chat(ctx context.Context, messages []Message, complexity int) (ChatOut, error) {
+//	    // Choose model based on complexity
+//	    var model ChatModel
+//	    if complexity > 7 {
+//	        model = s.primary
+//	    } else {
+//	        model = s.costSaver
+//	    }
+//
+//	    // Try primary choice
+//	    out, err := model.Chat(ctx, messages, nil)
+//	    if err == nil {
+//	        return out, nil
+//	    }
+//
+//	    // Fallback on error
+//	    log.Printf("Primary model failed: %v, using fallback", err)
+//	    return s.fallback.Chat(ctx, messages, nil)
+//	}
