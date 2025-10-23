@@ -51,3 +51,4 @@ Thumbs.db
 
 # Specify framework artifacts
 .specify/memory/local/
+settings.local.json
