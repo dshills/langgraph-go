@@ -1,29 +1,46 @@
 package graph
 
-// Reducer is a function that merges partial state updates (delta) into accumulated state (prev).
+import (
+	"encoding/json"
+	"fmt"
+)
+
+// deepCopy creates a deep copy of state S using JSON round-trip serialization (T102).
 //
-// Reducers are the core of LangGraph's deterministic state management.
-// They define how state evolves as nodes produce Delta values in NodeResult.
+// This approach works for any Go type that can be JSON-marshaled, including:
+//   - Primitives (string, int, bool, float64)
+//   - Structs with exported fields
+//   - Slices and arrays
+//   - Maps
+//   - Pointers (values are copied, not addresses)
 //
-// Key properties of reducers:
-//   - Deterministic: Same (prev, delta) always produces same result
-//   - Associative: Applying deltas in sequence produces consistent state
-//   - Idempotent-friendly: Replaying same deltas should be safe
+// Limitations:
+//   - Unexported struct fields are not copied
+//   - Channels, functions, and complex types that don't marshal to JSON will fail
+//   - Circular references will cause infinite loops
 //
-// Common patterns:
-//   - Replace: If delta field is non-zero, use it; otherwise keep prev
-//   - Accumulate: Add delta values to prev values (counters, lists)
-//   - Merge: Deep merge for nested structs/maps
+// Usage:
 //
-// Example:
-//
-//	func reduce(prev, delta MyState) MyState {
-//	    if delta.Query != "" {
-//	        prev.Query = delta.Query
-//	    }
-//	    prev.Steps += delta.Steps // accumulate
-//	    return prev
+//	original := MyState{Name: "test", Counter: 42}
+//	copied, err := deepCopy(original)
+//	if err != nil {
+//	    return err
 //	}
-//
-// Type parameter S is the state type shared across the workflow.
-type Reducer[S any] func(prev S, delta S) S
+//	// Now `copied` is independent from `original`
+func deepCopy[S any](state S) (S, error) {
+	var zero S
+
+	// Serialize to JSON
+	data, err := json.Marshal(state)
+	if err != nil {
+		return zero, fmt.Errorf("failed to marshal state: %w", err)
+	}
+
+	// Deserialize back to new instance
+	var copied S
+	if err := json.Unmarshal(data, &copied); err != nil {
+		return zero, fmt.Errorf("failed to unmarshal state: %w", err)
+	}
+
+	return copied, nil
+}

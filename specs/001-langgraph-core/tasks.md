@@ -226,9 +226,9 @@
 
 ### US3: State Isolation & Deep Copy
 
-- [ ] T101 [US3] Write tests for state deep copy utility in graph/state_test.go
-- [ ] T102 [US3] Implement deepCopy[S](state) helper using JSON round-trip in graph/state.go
-- [ ] T103 [US3] Write tests for isolated state per branch in graph/engine_test.go
+- [X] T101 [US3] Write tests for state deep copy utility in graph/state_test.go
+- [X] T102 [US3] Implement deepCopy[S](state) helper using JSON round-trip in graph/state.go
+- [X] T103 [US3] Write tests for isolated state per branch in graph/engine_test.go
 - [ ] T104 [US3] Apply deep copy before each parallel branch execution in graph/engine.go
 
 ### US3: Parallel Execution

@@ -8,6 +8,29 @@ import (
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
+// Reducer is a function that merges a partial state update (delta) into the previous state.
+//
+// Reducers are responsible for deterministic state composition, enabling:
+//   - Sequential state updates across workflow nodes
+//   - Parallel branch result merging
+//   - Checkpoint-based state reconstruction
+//
+// The reducer must be:
+//   - **Pure**: Same inputs always produce same output
+//   - **Deterministic**: No randomness or side effects
+//   - **Commutative** (for parallel merges): Order of deltas shouldn't matter for correctness
+//
+// Example:
+//
+//	reducer := func(prev, delta MyState) MyState {
+//	    if delta.Query != "" {
+//	        prev.Query = delta.Query  // Last write wins
+//	    }
+//	    prev.Counter += delta.Counter  // Accumulate
+//	    return prev
+//	}
+type Reducer[S any] func(prev, delta S) S
+
 // Engine orchestrates stateful workflow execution with checkpointing support.
 //
 // The Engine is the core runtime that:

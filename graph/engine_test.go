@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -2181,6 +2182,116 @@ func TestEngine_Termination(t *testing.T) {
 
 		if engineErr.Code != "NO_ROUTE" {
 			t.Errorf("expected error code NO_ROUTE, got %q", engineErr.Code)
+		}
+	})
+}
+
+// TestEngine_StateIsolationPerBranch verifies isolated state copies for parallel branches (T103).
+func TestEngine_StateIsolationPerBranch(t *testing.T) {
+	t.Run("parallel branches receive independent state copies", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		engine := New(reducer, st, emitter, Options{MaxSteps: 10})
+
+		// Track which branches executed and what state they saw
+		branchExecutions := make(map[string]int)
+		var mu sync.Mutex
+
+		// Node that fans out to multiple parallel branches
+		fanoutNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 10}, // Initial counter = 10
+				Route: Next{Many: []string{"branchA", "branchB", "branchC"}},
+			}
+		})
+
+		// Branch A: Modifies state and records what it sees
+		branchA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			mu.Lock()
+			branchExecutions["A"] = s.Counter
+			mu.Unlock()
+
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "A", Counter: 100}, // Add 100
+				Route: Stop(),
+			}
+		})
+
+		// Branch B: Modifies state and records what it sees
+		branchB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			mu.Lock()
+			branchExecutions["B"] = s.Counter
+			mu.Unlock()
+
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "B", Counter: 200}, // Add 200
+				Route: Stop(),
+			}
+		})
+
+		// Branch C: Modifies state and records what it sees
+		branchC := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			mu.Lock()
+			branchExecutions["C"] = s.Counter
+			mu.Unlock()
+
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "C", Counter: 300}, // Add 300
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("fanout", fanoutNode); err != nil {
+			t.Fatalf("Failed to add fanout node: %v", err)
+		}
+		if err := engine.Add("branchA", branchA); err != nil {
+			t.Fatalf("Failed to add branchA: %v", err)
+		}
+		if err := engine.Add("branchB", branchB); err != nil {
+			t.Fatalf("Failed to add branchB: %v", err)
+		}
+		if err := engine.Add("branchC", branchC); err != nil {
+			t.Fatalf("Failed to add branchC: %v", err)
+		}
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("Failed to set start node: %v", err)
+		}
+
+		ctx := context.Background()
+		finalState, err := engine.Run(ctx, "parallel-isolation-001", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify all branches saw the SAME initial state (Counter = 10 from fanout)
+		// This proves each branch got an isolated copy, not a shared reference
+		expectedInitialCounter := 10
+		for branch, seenCounter := range branchExecutions {
+			if seenCounter != expectedInitialCounter {
+				t.Errorf("branch %s saw Counter = %d, expected %d (state isolation failure)",
+					branch, seenCounter, expectedInitialCounter)
+			}
+		}
+
+		// Verify all branches executed
+		if len(branchExecutions) != 3 {
+			t.Errorf("expected 3 branches to execute, got %d", len(branchExecutions))
+		}
+
+		// Verify final state includes contributions from all branches
+		// Initial(0) + fanout(10) + branchA(100) + branchB(200) + branchC(300) = 610
+		expectedFinal := 0 + 10 + 100 + 200 + 300
+		if finalState.Counter != expectedFinal {
+			t.Errorf("expected final Counter = %d, got %d", expectedFinal, finalState.Counter)
 		}
 	})
 }
