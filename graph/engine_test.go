@@ -771,7 +771,7 @@ func TestEngine_MaxSteps(t *testing.T) {
 	})
 }
 
-// Helper functions for MaxSteps tests
+// Helper functions for MaxSteps tests.
 func nodeID(i int) string {
 	return "node" + string(rune('0'+i))
 }
@@ -789,7 +789,7 @@ func createCounterNode(value int, nextNode string) Node[TestState] {
 	})
 }
 
-// failingStore is a test store that always fails SaveStep
+// failingStore is a test store that always fails SaveStep.
 type failingStore[S any] struct{}
 
 func (f *failingStore[S]) SaveStep(ctx context.Context, runID string, step int, nodeID string, state S) error {

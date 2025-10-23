@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"testing"
 )
 
@@ -120,7 +121,7 @@ func TestStore_LoadLatest_NotFound(t *testing.T) {
 	store := &mockStore{}
 
 	_, _, err := store.LoadLatest(ctx, "nonexistent-run")
-	if err != ErrNotFound {
+	if !errors.Is(err, ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
 }
@@ -176,7 +177,7 @@ func TestStore_LoadCheckpoint_NotFound(t *testing.T) {
 	store := &mockStore{}
 
 	_, _, err := store.LoadCheckpoint(ctx, "nonexistent-cp")
-	if err != ErrNotFound {
+	if !errors.Is(err, ErrNotFound) {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
 }

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sync"
 	"testing"
 )
@@ -26,7 +27,7 @@ func TestMemStore_Construction(t *testing.T) {
 		ctx := context.Background()
 		_, _, err := store.LoadLatest(ctx, "nonexistent-run")
 
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("expected ErrNotFound for empty store, got %v", err)
 		}
 	})
@@ -42,7 +43,7 @@ func TestMemStore_Construction(t *testing.T) {
 
 		// Verify store2 doesn't have this data
 		_, _, err := store2.LoadLatest(ctx, "run-001")
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Error("store2 should not have data from store1")
 		}
 	})
@@ -137,7 +138,7 @@ func TestMemStore_LoadLatest(t *testing.T) {
 		ctx := context.Background()
 
 		_, _, err := store.LoadLatest(ctx, "nonexistent")
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("expected ErrNotFound, got %v", err)
 		}
 	})
@@ -302,7 +303,7 @@ func TestMemStore_LoadCheckpoint_Errors(t *testing.T) {
 		ctx := context.Background()
 
 		_, _, err := store.LoadCheckpoint(ctx, "nonexistent")
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("expected ErrNotFound, got %v", err)
 		}
 	})
@@ -312,7 +313,7 @@ func TestMemStore_LoadCheckpoint_Errors(t *testing.T) {
 		ctx := context.Background()
 
 		_, _, err := store.LoadCheckpoint(ctx, "any-id")
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("expected ErrNotFound for empty store, got %v", err)
 		}
 	})
@@ -326,7 +327,7 @@ func TestMemStore_LoadCheckpoint_Errors(t *testing.T) {
 
 		// Trying to load a checkpoint should fail
 		_, _, err := store.LoadCheckpoint(ctx, "cp-001")
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("expected ErrNotFound, got %v", err)
 		}
 	})
@@ -443,7 +444,7 @@ func TestMemStore_JSONDeserialization(t *testing.T) {
 		// Verify empty
 		ctx := context.Background()
 		_, _, loadErr := restored.LoadLatest(ctx, "any-run")
-		if loadErr != ErrNotFound {
+		if !errors.Is(loadErr, ErrNotFound) {
 			t.Error("expected empty store after unmarshaling empty JSON")
 		}
 	})

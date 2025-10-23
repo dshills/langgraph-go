@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"testing"
 )
 
@@ -88,8 +89,8 @@ func TestNodeError(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	nodeErr, ok := result.Err.(*NodeError)
-	if !ok {
+	var nodeErr *NodeError
+	if !errors.As(result.Err, &nodeErr) {
 		t.Fatalf("expected *NodeError, got %T", result.Err)
 	}
 	if nodeErr.Message != "test error" {

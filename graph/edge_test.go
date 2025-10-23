@@ -90,11 +90,9 @@ func TestEdge_Struct(t *testing.T) {
 // TestPredicate_Type verifies Predicate[S] function type (T026).
 func TestPredicate_Type(t *testing.T) {
 	t.Run("predicate type can be declared", func(t *testing.T) {
-		var pred Predicate[TestState]
-
-		pred = func(s TestState) bool {
+		pred := Predicate[TestState](func(s TestState) bool {
 			return s.Counter > 0
-		}
+		})
 
 		if !pred(TestState{Counter: 5}) {
 			t.Error("predicate should return true for Counter = 5")
