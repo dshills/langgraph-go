@@ -388,6 +388,246 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 	}
 }
 
+// SaveCheckpoint creates a named checkpoint for the most recent state of a run.
+//
+// Checkpoints enable:
+//   - Branching workflows (save checkpoint, try different paths)
+//   - Manual resumption points
+//   - Rollback to known-good states
+//   - A/B testing (checkpoint before experiment)
+//
+// The checkpoint captures the latest persisted state from the specified run.
+// Multiple checkpoints can be created for the same run with different labels.
+//
+// Parameters:
+//   - ctx: Context for cancellation
+//   - runID: The workflow run to checkpoint
+//   - cpID: Unique identifier for this checkpoint (e.g., "after-validation", "before-deploy")
+//
+// Returns error if:
+//   - runID doesn't exist or has no persisted state
+//   - Store operation fails
+//
+// Example:
+//
+//	// Run workflow
+//	final, _ := engine.Run(ctx, "run-001", initial)
+//
+//	// Save checkpoint at completion
+//	err := engine.SaveCheckpoint(ctx, "run-001", "before-deploy")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// Later, can resume from this checkpoint
+//	resumed, _ := engine.ResumeFromCheckpoint(ctx, "before-deploy", "run-002")
+func (e *Engine[S]) SaveCheckpoint(ctx context.Context, runID string, cpID string) error {
+	// Load latest state from the run
+	latestState, latestStep, err := e.store.LoadLatest(ctx, runID)
+	if err != nil {
+		return &EngineError{
+			Message: "cannot create checkpoint: run state not found: " + err.Error(),
+			Code:    "RUN_NOT_FOUND",
+		}
+	}
+
+	// Save checkpoint with the latest state
+	if err := e.store.SaveCheckpoint(ctx, cpID, latestState, latestStep); err != nil {
+		return &EngineError{
+			Message: "failed to save checkpoint: " + err.Error(),
+			Code:    "CHECKPOINT_SAVE_FAILED",
+		}
+	}
+
+	// Emit checkpoint event
+	if e.emitter != nil {
+		e.emitter.Emit(emit.Event{
+			RunID:  runID,
+			Step:   latestStep,
+			NodeID: "",
+			Msg:    "checkpoint saved: " + cpID,
+			Meta: map[string]interface{}{
+				"checkpoint_id": cpID,
+			},
+		})
+	}
+
+	return nil
+}
+
+// ResumeFromCheckpoint resumes workflow execution from a saved checkpoint.
+//
+// This enables:
+//   - Crash recovery (save checkpoints, resume after failure)
+//   - Branching workflows (checkpoint, try path A, resume from checkpoint, try path B)
+//   - Manual intervention (pause at checkpoint, human review, resume)
+//   - A/B testing (checkpoint before experiment, resume multiple times with variants)
+//
+// The resume operation:
+//  1. Loads the checkpoint state
+//  2. Starts a new workflow run with the checkpoint state as initial state
+//  3. Begins execution at the specified node (typically the next node after checkpoint)
+//  4. Continues until workflow completes or errors
+//
+// Parameters:
+//   - ctx: Context for cancellation
+//   - cpID: Checkpoint identifier to resume from
+//   - newRunID: New unique run ID for the resumed execution
+//   - startNode: Node to begin execution at (typically next node after checkpoint)
+//
+// Returns:
+//   - Final state after resumed execution completes
+//   - Error if checkpoint doesn't exist, startNode invalid, or execution fails
+//
+// Example:
+//
+//	// Original run with checkpoint
+//	_, _ = engine.Run(ctx, "run-001", initial)
+//	_ = engine.SaveCheckpoint(ctx, "run-001", "after-validation")
+//
+//	// Resume from checkpoint (e.g., after crash or for A/B test)
+//	finalA, _ := engine.ResumeFromCheckpoint(ctx, "after-validation", "run-002-pathA", "pathA")
+//	finalB, _ := engine.ResumeFromCheckpoint(ctx, "after-validation", "run-003-pathB", "pathB")
+func (e *Engine[S]) ResumeFromCheckpoint(ctx context.Context, cpID string, newRunID string, startNode string) (S, error) {
+	var zero S
+
+	// Load checkpoint state
+	checkpointState, checkpointStep, err := e.store.LoadCheckpoint(ctx, cpID)
+	if err != nil {
+		return zero, &EngineError{
+			Message: "cannot resume: checkpoint not found: " + err.Error(),
+			Code:    "CHECKPOINT_NOT_FOUND",
+		}
+	}
+
+	// Emit resume event
+	if e.emitter != nil {
+		e.emitter.Emit(emit.Event{
+			RunID:  newRunID,
+			Step:   0,
+			NodeID: startNode,
+			Msg:    "resuming from checkpoint: " + cpID,
+			Meta: map[string]interface{}{
+				"checkpoint_id":   cpID,
+				"checkpoint_step": checkpointStep,
+			},
+		})
+	}
+
+	// Validate configuration (same as Run)
+	if e.reducer == nil {
+		return zero, &EngineError{
+			Message: "reducer is required",
+			Code:    "MISSING_REDUCER",
+		}
+	}
+	if e.store == nil {
+		return zero, &EngineError{
+			Message: "store is required",
+			Code:    "MISSING_STORE",
+		}
+	}
+	if startNode == "" {
+		return zero, &EngineError{
+			Message: "start node not specified for resume",
+			Code:    "NO_START_NODE",
+		}
+	}
+
+	// Validate start node exists
+	e.mu.RLock()
+	_, exists := e.nodes[startNode]
+	e.mu.RUnlock()
+
+	if !exists {
+		return zero, &EngineError{
+			Message: "resume start node does not exist: " + startNode,
+			Code:    "NODE_NOT_FOUND",
+		}
+	}
+
+	// Initialize execution state with checkpoint state
+	currentState := checkpointState
+	currentNode := startNode
+	step := 0
+
+	// Execution loop (same as Run but starting from checkpoint state)
+	for {
+		step++
+
+		// Check MaxSteps limit
+		if e.opts.MaxSteps > 0 && step > e.opts.MaxSteps {
+			return zero, &EngineError{
+				Message: "workflow exceeded MaxSteps limit",
+				Code:    "MAX_STEPS_EXCEEDED",
+			}
+		}
+
+		// Check context cancellation
+		select {
+		case <-ctx.Done():
+			return zero, ctx.Err()
+		default:
+		}
+
+		// Get current node implementation
+		e.mu.RLock()
+		nodeImpl, exists := e.nodes[currentNode]
+		e.mu.RUnlock()
+
+		if !exists {
+			return zero, &EngineError{
+				Message: "node not found during execution: " + currentNode,
+				Code:    "NODE_NOT_FOUND",
+			}
+		}
+
+		// Execute node
+		result := nodeImpl.Run(ctx, currentState)
+
+		// Handle node error
+		if result.Err != nil {
+			return zero, result.Err
+		}
+
+		// Merge state update
+		currentState = e.reducer(currentState, result.Delta)
+
+		// Persist state after node execution
+		if err := e.store.SaveStep(ctx, newRunID, step, currentNode, currentState); err != nil {
+			return zero, &EngineError{
+				Message: "failed to save step: " + err.Error(),
+				Code:    "STORE_ERROR",
+			}
+		}
+
+		// Emit observability event
+		if e.emitter != nil {
+			e.emitter.Emit(emit.Event{
+				RunID:  newRunID,
+				Step:   step,
+				NodeID: currentNode,
+				Msg:    "node completed",
+			})
+		}
+
+		// Determine next node from routing decision
+		if result.Route.Terminal {
+			// Workflow complete
+			return currentState, nil
+		}
+
+		if result.Route.To != "" {
+			// Single next node (Goto)
+			currentNode = result.Route.To
+			continue
+		}
+
+		// If no explicit route, workflow ends
+		return currentState, nil
+	}
+}
+
 // EngineError represents an error from Engine operations.
 type EngineError struct {
 	Message string

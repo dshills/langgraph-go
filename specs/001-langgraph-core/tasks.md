@@ -136,12 +136,12 @@
 
 ### US1: Checkpoint & Resume
 
-- [ ] T061 [US1] Write tests for checkpoint save at specific steps in graph/engine_test.go
-- [ ] T062 [US1] Implement Engine.SaveCheckpoint(label) method in graph/engine.go
-- [ ] T063 [US1] Write tests for resume from checkpoint in graph/engine_test.go
-- [ ] T064 [US1] Implement Engine.LoadCheckpoint(label) and resume logic in graph/engine.go
-- [ ] T065 [US1] Write tests for missing checkpoint error handling in graph/engine_test.go
-- [ ] T066 [US1] Implement clear error for nonexistent checkpoint in graph/engine.go
+- [X] T061 [US1] Write tests for checkpoint save at specific steps in graph/engine_test.go
+- [X] T062 [US1] Implement Engine.SaveCheckpoint(label) method in graph/engine.go
+- [X] T063 [US1] Write tests for resume from checkpoint in graph/engine_test.go
+- [X] T064 [US1] Implement Engine.ResumeFromCheckpoint(cpID, newRunID, startNode) in graph/engine.go
+- [X] T065 [US1] Write tests for missing checkpoint error handling in graph/engine_test.go (covered in T063)
+- [X] T066 [US1] Implement clear error for nonexistent checkpoint in graph/engine.go (covered in T064)
 
 ### US1: Context Cancellation
 

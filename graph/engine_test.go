@@ -807,6 +807,284 @@ func (f *failingStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (S, i
 	return zero, 0, store.ErrNotFound
 }
 
+// TestEngine_SaveCheckpoint verifies checkpoint save at specific steps (T061).
+func TestEngine_SaveCheckpoint(t *testing.T) {
+	t.Run("save checkpoint after node execution", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Create a simple workflow
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node1", Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node2", Counter: 10},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node1)
+		_ = engine.Add("node2", node2)
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+		initial := TestState{Value: "initial", Counter: 0}
+
+		// Start workflow
+		_, err := engine.Run(ctx, "cp-run-001", initial)
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Save checkpoint after workflow completes
+		cpID := "checkpoint-1"
+		err = engine.SaveCheckpoint(ctx, "cp-run-001", cpID)
+		if err != nil {
+			t.Fatalf("SaveCheckpoint failed: %v", err)
+		}
+
+		// Verify checkpoint was saved in store
+		cpState, cpStep, err := engine.store.LoadCheckpoint(ctx, cpID)
+		if err != nil {
+			t.Fatalf("LoadCheckpoint failed: %v", err)
+		}
+
+		// Checkpoint should have final state
+		if cpState.Value != "node2" {
+			t.Errorf("expected checkpoint Value = 'node2', got %q", cpState.Value)
+		}
+		if cpState.Counter != 11 {
+			t.Errorf("expected checkpoint Counter = 11, got %d", cpState.Counter)
+		}
+		if cpStep != 2 {
+			t.Errorf("expected checkpoint step = 2, got %d", cpStep)
+		}
+	})
+
+	t.Run("save checkpoint with custom label", func(t *testing.T) {
+		engine := createTestEngine()
+
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 5},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node)
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+		_, _ = engine.Run(ctx, "cp-run-002", TestState{})
+
+		// Save with descriptive label
+		err := engine.SaveCheckpoint(ctx, "cp-run-002", "after-validation")
+		if err != nil {
+			t.Fatalf("SaveCheckpoint with label failed: %v", err)
+		}
+
+		// Verify label is usable
+		_, _, err = engine.store.LoadCheckpoint(ctx, "after-validation")
+		if err != nil {
+			t.Error("checkpoint with custom label should be loadable")
+		}
+	})
+
+	t.Run("save multiple checkpoints for same run", func(t *testing.T) {
+		engine := createTestEngine()
+
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node)
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+		runID := "cp-run-003"
+		_, _ = engine.Run(ctx, runID, TestState{})
+
+		// Save multiple checkpoints with different labels
+		_ = engine.SaveCheckpoint(ctx, runID, "checkpoint-a")
+		_ = engine.SaveCheckpoint(ctx, runID, "checkpoint-b")
+		_ = engine.SaveCheckpoint(ctx, runID, "checkpoint-c")
+
+		// All should be loadable
+		_, _, err1 := engine.store.LoadCheckpoint(ctx, "checkpoint-a")
+		_, _, err2 := engine.store.LoadCheckpoint(ctx, "checkpoint-b")
+		_, _, err3 := engine.store.LoadCheckpoint(ctx, "checkpoint-c")
+
+		if err1 != nil || err2 != nil || err3 != nil {
+			t.Error("all checkpoints should be loadable")
+		}
+	})
+
+	t.Run("save checkpoint for nonexistent run", func(t *testing.T) {
+		engine := createTestEngine()
+
+		ctx := context.Background()
+		err := engine.SaveCheckpoint(ctx, "nonexistent-run", "checkpoint-x")
+
+		// Should return error if run doesn't exist
+		if err == nil {
+			t.Error("expected error for nonexistent run")
+		}
+	})
+}
+
+// TestEngine_ResumeFromCheckpoint verifies resume from checkpoint functionality (T063).
+func TestEngine_ResumeFromCheckpoint(t *testing.T) {
+	t.Run("resume from checkpoint and continue workflow", func(t *testing.T) {
+		engine := createTestEngine()
+
+		// Create a 3-node workflow
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node1", Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node2", Counter: 10},
+				Route: Goto("node3"),
+			}
+		})
+
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "node3", Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node1)
+		_ = engine.Add("node2", node2)
+		_ = engine.Add("node3", node3)
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+
+		// Run to node2, then checkpoint
+		_, _ = engine.Run(ctx, "resume-run-001", TestState{})
+		_ = engine.SaveCheckpoint(ctx, "resume-run-001", "after-node2")
+
+		// Resume from checkpoint with new runID
+		finalState, err := engine.ResumeFromCheckpoint(ctx, "after-node2", "resume-run-002", "node3")
+		if err != nil {
+			t.Fatalf("ResumeFromCheckpoint failed: %v", err)
+		}
+
+		// Should have state from checkpoint (11) plus new node execution (100)
+		if finalState.Value != "node3" {
+			t.Errorf("expected Value = 'node3', got %q", finalState.Value)
+		}
+		// Checkpoint had Counter=11 (from node1+node2), node3 adds 100 more
+		// Total: 11 (checkpoint) + 100 (node3) + 100 (node3 again because it ran in original too) = 211
+		// Actually, let me trace: original run gives 11, checkpoint saves that, resume starts with 11 and adds 100 = 111
+		// Wait, the original run already executed all 3 nodes, so checkpoint has 111
+		// Resume from that checkpoint adds node3 again: 111 + 100 = 211
+		if finalState.Counter != 211 {
+			t.Errorf("expected Counter = 211 (checkpoint 111 + node3 100), got %d", finalState.Counter)
+		}
+	})
+
+	t.Run("resume from checkpoint at workflow start", func(t *testing.T) {
+		engine := createTestEngine()
+
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 5},
+				Route: Goto("node2"),
+			}
+		})
+
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 10},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node1)
+		_ = engine.Add("node2", node2)
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+
+		// Run and checkpoint
+		_, _ = engine.Run(ctx, "start-run", TestState{Counter: 0})
+		_ = engine.SaveCheckpoint(ctx, "start-run", "initial")
+
+		// Resume from start
+		final, err := engine.ResumeFromCheckpoint(ctx, "initial", "resumed-run", "node1")
+		if err != nil {
+			t.Fatalf("resume from start failed: %v", err)
+		}
+
+		// Original run: 0 + 5 (node1) + 10 (node2) = 15
+		// Checkpoint saved at 15
+		// Resume from 15: 15 + 5 (node1) + 10 (node2) = 30
+		if final.Counter != 30 {
+			t.Errorf("expected Counter = 30 (checkpoint 15 + resumed 15), got %d", final.Counter)
+		}
+	})
+
+	t.Run("resume preserves checkpoint state", func(t *testing.T) {
+		engine := createTestEngine()
+
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Value: "executed"},
+				Route: Stop(),
+			}
+		})
+
+		_ = engine.Add("node1", node)
+		_ = engine.StartAt("node1")
+
+		ctx := context.Background()
+
+		// Create checkpoint
+		_, _ = engine.Run(ctx, "preserve-run", TestState{Value: "original", Counter: 42})
+		_ = engine.SaveCheckpoint(ctx, "preserve-run", "preserve-cp")
+
+		// Resume should start with checkpoint state
+		final, err := engine.ResumeFromCheckpoint(ctx, "preserve-cp", "new-run", "node1")
+		if err != nil {
+			t.Fatalf("resume failed: %v", err)
+		}
+
+		// Should have preserved Counter from checkpoint
+		if final.Counter != 42 {
+			t.Errorf("expected preserved Counter = 42, got %d", final.Counter)
+		}
+		if final.Value != "executed" {
+			t.Errorf("expected Value = 'executed', got %q", final.Value)
+		}
+	})
+
+	t.Run("resume from nonexistent checkpoint", func(t *testing.T) {
+		engine := createTestEngine()
+
+		ctx := context.Background()
+		_, err := engine.ResumeFromCheckpoint(ctx, "nonexistent-cp", "new-run", "node1")
+
+		// Should return error
+		if err == nil {
+			t.Error("expected error for nonexistent checkpoint")
+		}
+	})
+}
+
 // createTestEngine is a helper to create a test engine with default configuration.
 func createTestEngine() *Engine[TestState] {
 	reducer := func(prev, delta TestState) TestState {
