@@ -333,11 +333,4 @@ func (m *mockOpenAIClient) createChatCompletion(ctx context.Context, messages []
 	}, nil
 }
 
-// rateLimitError represents an OpenAI rate limit error.
-type rateLimitError struct {
-	message string
-}
-
-func (e *rateLimitError) Error() string {
-	return e.message
-}
+// rateLimitError is imported from the openai package
