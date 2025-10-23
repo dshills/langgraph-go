@@ -301,11 +301,11 @@
 
 ### US4: Anthropic Adapter
 
-- [ ] T139 [P] [US4] Create graph/model/anthropic sub-package
-- [ ] T140 [P] [US4] Write tests for AnthropicChatModel in graph/model/anthropic/anthropic_test.go
-- [ ] T141 [P] [US4] Implement AnthropicChatModel wrapping anthropic-sdk-go in graph/model/anthropic/anthropic.go
-- [ ] T142 [P] [US4] Write tests for Anthropic error handling in graph/model/anthropic/anthropic_test.go
-- [ ] T143 [P] [US4] Implement error translation to common format in graph/model/anthropic/anthropic.go
+- [X] T139 [P] [US4] Create graph/model/anthropic sub-package
+- [X] T140 [P] [US4] Write tests for AnthropicChatModel in graph/model/anthropic/anthropic_test.go
+- [X] T141 [P] [US4] Implement AnthropicChatModel wrapping anthropic-sdk-go in graph/model/anthropic/anthropic.go
+- [X] T142 [P] [US4] Write tests for Anthropic error handling in graph/model/anthropic/anthropic_test.go
+- [X] T143 [P] [US4] Implement error translation to common format in graph/model/anthropic/anthropic.go
 
 ### US4: Google Adapter
 
