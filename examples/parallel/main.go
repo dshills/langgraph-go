@@ -27,7 +27,7 @@ type ProcessingState struct {
 }
 
 func main() {
-	fmt.Println("=== LangGraph-Go Parallel Execution Example ===\n")
+	fmt.Println("=== LangGraph-Go Parallel Execution Example ===")
 
 	// Define reducer that combines results from parallel branches
 	reducer := func(prev, delta ProcessingState) ProcessingState {

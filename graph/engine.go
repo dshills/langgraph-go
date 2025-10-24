@@ -382,11 +382,15 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 			}
 		}
 
+		// Emit node_start event (T153)
+		e.emitNodeStart(runID, currentNode, step-1) // step is incremented at start of loop, but events use 0-based indexing
+
 		// Execute node
 		result := nodeImpl.Run(ctx, currentState)
 
-		// Handle node error
+		// Handle node error (T159)
 		if result.Err != nil {
+			e.emitError(runID, currentNode, step-1, result.Err)
 			return zero, result.Err
 		}
 
@@ -401,24 +405,27 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 			}
 		}
 
-		// Emit observability event
-		if e.emitter != nil {
-			e.emitter.Emit(emit.Event{
-				RunID:  runID,
-				Step:   step,
-				NodeID: currentNode,
-				Msg:    "node completed",
-			})
-		}
+		// Emit node_end event with delta (T155)
+		e.emitNodeEnd(runID, currentNode, step-1, result.Delta)
 
 		// Determine next node from routing decision
 		if result.Route.Terminal {
+			// Emit routing_decision event for Stop (T157)
+			e.emitRoutingDecision(runID, currentNode, step-1, map[string]interface{}{
+				"terminal": true,
+			})
 			// Workflow complete
 			return currentState, nil
 		}
 
 		// Handle parallel execution (fan-out) - T104-T108
 		if len(result.Route.Many) > 0 {
+			// Emit routing_decision event for parallel execution (T157)
+			e.emitRoutingDecision(runID, currentNode, step-1, map[string]interface{}{
+				"parallel": true,
+				"branches": result.Route.Many,
+			})
+
 			// Execute branches in parallel with isolated state copies
 			parallelState, err := e.executeParallel(ctx, result.Route.Many, currentState)
 			if err != nil {
@@ -431,6 +438,11 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 		}
 
 		if result.Route.To != "" {
+			// Emit routing_decision event for Goto (T157)
+			e.emitRoutingDecision(runID, currentNode, step-1, map[string]interface{}{
+				"next_node": result.Route.To,
+			})
+
 			// Single next node (Goto)
 			currentNode = result.Route.To
 			continue
@@ -445,6 +457,12 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 				Code:    "NO_ROUTE",
 			}
 		}
+
+		// Emit routing_decision event for edge-based routing (T157)
+		e.emitRoutingDecision(runID, currentNode, step-1, map[string]interface{}{
+			"next_node": nextNode,
+			"via_edge":  true,
+		})
 
 		currentNode = nextNode
 		continue
@@ -787,11 +805,15 @@ func (e *Engine[S]) ResumeFromCheckpoint(ctx context.Context, cpID string, newRu
 			}
 		}
 
+		// Emit node_start event (T153)
+		e.emitNodeStart(newRunID, currentNode, step-1) // step is incremented at start of loop, but events use 0-based indexing
+
 		// Execute node
 		result := nodeImpl.Run(ctx, currentState)
 
-		// Handle node error
+		// Handle node error (T159)
 		if result.Err != nil {
+			e.emitError(newRunID, currentNode, step-1, result.Err)
 			return zero, result.Err
 		}
 
@@ -806,23 +828,25 @@ func (e *Engine[S]) ResumeFromCheckpoint(ctx context.Context, cpID string, newRu
 			}
 		}
 
-		// Emit observability event
-		if e.emitter != nil {
-			e.emitter.Emit(emit.Event{
-				RunID:  newRunID,
-				Step:   step,
-				NodeID: currentNode,
-				Msg:    "node completed",
-			})
-		}
+		// Emit node_end event with delta (T155)
+		e.emitNodeEnd(newRunID, currentNode, step-1, result.Delta)
 
 		// Determine next node from routing decision
 		if result.Route.Terminal {
+			// Emit routing_decision event for Stop (T157)
+			e.emitRoutingDecision(newRunID, currentNode, step-1, map[string]interface{}{
+				"terminal": true,
+			})
 			// Workflow complete
 			return currentState, nil
 		}
 
 		if result.Route.To != "" {
+			// Emit routing_decision event for Goto (T157)
+			e.emitRoutingDecision(newRunID, currentNode, step-1, map[string]interface{}{
+				"next_node": result.Route.To,
+			})
+
 			// Single next node (Goto)
 			currentNode = result.Route.To
 			continue
@@ -838,8 +862,69 @@ func (e *Engine[S]) ResumeFromCheckpoint(ctx context.Context, cpID string, newRu
 			}
 		}
 
+		// Emit routing_decision event for edge-based routing (T157)
+		e.emitRoutingDecision(newRunID, currentNode, step-1, map[string]interface{}{
+			"next_node": nextNode,
+			"via_edge":  true,
+		})
+
 		currentNode = nextNode
 		continue
+	}
+}
+
+// emitNodeStart emits a node_start event if emitter is configured (T153).
+func (e *Engine[S]) emitNodeStart(runID, nodeID string, step int) {
+	if e.emitter != nil {
+		e.emitter.Emit(emit.Event{
+			RunID:  runID,
+			Step:   step,
+			NodeID: nodeID,
+			Msg:    "node_start",
+		})
+	}
+}
+
+// emitNodeEnd emits a node_end event with delta metadata if emitter is configured (T155).
+func (e *Engine[S]) emitNodeEnd(runID, nodeID string, step int, delta S) {
+	if e.emitter != nil {
+		e.emitter.Emit(emit.Event{
+			RunID:  runID,
+			Step:   step,
+			NodeID: nodeID,
+			Msg:    "node_end",
+			Meta: map[string]interface{}{
+				"delta": delta,
+			},
+		})
+	}
+}
+
+// emitError emits an error event if emitter is configured (T159).
+func (e *Engine[S]) emitError(runID, nodeID string, step int, err error) {
+	if e.emitter != nil {
+		e.emitter.Emit(emit.Event{
+			RunID:  runID,
+			Step:   step,
+			NodeID: nodeID,
+			Msg:    "error",
+			Meta: map[string]interface{}{
+				"error": err.Error(),
+			},
+		})
+	}
+}
+
+// emitRoutingDecision emits a routing_decision event if emitter is configured (T157).
+func (e *Engine[S]) emitRoutingDecision(runID, nodeID string, step int, meta map[string]interface{}) {
+	if e.emitter != nil {
+		e.emitter.Emit(emit.Event{
+			RunID:  runID,
+			Step:   step,
+			NodeID: nodeID,
+			Msg:    "routing_decision",
+			Meta:   meta,
+		})
 	}
 }
 

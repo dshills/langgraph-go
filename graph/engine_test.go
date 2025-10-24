@@ -2923,3 +2923,592 @@ func createTestEngine() *Engine[TestState] {
 
 	return New(reducer, st, emitter, opts)
 }
+
+// TestEngine_NodeStartEvent verifies node_start event is emitted at the beginning of node execution (T152).
+func TestEngine_NodeStartEvent(t *testing.T) {
+	t.Run("node_start event emitted with correct metadata", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Add a simple node that increments counter
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("testNode", node); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("testNode"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "node-start-001", TestState{})
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify node_start event was emitted
+		var nodeStartEvent *emit.Event
+		for i := range emitter.events {
+			if emitter.events[i].Msg == "node_start" {
+				nodeStartEvent = &emitter.events[i]
+				break
+			}
+		}
+
+		if nodeStartEvent == nil {
+			t.Fatal("expected node_start event, but none found")
+		}
+
+		// Verify event metadata
+		if nodeStartEvent.RunID != "node-start-001" {
+			t.Errorf("expected RunID 'node-start-001', got %q", nodeStartEvent.RunID)
+		}
+		if nodeStartEvent.NodeID != "testNode" {
+			t.Errorf("expected NodeID 'testNode', got %q", nodeStartEvent.NodeID)
+		}
+		if nodeStartEvent.Step != 0 {
+			t.Errorf("expected Step 0, got %d", nodeStartEvent.Step)
+		}
+
+		t.Logf("node_start event emitted correctly: %+v", nodeStartEvent)
+	})
+
+	t.Run("node_start events emitted for each node in sequence", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Add three nodes in sequence
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 2},
+				Route: Goto("node3"),
+			}
+		})
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 3},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("node1", node1); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("node2", node2); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("node3", node3); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("node1"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "node-start-seq-001", TestState{})
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Collect all node_start events
+		var startEvents []emit.Event
+		for _, e := range emitter.events {
+			if e.Msg == "node_start" {
+				startEvents = append(startEvents, e)
+			}
+		}
+
+		// Verify we got 3 node_start events
+		if len(startEvents) != 3 {
+			t.Errorf("expected 3 node_start events, got %d", len(startEvents))
+		}
+
+		// Verify the sequence
+		expectedNodes := []string{"node1", "node2", "node3"}
+		for i, event := range startEvents {
+			if event.NodeID != expectedNodes[i] {
+				t.Errorf("event %d: expected NodeID %q, got %q", i, expectedNodes[i], event.NodeID)
+			}
+			if event.Step != i {
+				t.Errorf("event %d: expected Step %d, got %d", i, i, event.Step)
+			}
+		}
+
+		t.Logf("All node_start events emitted correctly for sequential execution")
+	})
+}
+
+// TestEngine_NodeEndEvent verifies node_end event is emitted after state merge with delta (T154).
+func TestEngine_NodeEndEvent(t *testing.T) {
+	t.Run("node_end event emitted with delta in metadata", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			prev.Value += delta.Value
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Add a node that returns a delta
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 5, Value: "test"},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("testNode", node); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("testNode"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		finalState, err := engine.Run(ctx, "node-end-001", TestState{})
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify final state has the merged delta
+		if finalState.Counter != 5 {
+			t.Errorf("expected Counter 5, got %d", finalState.Counter)
+		}
+		if finalState.Value != "test" {
+			t.Errorf("expected Value 'test', got %q", finalState.Value)
+		}
+
+		// Verify node_end event was emitted
+		var nodeEndEvent *emit.Event
+		for i := range emitter.events {
+			if emitter.events[i].Msg == "node_end" {
+				nodeEndEvent = &emitter.events[i]
+				break
+			}
+		}
+
+		if nodeEndEvent == nil {
+			t.Fatal("expected node_end event, but none found")
+		}
+
+		// Verify event metadata includes delta
+		if nodeEndEvent.RunID != "node-end-001" {
+			t.Errorf("expected RunID 'node-end-001', got %q", nodeEndEvent.RunID)
+		}
+		if nodeEndEvent.NodeID != "testNode" {
+			t.Errorf("expected NodeID 'testNode', got %q", nodeEndEvent.NodeID)
+		}
+		if nodeEndEvent.Step != 0 {
+			t.Errorf("expected Step 0, got %d", nodeEndEvent.Step)
+		}
+
+		// Meta should contain delta information
+		if nodeEndEvent.Meta == nil {
+			t.Fatal("expected Meta to contain delta information, got nil")
+		}
+
+		t.Logf("node_end event emitted correctly: %+v", nodeEndEvent)
+	})
+
+	t.Run("node_end events emitted for each node with correct step numbers", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Add three nodes in sequence with different deltas
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 10},
+				Route: Goto("node3"),
+			}
+		})
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 100},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("node1", node1); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("node2", node2); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("node3", node3); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("node1"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		finalState, err := engine.Run(ctx, "node-end-seq-001", TestState{})
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify final state accumulated all deltas
+		expectedCounter := 1 + 10 + 100
+		if finalState.Counter != expectedCounter {
+			t.Errorf("expected Counter %d, got %d", expectedCounter, finalState.Counter)
+		}
+
+		// Collect all node_end events
+		var endEvents []emit.Event
+		for _, e := range emitter.events {
+			if e.Msg == "node_end" {
+				endEvents = append(endEvents, e)
+			}
+		}
+
+		// Verify we got 3 node_end events
+		if len(endEvents) != 3 {
+			t.Errorf("expected 3 node_end events, got %d", len(endEvents))
+		}
+
+		// Verify the sequence and step numbers
+		expectedNodes := []string{"node1", "node2", "node3"}
+		for i, event := range endEvents {
+			if event.NodeID != expectedNodes[i] {
+				t.Errorf("event %d: expected NodeID %q, got %q", i, expectedNodes[i], event.NodeID)
+			}
+			if event.Step != i {
+				t.Errorf("event %d: expected Step %d, got %d", i, i, event.Step)
+			}
+		}
+
+		t.Logf("All node_end events emitted correctly for sequential execution")
+	})
+}
+
+// TestEngine_RoutingDecisionEvent verifies routing_decision event is emitted with chosen path (T156).
+func TestEngine_RoutingDecisionEvent(t *testing.T) {
+	t.Run("routing_decision event emitted with Goto target", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Add two nodes with explicit routing
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 2},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("node1", node1); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("node2", node2); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("node1"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "routing-001", TestState{})
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Collect all routing_decision events
+		var routingEvents []emit.Event
+		for _, e := range emitter.events {
+			if e.Msg == "routing_decision" {
+				routingEvents = append(routingEvents, e)
+			}
+		}
+
+		// Should have routing decisions (at least one for Goto, one for Stop)
+		if len(routingEvents) == 0 {
+			t.Fatal("expected routing_decision events, but none found")
+		}
+
+		// Find the Goto routing decision from node1
+		var gotoEvent *emit.Event
+		for i := range routingEvents {
+			if routingEvents[i].NodeID == "node1" {
+				gotoEvent = &routingEvents[i]
+				break
+			}
+		}
+
+		if gotoEvent == nil {
+			t.Fatal("expected routing_decision event for node1, but none found")
+		}
+
+		// Verify metadata contains routing target
+		if gotoEvent.Meta == nil {
+			t.Fatal("expected Meta to contain routing information, got nil")
+		}
+
+		nextNode, ok := gotoEvent.Meta["next_node"].(string)
+		if !ok || nextNode != "node2" {
+			t.Errorf("expected next_node 'node2', got %v", gotoEvent.Meta["next_node"])
+		}
+
+		t.Logf("routing_decision event emitted correctly: %+v", gotoEvent)
+	})
+
+	t.Run("routing_decision event emitted for Stop", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Add a single node that stops
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Stop(),
+			}
+		})
+
+		if err := engine.Add("node", node); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("node"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "routing-stop-001", TestState{})
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Find the Stop routing decision
+		var stopEvent *emit.Event
+		for i := range emitter.events {
+			if emitter.events[i].Msg == "routing_decision" && emitter.events[i].NodeID == "node" {
+				stopEvent = &emitter.events[i]
+				break
+			}
+		}
+
+		if stopEvent == nil {
+			t.Fatal("expected routing_decision event for Stop, but none found")
+		}
+
+		// Verify metadata indicates terminal
+		if stopEvent.Meta == nil {
+			t.Fatal("expected Meta to contain routing information, got nil")
+		}
+
+		terminal, ok := stopEvent.Meta["terminal"].(bool)
+		if !ok || !terminal {
+			t.Errorf("expected terminal true, got %v", stopEvent.Meta["terminal"])
+		}
+
+		t.Logf("routing_decision event for Stop emitted correctly: %+v", stopEvent)
+	})
+}
+
+// TestEngine_ErrorEvent verifies error event is emitted on NodeResult.Err (T158).
+func TestEngine_ErrorEvent(t *testing.T) {
+	t.Run("error event emitted when node returns error", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Add a node that returns an error
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Err: errors.New("test error"),
+			}
+		})
+
+		if err := engine.Add("errorNode", node); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("errorNode"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "error-001", TestState{})
+
+		// Verify the run failed with the expected error
+		if err == nil {
+			t.Fatal("expected error from node, got nil")
+		}
+		if err.Error() != "test error" {
+			t.Errorf("expected error 'test error', got %q", err.Error())
+		}
+
+		// Verify error event was emitted
+		var errorEvent *emit.Event
+		for i := range emitter.events {
+			if emitter.events[i].Msg == "error" {
+				errorEvent = &emitter.events[i]
+				break
+			}
+		}
+
+		if errorEvent == nil {
+			t.Fatal("expected error event, but none found")
+		}
+
+		// Verify event metadata
+		if errorEvent.RunID != "error-001" {
+			t.Errorf("expected RunID 'error-001', got %q", errorEvent.RunID)
+		}
+		if errorEvent.NodeID != "errorNode" {
+			t.Errorf("expected NodeID 'errorNode', got %q", errorEvent.NodeID)
+		}
+
+		// Meta should contain error information
+		if errorEvent.Meta == nil {
+			t.Fatal("expected Meta to contain error information, got nil")
+		}
+
+		errMsg, ok := errorEvent.Meta["error"].(string)
+		if !ok || errMsg != "test error" {
+			t.Errorf("expected error 'test error', got %v", errorEvent.Meta["error"])
+		}
+
+		t.Logf("error event emitted correctly: %+v", errorEvent)
+	})
+
+	t.Run("error event emitted in multi-node workflow", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Add nodes where second one fails
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Goto("node2"),
+			}
+		})
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Err: errors.New("node2 failed"),
+			}
+		})
+
+		if err := engine.Add("node1", node1); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.Add("node2", node2); err != nil {
+			t.Fatalf("Add failed: %v", err)
+		}
+		if err := engine.StartAt("node1"); err != nil {
+			t.Fatalf("StartAt failed: %v", err)
+		}
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "error-seq-001", TestState{})
+
+		// Verify the run failed
+		if err == nil {
+			t.Fatal("expected error from node2, got nil")
+		}
+
+		// Verify node_start event was emitted for both nodes
+		var startEvents []emit.Event
+		for _, e := range emitter.events {
+			if e.Msg == "node_start" {
+				startEvents = append(startEvents, e)
+			}
+		}
+		if len(startEvents) != 2 {
+			t.Errorf("expected 2 node_start events, got %d", len(startEvents))
+		}
+
+		// Verify error event was emitted
+		var errorEvent *emit.Event
+		for i := range emitter.events {
+			if emitter.events[i].Msg == "error" {
+				errorEvent = &emitter.events[i]
+				break
+			}
+		}
+
+		if errorEvent == nil {
+			t.Fatal("expected error event, but none found")
+		}
+
+		// Verify it came from node2
+		if errorEvent.NodeID != "node2" {
+			t.Errorf("expected NodeID 'node2', got %q", errorEvent.NodeID)
+		}
+		if errorEvent.Step != 1 {
+			t.Errorf("expected Step 1, got %d", errorEvent.Step)
+		}
+
+		t.Logf("error event emitted correctly in multi-node workflow: %+v", errorEvent)
+	})
+}
