@@ -52,8 +52,8 @@ func basicProviderUsage(ctx context.Context) error {
 	// OpenAI
 	openaiKey := os.Getenv("OPENAI_API_KEY")
 	if openaiKey != "" {
-		fmt.Println("\n--- OpenAI (GPT-4) ---")
-		m := openai.NewChatModel(openaiKey, "gpt-4")
+		fmt.Println("\n--- OpenAI (GPT-4o) ---")
+		m := openai.NewChatModel(openaiKey, "gpt-4o")
 		out, err := m.Chat(ctx, messages, nil)
 		if err != nil {
 			return fmt.Errorf("OpenAI error: %w", err)
@@ -66,8 +66,8 @@ func basicProviderUsage(ctx context.Context) error {
 	// Anthropic
 	anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
 	if anthropicKey != "" {
-		fmt.Println("\n--- Anthropic (Claude) ---")
-		m := anthropic.NewChatModel(anthropicKey, "claude-3-opus-20240229")
+		fmt.Println("\n--- Anthropic (Claude Sonnet 4.5) ---")
+		m := anthropic.NewChatModel(anthropicKey, "claude-sonnet-4-5-20250929")
 		out, err := m.Chat(ctx, messages, nil)
 		if err != nil {
 			return fmt.Errorf("Anthropic error: %w", err)
@@ -80,8 +80,8 @@ func basicProviderUsage(ctx context.Context) error {
 	// Google
 	googleKey := os.Getenv("GOOGLE_API_KEY")
 	if googleKey != "" {
-		fmt.Println("\n--- Google (Gemini) ---")
-		m := google.NewChatModel(googleKey, "gemini-pro")
+		fmt.Println("\n--- Google (Gemini 2.5 Flash) ---")
+		m := google.NewChatModel(googleKey, "gemini-2.5-flash")
 		out, err := m.Chat(ctx, messages, nil)
 		if err != nil {
 			// Handle Google-specific safety filter errors
@@ -104,10 +104,10 @@ func basicProviderUsage(ctx context.Context) error {
 // providerSwitching demonstrates choosing providers based on task requirements.
 func providerSwitching(ctx context.Context) error {
 	// Use Claude for long-form reasoning tasks
-	fmt.Println("\n--- Long-form reasoning (Claude) ---")
+	fmt.Println("\n--- Long-form reasoning (Claude Sonnet 4.5) ---")
 	anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
 	if anthropicKey != "" {
-		claude := anthropic.NewChatModel(anthropicKey, "claude-3-opus-20240229")
+		claude := anthropic.NewChatModel(anthropicKey, "claude-sonnet-4-5-20250929")
 		messages := []model.Message{
 			{Role: model.RoleSystem, Content: "You are a thoughtful philosopher."},
 			{Role: model.RoleUser, Content: "Explain the trolley problem in 2 sentences."},
@@ -119,11 +119,11 @@ func providerSwitching(ctx context.Context) error {
 		fmt.Printf("Claude: %s\n", out.Text)
 	}
 
-	// Use GPT-4 for tasks requiring recent knowledge
-	fmt.Println("\n--- Recent knowledge (GPT-4) ---")
+	// Use GPT-4o for tasks requiring recent knowledge
+	fmt.Println("\n--- Recent knowledge (GPT-4o) ---")
 	openaiKey := os.Getenv("OPENAI_API_KEY")
 	if openaiKey != "" {
-		gpt4 := openai.NewChatModel(openaiKey, "gpt-4")
+		gpt4 := openai.NewChatModel(openaiKey, "gpt-4o")
 		messages := []model.Message{
 			{Role: model.RoleUser, Content: "What are the latest developments in AI?"},
 		}
@@ -135,10 +135,10 @@ func providerSwitching(ctx context.Context) error {
 	}
 
 	// Use Gemini for multimodal tasks (placeholder - vision not in this example)
-	fmt.Println("\n--- Fast responses (Gemini) ---")
+	fmt.Println("\n--- Fast responses (Gemini 2.5 Flash) ---")
 	googleKey := os.Getenv("GOOGLE_API_KEY")
 	if googleKey != "" {
-		gemini := google.NewChatModel(googleKey, "gemini-pro")
+		gemini := google.NewChatModel(googleKey, "gemini-2.5-flash")
 		messages := []model.Message{
 			{Role: model.RoleUser, Content: "What is 2+2?"},
 		}
@@ -225,7 +225,7 @@ func toolUsageExample(ctx context.Context) error {
 	openaiKey := os.Getenv("OPENAI_API_KEY")
 	if openaiKey != "" {
 		fmt.Println("\n--- Tool calling with OpenAI ---")
-		m := openai.NewChatModel(openaiKey, "gpt-4")
+		m := openai.NewChatModel(openaiKey, "gpt-4o")
 		out, err := m.Chat(ctx, messages, tools)
 		if err != nil {
 			return err
@@ -252,7 +252,7 @@ func createOpenAIModel() model.ChatModel {
 	if key == "" {
 		return nil
 	}
-	return openai.NewChatModel(key, "gpt-4")
+	return openai.NewChatModel(key, "gpt-4o")
 }
 
 func createAnthropicModel() model.ChatModel {
@@ -260,7 +260,7 @@ func createAnthropicModel() model.ChatModel {
 	if key == "" {
 		return nil
 	}
-	return anthropic.NewChatModel(key, "claude-3-opus-20240229")
+	return anthropic.NewChatModel(key, "claude-sonnet-4-5-20250929")
 }
 
 func createGoogleModel() model.ChatModel {
@@ -268,5 +268,6 @@ func createGoogleModel() model.ChatModel {
 	if key == "" {
 		return nil
 	}
-	return google.NewChatModel(key, "gemini-pro")
+	// Use gemini-2.5-flash (latest stable Flash model as of 2025)
+	return google.NewChatModel(key, "gemini-2.5-flash")
 }

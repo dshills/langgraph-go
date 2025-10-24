@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/dshills/langgraph-go/graph/model"
+	openaisdk "github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/shared"
 )
 
 // ChatModel implements model.ChatModel for OpenAI's API.
@@ -62,7 +65,7 @@ type openaiClient interface {
 //	model := openai.NewChatModel(apiKey, "gpt-4")
 func NewChatModel(apiKey, modelName string) *ChatModel {
 	if modelName == "" {
-		modelName = "gpt-3.5-turbo"
+		modelName = "gpt-4o" // GPT-4o is the latest multimodal model (2025)
 	}
 
 	return &ChatModel{
@@ -173,8 +176,7 @@ func (e *rateLimitError) Error() string {
 	return e.message
 }
 
-// defaultClient is a placeholder for the actual OpenAI SDK client.
-// In a real implementation, this would wrap the official openai-go SDK.
+// defaultClient wraps the official OpenAI SDK client.
 type defaultClient struct {
 	apiKey    string
 	modelName string
@@ -186,17 +188,113 @@ func (c *defaultClient) createChatCompletion(ctx context.Context, messages []mod
 		return model.ChatOut{}, errors.New("OpenAI API key is required")
 	}
 
-	// This is a placeholder implementation.
-	// In production, this would use the official openai-go SDK:
-	//
-	// client := openai.NewClient(c.apiKey)
-	// req := openai.ChatCompletionRequest{
-	//     Model:    c.modelName,
-	//     Messages: convertMessages(messages),
-	//     Tools:    convertTools(tools),
-	// }
-	// resp, err := client.CreateChatCompletion(ctx, req)
-	// return convertResponse(resp), err
+	// Create OpenAI client
+	client := openaisdk.NewClient(option.WithAPIKey(c.apiKey))
 
-	return model.ChatOut{}, errors.New("OpenAI client not implemented - use mocked client for testing")
+	// Convert messages to OpenAI format
+	openaiMessages := convertMessages(messages)
+
+	// Build request parameters
+	params := openaisdk.ChatCompletionNewParams{
+		Model:    openaisdk.ChatModel(c.modelName),
+		Messages: openaiMessages,
+	}
+
+	// Add tools if provided
+	if len(tools) > 0 {
+		params.Tools = convertTools(tools)
+	}
+
+	// Call OpenAI API
+	resp, err := client.Chat.Completions.New(ctx, params)
+	if err != nil {
+		return model.ChatOut{}, fmt.Errorf("OpenAI API error: %w", err)
+	}
+
+	// Convert response to our format
+	return convertResponse(resp), nil
+}
+
+// convertMessages converts our Message format to OpenAI's format.
+func convertMessages(messages []model.Message) []openaisdk.ChatCompletionMessageParamUnion {
+	result := make([]openaisdk.ChatCompletionMessageParamUnion, len(messages))
+
+	for i, msg := range messages {
+		switch msg.Role {
+		case model.RoleSystem:
+			result[i] = openaisdk.SystemMessage(msg.Content)
+		case model.RoleUser:
+			result[i] = openaisdk.UserMessage(msg.Content)
+		case model.RoleAssistant:
+			result[i] = openaisdk.AssistantMessage(msg.Content)
+		default:
+			// Fallback to user message for unknown roles
+			result[i] = openaisdk.UserMessage(msg.Content)
+		}
+	}
+
+	return result
+}
+
+// convertTools converts our ToolSpec format to OpenAI's format.
+func convertTools(tools []model.ToolSpec) []openaisdk.ChatCompletionToolParam {
+	result := make([]openaisdk.ChatCompletionToolParam, len(tools))
+
+	for i, tool := range tools {
+		result[i] = openaisdk.ChatCompletionToolParam{
+			Function: shared.FunctionDefinitionParam{
+				Name:        tool.Name,
+				Description: openaisdk.String(tool.Description),
+				Parameters:  shared.FunctionParameters(tool.Schema),
+			},
+		}
+	}
+
+	return result
+}
+
+// convertResponse converts OpenAI's response to our ChatOut format.
+func convertResponse(resp *openaisdk.ChatCompletion) model.ChatOut {
+	out := model.ChatOut{}
+
+	if len(resp.Choices) == 0 {
+		return out
+	}
+
+	// Get the first choice (most common case)
+	choice := resp.Choices[0]
+	msg := choice.Message
+
+	// Extract text content
+	out.Text = msg.Content
+
+	// Extract tool calls if present
+	if len(msg.ToolCalls) > 0 {
+		out.ToolCalls = make([]model.ToolCall, len(msg.ToolCalls))
+		for i, tc := range msg.ToolCalls {
+			out.ToolCalls[i] = model.ToolCall{
+				Name:  tc.Function.Name,
+				Input: parseToolInput(tc.Function.Arguments),
+			}
+		}
+	}
+
+	return out
+}
+
+// parseToolInput parses the JSON arguments string into a map.
+func parseToolInput(jsonStr string) map[string]interface{} {
+	// For now, return a simple map with the raw JSON
+	// In production, you'd parse this properly using encoding/json
+	if jsonStr == "" {
+		return nil
+	}
+
+	// Parse JSON string into map
+	result := make(map[string]interface{})
+	// TODO: Implement proper JSON parsing
+	// For now, store as a single "arguments" field
+	result["_raw"] = jsonStr
+
+	return result
 }

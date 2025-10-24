@@ -3,7 +3,10 @@ package anthropic
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	anthropicsdk "github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/dshills/langgraph-go/graph/model"
 )
 
@@ -54,7 +57,7 @@ type anthropicClient interface {
 //	model := anthropic.NewChatModel(apiKey, "claude-3-opus-20240229")
 func NewChatModel(apiKey, modelName string) *ChatModel {
 	if modelName == "" {
-		modelName = "claude-3-sonnet-20240229"
+		modelName = "claude-sonnet-4-5-20250929" // Claude Sonnet 4.5 (latest as of Sept 2025)
 	}
 
 	return &ChatModel{
@@ -133,8 +136,7 @@ func translateAnthropicError(err *anthropicError) error {
 	return err
 }
 
-// defaultClient is a placeholder for the actual Anthropic SDK client.
-// In a real implementation, this would wrap the official anthropic-sdk-go.
+// defaultClient wraps the official Anthropic SDK client.
 type defaultClient struct {
 	apiKey    string
 	modelName string
@@ -146,20 +148,143 @@ func (c *defaultClient) createMessage(ctx context.Context, systemPrompt string, 
 		return model.ChatOut{}, errors.New("Anthropic API key is required")
 	}
 
-	// This is a placeholder implementation.
-	// In production, this would use the official anthropic-sdk-go SDK:
-	//
-	// client := anthropic.NewClient(c.apiKey)
-	// req := anthropic.MessageRequest{
-	//     Model:    c.modelName,
-	//     System:   systemPrompt,
-	//     Messages: convertMessages(messages),
-	//     Tools:    convertTools(tools),
-	// }
-	// resp, err := client.CreateMessage(ctx, req)
-	// return convertResponse(resp), err
+	// Create Anthropic client
+	client := anthropicsdk.NewClient(option.WithAPIKey(c.apiKey))
 
-	return model.ChatOut{}, errors.New("Anthropic client not implemented - use mocked client for testing")
+	// Convert messages to Anthropic format
+	anthropicMessages := convertMessages(messages)
+
+	// Build request parameters
+	params := anthropicsdk.MessageNewParams{
+		Model:     anthropicsdk.Model(c.modelName),
+		Messages:  anthropicMessages,
+		MaxTokens: 4096, // Default max tokens
+	}
+
+	// Add system prompt if provided
+	if systemPrompt != "" {
+		params.System = []anthropicsdk.TextBlockParam{
+			{Text: systemPrompt},
+		}
+	}
+
+	// Add tools if provided
+	if len(tools) > 0 {
+		params.Tools = convertTools(tools)
+	}
+
+	// Call Anthropic API
+	resp, err := client.Messages.New(ctx, params)
+	if err != nil {
+		return model.ChatOut{}, fmt.Errorf("Anthropic API error: %w", err)
+	}
+
+	// Convert response to our format (resp is already a pointer)
+	return convertResponse(resp), nil
+}
+
+// convertMessages converts our Message format to Anthropic's format.
+func convertMessages(messages []model.Message) []anthropicsdk.MessageParam {
+	result := make([]anthropicsdk.MessageParam, len(messages))
+
+	for i, msg := range messages {
+		switch msg.Role {
+		case model.RoleUser:
+			result[i] = anthropicsdk.NewUserMessage(anthropicsdk.NewTextBlock(msg.Content))
+		case model.RoleAssistant:
+			result[i] = anthropicsdk.NewAssistantMessage(anthropicsdk.NewTextBlock(msg.Content))
+		default:
+			// Fallback to user message for unknown roles (system is handled separately)
+			result[i] = anthropicsdk.NewUserMessage(anthropicsdk.NewTextBlock(msg.Content))
+		}
+	}
+
+	return result
+}
+
+// convertTools converts our ToolSpec format to Anthropic's format.
+func convertTools(tools []model.ToolSpec) []anthropicsdk.ToolUnionParam {
+	result := make([]anthropicsdk.ToolUnionParam, len(tools))
+
+	for i, tool := range tools {
+		// Extract properties and required from schema
+		var properties any
+		var required []string
+		if tool.Schema != nil {
+			if props, ok := tool.Schema["properties"]; ok {
+				properties = props
+			}
+			if req, ok := tool.Schema["required"].([]string); ok {
+				required = req
+			} else if req, ok := tool.Schema["required"].([]interface{}); ok {
+				// Convert []interface{} to []string
+				required = make([]string, len(req))
+				for j, v := range req {
+					if s, ok := v.(string); ok {
+						required[j] = s
+					}
+				}
+			}
+		}
+
+		inputSchema := anthropicsdk.ToolInputSchemaParam{
+			Properties: properties,
+			Required:   required,
+		}
+
+		result[i] = anthropicsdk.ToolUnionParam{
+			OfTool: &anthropicsdk.ToolParam{
+				Name:        tool.Name,
+				Description: anthropicsdk.String(tool.Description),
+				InputSchema: inputSchema,
+			},
+		}
+	}
+
+	return result
+}
+
+// convertResponse converts Anthropic's response to our ChatOut format.
+func convertResponse(resp *anthropicsdk.Message) model.ChatOut {
+	out := model.ChatOut{}
+
+	// Extract content from response
+	for _, block := range resp.Content {
+		switch b := block.AsAny().(type) {
+		case anthropicsdk.TextBlock:
+			// Append text content
+			if out.Text != "" {
+				out.Text += "\n"
+			}
+			out.Text += b.Text
+
+		case anthropicsdk.ToolUseBlock:
+			// Extract tool calls
+			out.ToolCalls = append(out.ToolCalls, model.ToolCall{
+				Name:  b.Name,
+				Input: convertToolInput(b.Input),
+			})
+		}
+	}
+
+	return out
+}
+
+// convertToolInput converts Anthropic's tool input to our format.
+func convertToolInput(input interface{}) map[string]interface{} {
+	if input == nil {
+		return nil
+	}
+
+	// If it's already a map, return it directly
+	if m, ok := input.(map[string]interface{}); ok {
+		return m
+	}
+
+	// Otherwise wrap it
+	return map[string]interface{}{
+		"_raw": input,
+	}
 }
 
 // anthropicError represents an Anthropic API error.
