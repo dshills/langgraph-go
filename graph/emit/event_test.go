@@ -168,3 +168,305 @@ func TestEvent_UseCases(t *testing.T) {
 		}
 	})
 }
+
+// TestEvent_WithDuration verifies WithDuration metadata helper (T166).
+func TestEvent_WithDuration(t *testing.T) {
+	t.Run("sets duration_ms in metadata", func(t *testing.T) {
+		event := Event{
+			RunID:  "run-001",
+			Step:   1,
+			NodeID: "node1",
+			Msg:    "test",
+		}
+
+		duration := 125 * time.Millisecond
+		result := event.WithDuration(duration)
+
+		if result.Meta == nil {
+			t.Fatal("expected Meta to be initialized")
+		}
+		if result.Meta["duration_ms"] != int64(125) {
+			t.Errorf("expected duration_ms = 125, got %v", result.Meta["duration_ms"])
+		}
+	})
+
+	t.Run("preserves existing metadata", func(t *testing.T) {
+		event := Event{
+			RunID:  "run-001",
+			Step:   1,
+			NodeID: "node1",
+			Msg:    "test",
+			Meta: map[string]interface{}{
+				"existing_key": "existing_value",
+			},
+		}
+
+		duration := 250 * time.Millisecond
+		result := event.WithDuration(duration)
+
+		if result.Meta["existing_key"] != "existing_value" {
+			t.Errorf("expected existing_key to be preserved, got %v", result.Meta["existing_key"])
+		}
+		if result.Meta["duration_ms"] != int64(250) {
+			t.Errorf("expected duration_ms = 250, got %v", result.Meta["duration_ms"])
+		}
+	})
+
+	t.Run("handles zero duration", func(t *testing.T) {
+		event := Event{RunID: "run-001", Msg: "test"}
+		result := event.WithDuration(0)
+
+		if result.Meta["duration_ms"] != int64(0) {
+			t.Errorf("expected duration_ms = 0, got %v", result.Meta["duration_ms"])
+		}
+	})
+}
+
+// TestEvent_WithError verifies WithError metadata helper (T166).
+func TestEvent_WithError(t *testing.T) {
+	t.Run("sets error in metadata", func(t *testing.T) {
+		event := Event{
+			RunID:  "run-001",
+			Step:   1,
+			NodeID: "node1",
+			Msg:    "error",
+		}
+
+		err := &time.ParseError{Value: "invalid"}
+		result := event.WithError(err)
+
+		if result.Meta == nil {
+			t.Fatal("expected Meta to be initialized")
+		}
+		errStr, ok := result.Meta["error"].(string)
+		if !ok {
+			t.Fatal("expected error to be string")
+		}
+		if errStr == "" {
+			t.Error("expected error message to be non-empty")
+		}
+	})
+
+	t.Run("preserves existing metadata", func(t *testing.T) {
+		event := Event{
+			RunID: "run-001",
+			Msg:   "error",
+			Meta: map[string]interface{}{
+				"request_id": "req-123",
+			},
+		}
+
+		err := &time.ParseError{Value: "test"}
+		result := event.WithError(err)
+
+		if result.Meta["request_id"] != "req-123" {
+			t.Error("expected request_id to be preserved")
+		}
+		if result.Meta["error"] == nil {
+			t.Error("expected error to be set")
+		}
+	})
+}
+
+// TestEvent_WithNodeType verifies WithNodeType metadata helper (T167).
+func TestEvent_WithNodeType(t *testing.T) {
+	t.Run("sets node_type in metadata", func(t *testing.T) {
+		event := Event{
+			RunID:  "run-001",
+			Step:   1,
+			NodeID: "llm-node",
+			Msg:    "node_start",
+		}
+
+		result := event.WithNodeType("llm")
+
+		if result.Meta == nil {
+			t.Fatal("expected Meta to be initialized")
+		}
+		if result.Meta["node_type"] != "llm" {
+			t.Errorf("expected node_type = 'llm', got %v", result.Meta["node_type"])
+		}
+	})
+
+	t.Run("preserves existing metadata", func(t *testing.T) {
+		event := Event{
+			RunID: "run-001",
+			Msg:   "test",
+			Meta: map[string]interface{}{
+				"version": "1.0",
+			},
+		}
+
+		result := event.WithNodeType("tool")
+
+		if result.Meta["version"] != "1.0" {
+			t.Error("expected version to be preserved")
+		}
+		if result.Meta["node_type"] != "tool" {
+			t.Errorf("expected node_type = 'tool', got %v", result.Meta["node_type"])
+		}
+	})
+
+	t.Run("handles empty node type", func(t *testing.T) {
+		event := Event{RunID: "run-001", Msg: "test"}
+		result := event.WithNodeType("")
+
+		if result.Meta["node_type"] != "" {
+			t.Errorf("expected empty node_type, got %v", result.Meta["node_type"])
+		}
+	})
+}
+
+// TestEvent_WithMeta verifies WithMeta chaining helper (T167).
+func TestEvent_WithMeta(t *testing.T) {
+	t.Run("sets single metadata field", func(t *testing.T) {
+		event := Event{
+			RunID: "run-001",
+			Msg:   "test",
+		}
+
+		result := event.WithMeta("tokens", 150)
+
+		if result.Meta == nil {
+			t.Fatal("expected Meta to be initialized")
+		}
+		if result.Meta["tokens"] != 150 {
+			t.Errorf("expected tokens = 150, got %v", result.Meta["tokens"])
+		}
+	})
+
+	t.Run("preserves existing metadata", func(t *testing.T) {
+		event := Event{
+			RunID: "run-001",
+			Msg:   "test",
+			Meta: map[string]interface{}{
+				"key1": "value1",
+			},
+		}
+
+		result := event.WithMeta("key2", "value2")
+
+		if result.Meta["key1"] != "value1" {
+			t.Error("expected key1 to be preserved")
+		}
+		if result.Meta["key2"] != "value2" {
+			t.Errorf("expected key2 = 'value2', got %v", result.Meta["key2"])
+		}
+	})
+
+	t.Run("allows chaining", func(t *testing.T) {
+		event := Event{RunID: "run-001", Msg: "test"}
+
+		result := event.
+			WithMeta("key1", "value1").
+			WithMeta("key2", 42).
+			WithMeta("key3", true)
+
+		if result.Meta["key1"] != "value1" {
+			t.Error("expected key1 to be set")
+		}
+		if result.Meta["key2"] != 42 {
+			t.Error("expected key2 to be set")
+		}
+		if result.Meta["key3"] != true {
+			t.Error("expected key3 to be set")
+		}
+	})
+
+	t.Run("overwrites existing key", func(t *testing.T) {
+		event := Event{
+			RunID: "run-001",
+			Msg:   "test",
+			Meta: map[string]interface{}{
+				"status": "pending",
+			},
+		}
+
+		result := event.WithMeta("status", "complete")
+
+		if result.Meta["status"] != "complete" {
+			t.Errorf("expected status to be overwritten to 'complete', got %v", result.Meta["status"])
+		}
+	})
+}
+
+// TestEvent_MetaHelpers_Integration verifies chaining multiple helpers (T167).
+func TestEvent_MetaHelpers_Integration(t *testing.T) {
+	t.Run("chain duration and node type", func(t *testing.T) {
+		event := Event{
+			RunID:  "run-001",
+			Step:   1,
+			NodeID: "llm-node",
+			Msg:    "node_end",
+		}
+
+		result := event.
+			WithDuration(150 * time.Millisecond).
+			WithNodeType("llm")
+
+		if result.Meta["duration_ms"] != int64(150) {
+			t.Error("expected duration_ms to be set")
+		}
+		if result.Meta["node_type"] != "llm" {
+			t.Error("expected node_type to be set")
+		}
+	})
+
+	t.Run("chain error with custom metadata", func(t *testing.T) {
+		event := Event{
+			RunID:  "run-001",
+			Step:   2,
+			NodeID: "validator",
+			Msg:    "error",
+		}
+
+		err := &time.ParseError{Value: "bad input"}
+		result := event.
+			WithError(err).
+			WithMeta("retryable", true).
+			WithMeta("attempt", 2)
+
+		if result.Meta["error"] == nil {
+			t.Error("expected error to be set")
+		}
+		if result.Meta["retryable"] != true {
+			t.Error("expected retryable to be set")
+		}
+		if result.Meta["attempt"] != 2 {
+			t.Error("expected attempt to be set")
+		}
+	})
+
+	t.Run("complex chain with all helpers", func(t *testing.T) {
+		event := Event{
+			RunID:  "run-001",
+			Step:   5,
+			NodeID: "processor",
+			Msg:    "node_end",
+		}
+
+		result := event.
+			WithDuration(500*time.Millisecond).
+			WithNodeType("processor").
+			WithMeta("records_processed", 1000).
+			WithMeta("cache_hits", 850).
+			WithMeta("cost", 0.05)
+
+		// Verify all metadata is present
+		if result.Meta["duration_ms"] != int64(500) {
+			t.Error("expected duration_ms")
+		}
+		if result.Meta["node_type"] != "processor" {
+			t.Error("expected node_type")
+		}
+		if result.Meta["records_processed"] != 1000 {
+			t.Error("expected records_processed")
+		}
+		if result.Meta["cache_hits"] != 850 {
+			t.Error("expected cache_hits")
+		}
+		if result.Meta["cost"] != 0.05 {
+			t.Error("expected cost")
+		}
+	})
+}

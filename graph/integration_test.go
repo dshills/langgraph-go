@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -1274,5 +1275,241 @@ func TestIntegration_ProviderSelectionStrategy(t *testing.T) {
 				t.Errorf("%s: expected %q, got %q", tt.taskType, tt.expectedResponse, out.Text)
 			}
 		}
+	})
+}
+
+// TestIntegration_EventTracingCapture verifies comprehensive event capture for 10-node workflow (T174).
+//
+// This integration test validates that the event tracing system correctly
+// captures all events from a 10-node workflow execution, including:
+//   - Node start/end events
+//   - Routing decisions
+//   - State changes
+//   - Event filtering and querying
+func TestIntegration_EventTracingCapture(t *testing.T) {
+	t.Run("10-node sequential workflow with full event capture", func(t *testing.T) {
+		// Create buffered emitter to capture events
+		emitter := emit.NewBufferedEmitter()
+
+		// Define state
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		// Create engine
+		st := store.NewMemStore[TestState]()
+		opts := Options{MaxSteps: 100}
+		engine := New(reducer, st, emitter, opts)
+
+		// Create 10 nodes that form a sequential chain
+		for i := 0; i < 10; i++ {
+			nodeID := fmt.Sprintf("node%d", i)
+			nextNode := fmt.Sprintf("node%d", i+1)
+			if i == 9 {
+				nextNode = "" // Last node stops
+			}
+
+			// Capture i in closure
+			currentValue := i
+			currentNodeID := nodeID
+			currentNextNode := nextNode
+
+			node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+				// Each node sets its value in the state
+				result := NodeResult[TestState]{
+					Delta: TestState{Value: fmt.Sprintf("value%d", currentValue), Counter: 1},
+				}
+
+				if currentNextNode != "" {
+					result.Route = Goto(currentNextNode)
+				} else {
+					result.Route = Stop()
+				}
+
+				return result
+			})
+
+			if err := engine.Add(currentNodeID, node); err != nil {
+				t.Fatalf("Failed to add %s: %v", currentNodeID, err)
+			}
+		}
+
+		if err := engine.StartAt("node0"); err != nil {
+			t.Fatalf("Failed to set entry point: %v", err)
+		}
+
+		// Execute workflow
+		ctx := context.Background()
+		initialState := TestState{}
+
+		finalState, err := engine.Run(ctx, "integration-trace-001", initialState)
+		if err != nil {
+			t.Fatalf("Workflow execution failed: %v", err)
+		}
+
+		// Verify final state
+		if finalState.Counter != 10 {
+			t.Errorf("expected Counter = 10, got %d", finalState.Counter)
+		}
+		if finalState.Value != "value9" {
+			t.Errorf("expected Value = 'value9', got %q", finalState.Value)
+		}
+
+		// Test 1: Verify all node_start events captured
+		t.Run("captures all node_start events", func(t *testing.T) {
+			nodeStarts := emitter.GetHistoryWithFilter("integration-trace-001", emit.HistoryFilter{Msg: "node_start"})
+			if len(nodeStarts) != 10 {
+				t.Errorf("expected 10 node_start events, got %d", len(nodeStarts))
+			}
+
+			// Verify node execution order
+			for i, event := range nodeStarts {
+				expectedNodeID := fmt.Sprintf("node%d", i)
+				if event.NodeID != expectedNodeID {
+					t.Errorf("node_start %d: expected NodeID = %q, got %q", i, expectedNodeID, event.NodeID)
+				}
+				if event.Step != i {
+					t.Errorf("node_start %d: expected Step = %d, got %d", i, i, event.Step)
+				}
+			}
+		})
+
+		// Test 2: Verify all node_end events captured
+		t.Run("captures all node_end events", func(t *testing.T) {
+			nodeEnds := emitter.GetHistoryWithFilter("integration-trace-001", emit.HistoryFilter{Msg: "node_end"})
+			if len(nodeEnds) != 10 {
+				t.Errorf("expected 10 node_end events, got %d", len(nodeEnds))
+			}
+
+			// Verify each node_end has delta metadata
+			for i, event := range nodeEnds {
+				if event.Meta == nil {
+					t.Errorf("node_end %d: expected Meta to be non-nil", i)
+					continue
+				}
+				if event.Meta["delta"] == nil {
+					t.Errorf("node_end %d: expected delta in Meta", i)
+				}
+			}
+		})
+
+		// Test 3: Verify all routing_decision events captured
+		t.Run("captures all routing_decision events", func(t *testing.T) {
+			routingDecisions := emitter.GetHistoryWithFilter("integration-trace-001", emit.HistoryFilter{Msg: "routing_decision"})
+			if len(routingDecisions) != 10 {
+				t.Errorf("expected 10 routing_decision events, got %d", len(routingDecisions))
+			}
+
+			// Verify routing decisions
+			for i, event := range routingDecisions {
+				if event.Meta == nil {
+					t.Errorf("routing_decision %d: expected Meta to be non-nil", i)
+					continue
+				}
+
+				if i < 9 {
+					// First 9 nodes route to the next node
+					expectedNext := fmt.Sprintf("node%d", i+1)
+					if nextNode, ok := event.Meta["next_node"].(string); !ok || nextNode != expectedNext {
+						t.Errorf("routing_decision %d: expected next_node = %q, got %v", i, expectedNext, event.Meta["next_node"])
+					}
+				} else {
+					// Last node should be terminal
+					if terminal, ok := event.Meta["terminal"].(bool); !ok || !terminal {
+						t.Errorf("routing_decision %d: expected terminal = true, got %v", i, event.Meta["terminal"])
+					}
+				}
+			}
+		})
+
+		// Test 4: Verify total event count
+		t.Run("total event count", func(t *testing.T) {
+			allEvents := emitter.GetHistory("integration-trace-001")
+			// Should have: 10 node_start + 10 node_end + 10 routing_decision = 30 events
+			if len(allEvents) != 30 {
+				t.Errorf("expected 30 total events, got %d", len(allEvents))
+			}
+		})
+
+		// Test 5: Verify events are in chronological order
+		t.Run("events are in chronological order", func(t *testing.T) {
+			allEvents := emitter.GetHistory("integration-trace-001")
+
+			// Verify events are ordered by step and type
+			// Expected pattern for each step: node_start, node_end, routing_decision
+			for i := 0; i < 10; i++ {
+				baseIdx := i * 3
+
+				// Check node_start
+				if allEvents[baseIdx].Msg != "node_start" {
+					t.Errorf("step %d: expected node_start at index %d, got %s", i, baseIdx, allEvents[baseIdx].Msg)
+				}
+				if allEvents[baseIdx].Step != i {
+					t.Errorf("step %d: node_start has wrong step number: %d", i, allEvents[baseIdx].Step)
+				}
+
+				// Check node_end
+				if allEvents[baseIdx+1].Msg != "node_end" {
+					t.Errorf("step %d: expected node_end at index %d, got %s", i, baseIdx+1, allEvents[baseIdx+1].Msg)
+				}
+				if allEvents[baseIdx+1].Step != i {
+					t.Errorf("step %d: node_end has wrong step number: %d", i, allEvents[baseIdx+1].Step)
+				}
+
+				// Check routing_decision
+				if allEvents[baseIdx+2].Msg != "routing_decision" {
+					t.Errorf("step %d: expected routing_decision at index %d, got %s", i, baseIdx+2, allEvents[baseIdx+2].Msg)
+				}
+				if allEvents[baseIdx+2].Step != i {
+					t.Errorf("step %d: routing_decision has wrong step number: %d", i, allEvents[baseIdx+2].Step)
+				}
+			}
+		})
+
+		// Test 6: Verify filtering by step range works
+		t.Run("filtering by step range works", func(t *testing.T) {
+			// Get events from steps 3-7
+			minStep := 3
+			maxStep := 7
+			filter := emit.HistoryFilter{MinStep: &minStep, MaxStep: &maxStep}
+			filteredEvents := emitter.GetHistoryWithFilter("integration-trace-001", filter)
+
+			// Should have 5 steps * 3 events per step = 15 events
+			if len(filteredEvents) != 15 {
+				t.Errorf("expected 15 events for steps 3-7, got %d", len(filteredEvents))
+			}
+
+			// Verify all events are within the step range
+			for _, event := range filteredEvents {
+				if event.Step < 3 || event.Step > 7 {
+					t.Errorf("found event outside step range 3-7: step %d", event.Step)
+				}
+			}
+		})
+
+		// Test 7: Verify filtering by node ID works
+		t.Run("filtering by node ID works", func(t *testing.T) {
+			// Get all events from node5
+			filter := emit.HistoryFilter{NodeID: "node5"}
+			node5Events := emitter.GetHistoryWithFilter("integration-trace-001", filter)
+
+			// Should have: node_start, node_end, routing_decision = 3 events
+			if len(node5Events) != 3 {
+				t.Errorf("expected 3 events for node5, got %d", len(node5Events))
+			}
+
+			// Verify all events are from node5
+			for _, event := range node5Events {
+				if event.NodeID != "node5" {
+					t.Errorf("expected NodeID = 'node5', got %q", event.NodeID)
+				}
+			}
+		})
+
+		t.Log("Integration test passed: 10-node workflow with comprehensive event tracing")
 	})
 }
