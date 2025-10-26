@@ -3512,3 +3512,350 @@ func TestEngine_ErrorEvent(t *testing.T) {
 		t.Logf("error event emitted correctly in multi-node workflow: %+v", errorEvent)
 	})
 }
+
+// T180: Tool invocation integration tests
+
+// TestEngine_NodeWithToolInvocation verifies nodes can call tools
+func TestEngine_NodeWithToolInvocation(t *testing.T) {
+	t.Run("node calls single tool successfully", func(t *testing.T) {
+		// Create a mock tool
+		mockTool := &mockToolForEngine{
+			name: "calculator",
+			output: map[string]interface{}{
+				"result": 42,
+			},
+		}
+
+		// Create node that calls the tool
+		toolNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			// Call the tool
+			result, err := mockTool.Call(ctx, map[string]interface{}{
+				"operation": "add",
+				"a":         20,
+				"b":         22,
+			})
+			if err != nil {
+				return NodeResult[TestState]{Err: err}
+			}
+
+			// Use tool result in state
+			resultValue := result["result"].(int)
+			return NodeResult[TestState]{
+				Delta: TestState{
+					Counter: resultValue,
+					Value:   "tool called successfully",
+				},
+				Route: Stop(),
+			}
+		})
+
+		// Set up workflow
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 10}
+
+		engine := New(reducer, st, emitter, opts)
+		engine.Add("tool_node", toolNode)
+		engine.StartAt("tool_node")
+
+		// Run workflow
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "tool-test-1", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+
+		// Verify tool result was used
+		if final.Counter != 42 {
+			t.Errorf("Counter = %d, want 42", final.Counter)
+		}
+		if final.Value != "tool called successfully" {
+			t.Errorf("Value = %q, want 'tool called successfully'", final.Value)
+		}
+
+		// Verify tool was actually called
+		if !mockTool.called {
+			t.Error("Tool was not called")
+		}
+	})
+
+	t.Run("node calls multiple tools in sequence", func(t *testing.T) {
+		tool1 := &mockToolForEngine{
+			name:   "fetch_data",
+			output: map[string]interface{}{"data": "user data"},
+		}
+		tool2 := &mockToolForEngine{
+			name:   "process_data",
+			output: map[string]interface{}{"processed": true, "count": 5},
+		}
+
+		multiToolNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			// Call first tool
+			data, err := tool1.Call(ctx, map[string]interface{}{"user_id": 123})
+			if err != nil {
+				return NodeResult[TestState]{Err: err}
+			}
+
+			// Call second tool with result from first
+			processed, err := tool2.Call(ctx, map[string]interface{}{
+				"data": data["data"],
+			})
+			if err != nil {
+				return NodeResult[TestState]{Err: err}
+			}
+
+			count := processed["count"].(int)
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: count, Value: "multi-tool"},
+				Route: Stop(),
+			}
+		})
+
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 10}
+
+		engine := New(reducer, st, emitter, opts)
+		engine.Add("multi_tool", multiToolNode)
+		engine.StartAt("multi_tool")
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "multi-tool-test", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+
+		if final.Counter != 5 {
+			t.Errorf("Counter = %d, want 5", final.Counter)
+		}
+
+		// Verify both tools were called
+		if !tool1.called || !tool2.called {
+			t.Error("Not all tools were called")
+		}
+	})
+
+	t.Run("node handles tool error gracefully", func(t *testing.T) {
+		failingTool := &mockToolForEngine{
+			name: "failing_tool",
+			err:  errors.New("tool execution failed"),
+		}
+
+		errorHandlingNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			result, err := failingTool.Call(ctx, map[string]interface{}{"input": "test"})
+			if err != nil {
+				// Handle tool error by returning it in NodeResult
+				return NodeResult[TestState]{
+					Delta: TestState{Value: "tool error handled"},
+					Err:   err,
+				}
+			}
+
+			// This shouldn't be reached
+			_ = result
+			return NodeResult[TestState]{Route: Stop()}
+		})
+
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 10, Retries: 0} // No retries
+
+		engine := New(reducer, st, emitter, opts)
+		engine.Add("error_node", errorHandlingNode)
+		engine.StartAt("error_node")
+
+		ctx := context.Background()
+		_, err := engine.Run(ctx, "error-test", TestState{})
+
+		// Should return error from tool
+		if err == nil {
+			t.Error("Run() error = nil, want error from tool")
+		}
+		if !strings.Contains(err.Error(), "tool execution failed") {
+			t.Errorf("Error message = %q, want to contain 'tool execution failed'", err.Error())
+		}
+	})
+
+	t.Run("node passes tool results to next node via state", func(t *testing.T) {
+		weatherTool := &mockToolForEngine{
+			name: "get_weather",
+			output: map[string]interface{}{
+				"temperature": 72,
+				"conditions":  "sunny",
+			},
+		}
+
+		// First node calls tool
+		fetchNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			weather, err := weatherTool.Call(ctx, map[string]interface{}{
+				"location": "San Francisco",
+			})
+			if err != nil {
+				return NodeResult[TestState]{Err: err}
+			}
+
+			temp := weather["temperature"].(int)
+			return NodeResult[TestState]{
+				Delta: TestState{
+					Counter: temp,
+					Value:   weather["conditions"].(string),
+				},
+				Route: Goto("process"),
+			}
+		})
+
+		// Second node uses tool results from state
+		processNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			// Use weather data from previous node
+			summary := state.Value + " day"
+			if state.Counter > 70 {
+				summary = "warm " + summary
+			}
+
+			return NodeResult[TestState]{
+				Delta: TestState{Value: summary},
+				Route: Stop(),
+			}
+		})
+
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 10}
+
+		engine := New(reducer, st, emitter, opts)
+		engine.Add("fetch", fetchNode)
+		engine.Add("process", processNode)
+		engine.StartAt("fetch")
+
+		ctx := context.Background()
+		final, err := engine.Run(ctx, "weather-test", TestState{})
+
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+
+		if final.Counter != 72 {
+			t.Errorf("Counter = %d, want 72", final.Counter)
+		}
+		if final.Value != "warm sunny day" {
+			t.Errorf("Value = %q, want 'warm sunny day'", final.Value)
+		}
+	})
+
+	t.Run("tool respects context cancellation", func(t *testing.T) {
+		slowTool := &mockToolForEngine{
+			name: "slow_tool",
+			output: map[string]interface{}{
+				"result": "done",
+			},
+			delay: 2 * time.Second, // Simulates slow operation
+		}
+
+		slowNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			result, err := slowTool.Call(ctx, nil)
+			if err != nil {
+				return NodeResult[TestState]{Err: err}
+			}
+
+			return NodeResult[TestState]{
+				Delta: TestState{Value: result["result"].(string)},
+				Route: Stop(),
+			}
+		})
+
+		reducer := func(prev, delta TestState) TestState {
+			if delta.Value != "" {
+				prev.Value = delta.Value
+			}
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+		opts := Options{MaxSteps: 10}
+
+		engine := New(reducer, st, emitter, opts)
+		engine.Add("slow", slowNode)
+		engine.StartAt("slow")
+
+		// Create context with short timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+
+		_, err := engine.Run(ctx, "timeout-test", TestState{})
+
+		// Should timeout
+		if err == nil {
+			t.Error("Run() error = nil, want timeout error")
+		}
+		if !errors.Is(err, context.DeadlineExceeded) && !strings.Contains(err.Error(), "context") {
+			t.Errorf("Error = %v, want context timeout error", err)
+		}
+	})
+}
+
+// mockToolForEngine is a mock tool for engine integration testing
+type mockToolForEngine struct {
+	name   string
+	output map[string]interface{}
+	err    error
+	called bool
+	input  map[string]interface{}
+	delay  time.Duration
+}
+
+func (m *mockToolForEngine) Name() string {
+	return m.name
+}
+
+func (m *mockToolForEngine) Call(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {
+	m.called = true
+	m.input = input
+
+	// Simulate delay if configured
+	if m.delay > 0 {
+		select {
+		case <-time.After(m.delay):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.output, nil
+}

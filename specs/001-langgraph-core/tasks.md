@@ -275,15 +275,15 @@
 - [X] T130 Write tests for LastError in state in graph/engine_test.go
 - [X] T131 Implement LastError state field population in graph/engine.go
 
-### Tool System ⏳ PENDING
+### Tool System ✅ COMPLETE
 
-- [ ] T176 Write tests for Tool interface in graph/tool/tool_test.go
-- [ ] T177 Define Tool interface with Name() and Call() in graph/tool/tool.go
-- [ ] T178 [P] Write tests for HTTP tool in graph/tool/http_test.go
-- [ ] T179 [P] Implement HTTP tool example with GET/POST in graph/tool/http.go
-- [ ] T180 Write tests for tool invocation in nodes in graph/engine_test.go
-- [ ] T181 Document tool usage patterns in graph/tool/README.md
-- [ ] T182 Create tool invocation example in examples/tools/main.go
+- [X] T176 Write tests for Tool interface in graph/tool/tool_test.go
+- [X] T177 Define Tool interface with Name() and Call() in graph/tool/tool.go
+- [X] T178 [P] Write tests for HTTP tool in graph/tool/http_test.go
+- [X] T179 [P] Implement HTTP tool example with GET/POST in graph/tool/http.go
+- [X] T180 Write tests for tool invocation in nodes in graph/engine_test.go
+- [X] T181 Document tool usage patterns in graph/tool/README.md
+- [X] T182 Create tool invocation example in examples/tools/main.go
 
 ### Production Storage (MySQL) ⏳ IN PROGRESS
 
@@ -293,8 +293,8 @@
 - [X] T186 [P] Implement transaction-based state persistence in graph/store/mysql.go
 - [X] T187 Write tests for MySQL checkpoint operations in graph/store/mysql_test.go
 - [X] T188 Implement checkpoint save/load with MySQL in graph/store/mysql.go
-- [ ] T189 Document MySQL schema requirements in graph/store/mysql/README.md
-- [ ] T190 Create SQL migration scripts in graph/store/mysql/migrations/
+- [X] T189 Document MySQL schema requirements in graph/store/mysql/README.md
+- [X] T190 Create SQL migration scripts in graph/store/mysql/migrations/
 - [ ] T191 Write MySQL integration test with real database in graph/store/mysql_integration_test.go
 
 ### OpenTelemetry Integration ⏳ OPTIONAL
@@ -335,8 +335,8 @@
 ## Task Summary
 
 **Total Tasks**: 215
-**Completed**: 192 (89%)
-**Remaining**: 23 (11%)
+**Completed**: 201 (93%)
+**Remaining**: 14 (7%)
 
 **By Phase**:
 - Phase 1 (Setup): 11/11 ✅ 100%
@@ -346,11 +346,11 @@
 - Phase 5 (US3 - Parallel): 25/25 ✅ 100%
 - Phase 6 (US4 - LLM): 3/3 ✅ 100%
 - Phase 7 (US5 - Events): 24/24 ✅ 100%
-- Phase 8 (Polish): 48/81 ⏳ 59%
+- Phase 8 (Polish): 57/81 ⏳ 70%
 
 **Remaining Work Breakdown**:
-- Tool System: 7 tasks (T176-T182)
-- MySQL Store: 3 tasks (T189-T191)
+- Tool System: 0 tasks ✅ COMPLETE
+- MySQL Store: 1 task (T191)
 - OpenTelemetry: 4 tasks (T192-T195) - OPTIONAL
 - Performance: 5 tasks (T196-T200)
 - Documentation: 2 tasks (T201-T202) - DEFERRED (godoc, architecture diagram)
