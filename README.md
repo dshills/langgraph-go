@@ -18,7 +18,12 @@ package main
 
 import (
     "context"
+    "fmt"
+    "os"
+
     "github.com/dshills/langgraph-go/graph"
+    "github.com/dshills/langgraph-go/graph/emit"
+    "github.com/dshills/langgraph-go/graph/store"
 )
 
 // Define your state type
@@ -36,9 +41,7 @@ func reduce(prev, delta Session) Session {
     if delta.Answer != "" {
         prev.Answer = delta.Answer
     }
-    if delta.Steps != 0 {
-        prev.Steps = delta.Steps
-    }
+    prev.Steps += delta.Steps
     return prev
 }
 
@@ -46,16 +49,17 @@ func main() {
     // Create nodes
     process := graph.NodeFunc[Session](func(ctx context.Context, s Session) graph.NodeResult[Session] {
         return graph.NodeResult[Session]{
-            Delta: Session{Answer: "Processed: " + s.Query, Steps: s.Steps + 1},
+            Delta: Session{Answer: "Processed: " + s.Query, Steps: 1},
             Route: graph.Stop(),
         }
     })
 
     // Build the workflow
-    store := graph.NewMemStore[Session]()
-    emitter := graph.NewLogEmitter()
+    st := store.NewMemStore[Session]()
+    emitter := emit.NewLogEmitter(os.Stdout, false)
+    opts := graph.Options{MaxSteps: 10}
 
-    engine := graph.New[Session](reduce, store, emitter, graph.Options{MaxSteps: 10})
+    engine := graph.New(reduce, st, emitter, opts)
     engine.Add("process", process)
     engine.StartAt("process")
 
@@ -66,7 +70,7 @@ func main() {
         panic(err)
     }
 
-    println(final.Answer) // Output: Processed: Hello LangGraph!
+    fmt.Println(final.Answer) // Output: Processed: Hello LangGraph!
 }
 ```
 
@@ -163,10 +167,27 @@ See the [`examples/`](./examples) directory for complete examples:
 
 ## Documentation
 
+### User Guides
+
+- [Getting Started](./docs/guides/01-getting-started.md) - Build your first workflow
+- [Building Workflows](./docs/guides/02-building-workflows.md) - Patterns and best practices
+- [State Management](./docs/guides/03-state-management.md) - Advanced reducer patterns
+- [Checkpoints & Resume](./docs/guides/04-checkpoints.md) - Save and resume workflows
+- [Conditional Routing](./docs/guides/05-routing.md) - Dynamic control flow
+- [Parallel Execution](./docs/guides/06-parallel.md) - Concurrent node execution
+- [LLM Integration](./docs/guides/07-llm-integration.md) - Multi-provider LLM support
+- [Event Tracing](./docs/guides/08-event-tracing.md) - Observability and monitoring
+
+### Reference
+
+- [API Reference](./docs/api/) - Complete API documentation
+- [FAQ](./docs/FAQ.md) - Frequently asked questions
+
+### Project Documentation
+
 - [Architecture Overview](./CLAUDE.md)
-- [Constitution](`./.specify/memory/constitution.md`) - Development principles
-- [Specification](./specs/SPEC.md) - Technical specification
-- [Contributing](./CONTRIBUTING.md) - Development workflow
+- [Technical Specification](./specs/SPEC.md)
+- [Contributing Guide](./CONTRIBUTING.md)
 
 ## Development
 
@@ -190,9 +211,15 @@ MIT License - see [LICENSE](./LICENSE) for details
 
 ## Project Status
 
-🚧 **Early Development** - This project is actively being developed following specification-driven development practices. The core framework is being implemented incrementally based on prioritized user stories.
+✅ **Core Framework Complete** - All 5 user stories have been implemented and tested:
 
-Current focus: **User Story 1 (P1)** - Stateful workflow with checkpointing
+- ✅ **US1**: Stateful workflow with checkpointing
+- ✅ **US2**: Conditional routing and dynamic control flow
+- ✅ **US3**: Parallel execution with fan-out/fan-in
+- ✅ **US4**: Multi-provider LLM integration
+- ✅ **US5**: Comprehensive event tracing and observability
+
+**Current Phase**: Documentation and polish (81% complete)
 
 ## Contributing
 
