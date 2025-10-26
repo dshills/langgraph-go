@@ -93,7 +93,8 @@ func (d *DemoNewsTool) Call(ctx context.Context, input map[string]interface{}) (
 }
 
 func main() {
-	fmt.Println("=== LangGraph-Go Tool Invocation Example ===\n")
+	fmt.Println("=== LangGraph-Go Tool Invocation Example ===")
+	fmt.Println()
 
 	// Create demo tools (custom implementations)
 	weatherTool := &DemoWeatherTool{}
@@ -225,8 +226,10 @@ func main() {
 		UserQuery: "What's happening in New York today?",
 	}
 
-	fmt.Println("🚀 Starting workflow...\n")
-	fmt.Println("─────────────────────────────────────────────\n")
+	fmt.Println("🚀 Starting workflow...")
+	fmt.Println()
+	fmt.Println("─────────────────────────────────────────────")
+	fmt.Println()
 
 	final, err := engine.Run(ctx, "tool-example-001", initialState)
 	if err != nil {
@@ -235,7 +238,9 @@ func main() {
 
 	// Display results
 	fmt.Println("─────────────────────────────────────────────")
-	fmt.Println("\n🎉 Workflow Complete!\n")
+	fmt.Println()
+	fmt.Println("🎉 Workflow Complete!")
+	fmt.Println()
 	fmt.Println("=== Final State ===")
 	fmt.Printf("Location: %s\n", final.Location)
 	fmt.Printf("Weather Data: %v\n", final.WeatherData != nil)

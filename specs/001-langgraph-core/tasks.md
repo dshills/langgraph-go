@@ -295,7 +295,7 @@
 - [X] T188 Implement checkpoint save/load with MySQL in graph/store/mysql.go
 - [X] T189 Document MySQL schema requirements in graph/store/mysql/README.md
 - [X] T190 Create SQL migration scripts in graph/store/mysql/migrations/
-- [ ] T191 Write MySQL integration test with real database in graph/store/mysql_integration_test.go
+- [X] T191 Write MySQL integration test with real database in graph/store/mysql_integration_test.go
 
 ### OpenTelemetry Integration ⏳ OPTIONAL
 
@@ -304,13 +304,13 @@
 - [ ] T194 [P] Implement OtelEmitter with trace spans in graph/emit/otel/otel.go
 - [ ] T195 [P] Document OpenTelemetry integration in graph/emit/otel/README.md
 
-### Performance & Benchmarking ⏳ PENDING
+### Performance & Benchmarking ✅ COMPLETE
 
-- [ ] T196 Write benchmark for large workflow (100+ nodes) in graph/benchmark_test.go
-- [ ] T197 Write benchmark for high-frequency small workflows in graph/benchmark_test.go
-- [ ] T198 Profile memory usage with pprof in graph/benchmark_test.go
-- [ ] T199 Document performance characteristics in docs/performance.md
-- [ ] T200 Create performance comparison example in examples/benchmarks/
+- [X] T196 Write benchmark for large workflow (100+ nodes) in graph/benchmark_test.go
+- [X] T197 Write benchmark for high-frequency small workflows in graph/benchmark_test.go
+- [X] T198 Profile memory usage with pprof in graph/benchmark_test.go
+- [X] T199 Document performance characteristics in docs/performance.md
+- [X] T200 Create performance comparison example in examples/benchmarks/
 
 ### Documentation ✅ COMPLETE
 
@@ -335,8 +335,8 @@
 ## Task Summary
 
 **Total Tasks**: 215
-**Completed**: 201 (93%)
-**Remaining**: 14 (7%)
+**Completed**: 207 (96%)
+**Remaining**: 8 (4%)
 
 **By Phase**:
 - Phase 1 (Setup): 11/11 ✅ 100%
@@ -346,14 +346,16 @@
 - Phase 5 (US3 - Parallel): 25/25 ✅ 100%
 - Phase 6 (US4 - LLM): 3/3 ✅ 100%
 - Phase 7 (US5 - Events): 24/24 ✅ 100%
-- Phase 8 (Polish): 57/81 ⏳ 70%
+- Phase 8 (Polish): 63/81 ⏳ 78%
 
 **Remaining Work Breakdown**:
 - Tool System: 0 tasks ✅ COMPLETE
-- MySQL Store: 1 task (T191)
+- MySQL Store: 0 tasks ✅ COMPLETE
 - OpenTelemetry: 4 tasks (T192-T195) - OPTIONAL
-- Performance: 5 tasks (T196-T200)
+- Performance: 0 tasks ✅ COMPLETE
 - Documentation: 2 tasks (T201-T202) - DEFERRED (godoc, architecture diagram)
+- Migration guide: 1 task (T213) - N/A for initial release
+- User guide: 1 task (T213) - N/A
 
 ## Dependencies
 
@@ -364,10 +366,10 @@
 4. ✅ US4 (LLM Integration) - independent
 5. ✅ US5 (Event Tracing) - independent
 
-**Remaining Work** (can be done in any order):
-- Tool System (independent)
-- MySQL Store (independent)
-- Performance testing (should wait for MySQL completion)
+**Remaining Work** (all optional):
+- OpenTelemetry (independent, optional enhancement)
+- Godoc + architecture diagram (deferred)
+- Migration guide (N/A - initial release)
 
 ## Parallel Execution Opportunities
 
@@ -385,27 +387,30 @@
 - ✅ US4: Same workflow works with 3 different LLM providers ✅ VALIDATED
 - ✅ US5: 10-node workflow emits 30 events (all captured) ✅ VALIDATED
 
-**Remaining**:
-- Tool System: HTTP tool successfully called from workflow node
-- MySQL Store: 5-node workflow persists to MySQL, survives process restart
-- Performance: 100-node workflow completes without degradation
+**All Validated**:
+- ✅ Tool System: HTTP tool successfully called from workflow node
+- ✅ MySQL Store: 5-node workflow persists to MySQL, survives process restart
+- ✅ Performance: 100-node workflow completes without degradation
 
 ## Implementation Status
 
-**Current State**: v1.0-rc1 ready (87% complete)
+**Current State**: v1.0 ready (96% complete)
 - ✅ All 5 user stories complete with comprehensive tests
-- ✅ Production-ready for in-memory workflows
-- ✅ LLM integration with 3 major providers
+- ✅ Production-ready with MySQL persistence
+- ✅ Tool system for external integrations (HTTP tool)
+- ✅ LLM integration with 3 major providers (OpenAI, Anthropic, Google)
 - ✅ Full observability with event tracing
-- ✅ Complete documentation (8 user guides, API reference, FAQ)
-- ✅ 100+ unit and integration tests
-- ✅ 4,400+ lines of user-facing documentation
+- ✅ Complete documentation (8 user guides, API reference, FAQ, performance guide)
+- ✅ 110+ unit and integration tests
+- ✅ Performance benchmarks and profiling support
+- ✅ 9,000+ lines of user-facing documentation
 
 **Path to v1.0**:
-- Optional: Add MySQL Store for production persistence
-- Optional: Add Tool system for external integrations
-- Optional: Performance benchmarks
-- Optional: OpenTelemetry integration
+- All core features complete ✅
+- Only optional enhancements remaining:
+  - OpenTelemetry integration (4 tasks, optional)
+  - Godoc generation (deferred)
+  - Architecture diagram (deferred)
 
 **Path to v1.1** (future enhancements):
 - OpenTelemetry integration
