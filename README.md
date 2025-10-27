@@ -2,6 +2,16 @@
 
 A Go-native orchestration framework for building **stateful, graph-based LLM and tool workflows**.
 
+> **⚠️ Alpha Software Warning**
+>
+> LangGraph-Go is currently in **alpha** stage. The API is not yet stable and may change significantly between releases. While the core functionality is complete and tested, we recommend:
+> - **Not using in production** without thorough testing
+> - **Pinning to specific versions** in your go.mod
+> - **Expecting breaking changes** until v1.0.0
+> - **Reporting issues** to help us improve stability
+>
+> We welcome early adopters and contributors! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for how to get involved.
+
 ## Overview
 
 LangGraph-Go enables you to build complex AI agent systems with:
@@ -77,8 +87,14 @@ func main() {
 ## Installation
 
 ```bash
+# Install latest version (may include breaking changes)
 go get github.com/dshills/langgraph-go
+
+# Recommended: Pin to a specific version
+go get github.com/dshills/langgraph-go@v0.1.0
 ```
+
+**Note:** Since this is alpha software, we recommend pinning to a specific version in your `go.mod` to avoid unexpected breaking changes.
 
 ## Core Concepts
 
@@ -134,16 +150,29 @@ final, err := engine.Run(ctx, runID, initialState)
 /graph
   ├── engine.go      # Workflow execution engine
   ├── node.go        # Node abstractions
+  ├── edge.go        # Edge and predicate types
   ├── state.go       # State management
   ├── store/         # Persistence layer
-  │   └── memory.go  # In-memory store (for testing)
+  │   ├── store.go   # Store interface
+  │   ├── memory.go  # In-memory store (for testing)
+  │   ├── mysql.go   # MySQL/Aurora store
+  │   └── mysql/     # MySQL implementation details
   ├── emit/          # Event system
-  │   └── log.go     # Logging emitter
+  │   ├── emitter.go # Emitter interface
+  │   ├── event.go   # Event types
+  │   ├── log.go     # Logging emitter
+  │   ├── buffered.go# Buffered emitter
+  │   └── null.go    # Null emitter
   ├── model/         # LLM integrations
-  │   ├── openai/
-  │   ├── anthropic/
-  │   └── google/
+  │   ├── chat.go    # ChatModel interface
+  │   ├── openai/    # OpenAI adapter
+  │   ├── anthropic/ # Anthropic Claude adapter
+  │   ├── google/    # Google Gemini adapter
+  │   └── mock.go    # Mock for testing
   └── tool/          # Tool abstractions
+      ├── tool.go    # Tool interface
+      ├── http.go    # HTTP tool implementation
+      └── mock.go    # Mock tool for testing
 ```
 
 ## Features
@@ -151,19 +180,34 @@ final, err := engine.Run(ctx, runID, initialState)
 - ✅ **Stateful Execution** - Checkpoint and resume workflows
 - ✅ **Conditional Routing** - Dynamic control flow based on state
 - ✅ **Parallel Execution** - Fan-out to concurrent nodes
-- ✅ **LLM Integration** - OpenAI, Anthropic, Google, Ollama
-- ✅ **Event Tracing** - Comprehensive observability
+- ✅ **LLM Integration** - OpenAI, Anthropic, Google Gemini
+- ✅ **Tool Support** - HTTP tools and custom tool integration
+- ✅ **Persistence** - MySQL/Aurora store for production use
+- ✅ **Event Tracing** - Comprehensive observability with multiple emitters
 - ✅ **Type Safety** - Go generics for compile-time safety
 - ✅ **Production Ready** - Error handling, retries, timeouts
 
 ## Examples
 
-See the [`examples/`](./examples) directory for complete examples:
-- `simple/` - Basic 3-node workflow
-- `checkpoint/` - Checkpoint and resume
-- `routing/` - Conditional routing
-- `parallel/` - Parallel execution
-- `llm/` - LLM provider integration
+See the [`examples/`](./examples) directory for complete, runnable examples:
+
+- **`chatbot/`** - Customer support chatbot with intent detection
+- **`checkpoint/`** - Checkpoint and resume workflows
+- **`routing/`** - Conditional routing based on state
+- **`parallel/`** - Parallel execution with fan-out/fan-in
+- **`llm/`** - Multi-provider LLM integration (OpenAI, Anthropic, Google)
+- **`tools/`** - Tool calling and integration
+- **`data-pipeline/`** - Data processing pipeline
+- **`research-pipeline/`** - Multi-stage research workflow
+- **`interactive-workflow/`** - Interactive user input workflow
+- **`tracing/`** - Event tracing and observability
+- **`benchmarks/`** - Performance benchmarking
+
+All examples can be built with:
+```bash
+make examples
+./build/<example-name>
+```
 
 ## Documentation
 
@@ -191,6 +235,51 @@ See the [`examples/`](./examples) directory for complete examples:
 
 ## Development
 
+The project includes a comprehensive Makefile for common development tasks:
+
+```bash
+# Build the library
+make build
+
+# Build all examples
+make examples
+
+# Run tests
+make test
+
+# Run tests with verbose output
+make test-verbose
+
+# Run tests with coverage report
+make test-cover
+
+# Run benchmarks
+make bench
+
+# Format code
+make fmt
+
+# Run go vet
+make vet
+
+# Run linter (if golangci-lint is available)
+make lint
+
+# Clean build artifacts
+make clean
+
+# Install dependencies
+make install
+
+# Build everything
+make all
+
+# Show all available targets
+make help
+```
+
+Or use standard Go commands:
+
 ```bash
 # Run tests
 go test ./...
@@ -207,9 +296,11 @@ go build ./...
 
 ## License
 
-MIT License - see [LICENSE](./LICENSE) for details
+MIT License
 
 ## Project Status
+
+**Current Version:** v0.1.0-alpha
 
 ✅ **Core Framework Complete** - All 5 user stories have been implemented and tested:
 
@@ -219,12 +310,33 @@ MIT License - see [LICENSE](./LICENSE) for details
 - ✅ **US4**: Multi-provider LLM integration
 - ✅ **US5**: Comprehensive event tracing and observability
 
-**Current Phase**: Documentation and polish (81% complete)
+**Current Phase**: Alpha release - API stabilization and community feedback
+
+**Roadmap to v1.0.0:**
+- Gather feedback from early adopters
+- Stabilize public API based on real-world usage
+- Address any critical bugs or issues
+- Complete API documentation
+- Add more examples and use cases
 
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for development guidelines including our Test-Driven Development workflow.
 
+Please note that this project is released with a [Code of Conduct](./CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
+
+## Security
+
+For security concerns, please see our [Security Policy](./SECURITY.md).
+
 ## Acknowledgments
 
-Inspired by [LangGraph](https://github.com/langchain-ai/langgraph), redesigned for Go's type system and concurrency primitives.
+This project is inspired by [LangGraph](https://github.com/langchain-ai/langgraph) by LangChain AI, a powerful framework for building stateful, multi-actor applications with LLMs. LangGraph-Go brings these concepts to the Go ecosystem, redesigned from the ground up to leverage Go's type system, generics, and concurrency primitives.
+
+**Key differences from the original LangGraph:**
+- **Type-safe** - Uses Go generics for compile-time type safety
+- **Go-native** - Idiomatic Go design patterns and error handling
+- **Concurrency-first** - Built on goroutines and channels for efficient parallelism
+- **Minimal dependencies** - Pure Go core with optional external adapters
+
+We are grateful to the LangChain AI team for pioneering the graph-based workflow approach for LLM applications. Check out the original Python implementation at https://github.com/langchain-ai/langgraph.

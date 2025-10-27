@@ -14,17 +14,20 @@
 *.out
 coverage.out
 coverage.html
+*.coverprofile
 
 # Dependency directories
 vendor/
 
 # Go workspace file
 go.work
+go.work.sum
 
 # Build artifacts
 bin/
 build/
 dist/
+*.a
 
 # IDE and editor files
 .DS_Store
@@ -35,20 +38,41 @@ dist/
 *~
 .project
 .settings/
+*.sublime-project
+*.sublime-workspace
+.fleet/
+.vimrc.local
 
 # Environment files
 .env
 .env.local
 .env.*.local
 *.env
+.envrc
 
 # Temporary files
 *.tmp
 *.log
+*.bak
+*.orig
 
 # OS files
 Thumbs.db
+.fuse_hidden*
+.directory
+.Trash-*
 
 # Specify framework artifacts
 .specify/memory/local/
 settings.local.json
+
+# Database files (for local development)
+*.db
+*.sqlite
+*.sqlite3
+
+# API keys and credentials (extra safety)
+*_credentials.json
+*_secret*.json
+secrets/
+credentials/
