@@ -1,6 +1,9 @@
 package emit
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 // BufferedEmitter implements Emitter by storing events in memory (T169-T172).
 //
@@ -235,4 +238,19 @@ func (b *BufferedEmitter) Clear(runID string) {
 		// Clear specific runID
 		delete(b.events, runID)
 	}
+}
+
+// TODO: Implement in Phase 8
+// EmitBatch stores multiple events in the buffer in a single operation.
+func (b *BufferedEmitter) EmitBatch(ctx context.Context, events []Event) error {
+	for _, event := range events {
+		b.Emit(event)
+	}
+	return nil
+}
+
+// TODO: Implement in Phase 8
+// Flush is a no-op for buffered emitter (events are already stored in memory).
+func (b *BufferedEmitter) Flush(ctx context.Context) error {
+	return nil
 }

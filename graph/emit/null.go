@@ -1,5 +1,7 @@
 package emit
 
+import "context"
+
 // NullEmitter implements Emitter by discarding all events (T165).
 //
 // This is a no-op emitter for production environments where event
@@ -32,4 +34,18 @@ func NewNullEmitter() *NullEmitter {
 // and performs no I/O or processing.
 func (n *NullEmitter) Emit(event Event) {
 	// No-op: discard the event
+}
+
+// TODO: Implement in Phase 8
+// EmitBatch discards multiple events in a single operation.
+func (n *NullEmitter) EmitBatch(ctx context.Context, events []Event) error {
+	// No-op: discard all events
+	return nil
+}
+
+// TODO: Implement in Phase 8
+// Flush is a no-op for null emitter.
+func (n *NullEmitter) Flush(ctx context.Context) error {
+	// No-op: nothing to flush
+	return nil
 }

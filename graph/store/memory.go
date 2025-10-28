@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"sync"
+
+	"github.com/dshills/langgraph-go/graph/emit"
 )
 
 // MemStore is an in-memory implementation of Store[S].
@@ -198,5 +200,36 @@ func (m *MemStore[S]) UnmarshalJSON(data []byte) error {
 		m.checkpoints = make(map[string]Checkpoint[S])
 	}
 
+	return nil
+}
+
+// TODO: Implement in Phase 8
+// SaveCheckpointV2 persists an enhanced checkpoint with full execution context.
+func (m *MemStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint Checkpoint[S]) error {
+	return nil
+}
+
+// TODO: Implement in Phase 8
+// LoadCheckpointV2 retrieves an enhanced checkpoint by run ID and step ID.
+func (m *MemStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (Checkpoint[S], error) {
+	var zero Checkpoint[S]
+	return zero, ErrNotFound
+}
+
+// TODO: Implement in Phase 8
+// CheckIdempotency verifies if an idempotency key has been used.
+func (m *MemStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, error) {
+	return false, nil
+}
+
+// TODO: Implement in Phase 8
+// PendingEvents retrieves events from the transactional outbox that haven't been emitted.
+func (m *MemStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error) {
+	return nil, nil
+}
+
+// TODO: Implement in Phase 8
+// MarkEventsEmitted marks events as successfully emitted to prevent re-delivery.
+func (m *MemStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string) error {
 	return nil
 }

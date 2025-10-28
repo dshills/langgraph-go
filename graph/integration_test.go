@@ -335,6 +335,19 @@ func (e *integrationEmitter) Emit(event emit.Event) {
 	e.events = append(e.events, event)
 }
 
+// TODO: Implement in Phase 8
+func (e *integrationEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+	for _, event := range events {
+		e.Emit(event)
+	}
+	return nil
+}
+
+// TODO: Implement in Phase 8
+func (e *integrationEmitter) Flush(ctx context.Context) error {
+	return nil
+}
+
 // TestIntegration_ConfidenceBasedRouting verifies confidence-based conditional routing (T099).
 func TestIntegration_ConfidenceBasedRouting(t *testing.T) {
 	t.Run("route based on confidence score with multiple paths", func(t *testing.T) {

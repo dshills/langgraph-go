@@ -1,6 +1,7 @@
 package emit
 
 import (
+	"context"
 	"testing"
 )
 
@@ -20,6 +21,19 @@ func (m *mockEmitter) Emit(event Event) {
 		m.events = make([]Event, 0)
 	}
 	m.events = append(m.events, event)
+}
+
+// TODO: Implement in Phase 8
+func (m *mockEmitter) EmitBatch(ctx context.Context, events []Event) error {
+	for _, event := range events {
+		m.Emit(event)
+	}
+	return nil
+}
+
+// TODO: Implement in Phase 8
+func (m *mockEmitter) Flush(ctx context.Context) error {
+	return nil
 }
 
 // TestEmitter_Emit verifies Emit method behavior.

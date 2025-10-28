@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/dshills/langgraph-go/graph/emit"
 )
 
 // TestState is a test state type for store tests.
@@ -63,6 +65,32 @@ func (m *mockStore) LoadCheckpoint(ctx context.Context, cpID string) (TestState,
 		return TestState{}, 0, ErrNotFound
 	}
 	return cp.State, cp.Step, nil
+}
+
+// TODO: Implement in Phase 8
+func (m *mockStore) SaveCheckpointV2(ctx context.Context, checkpoint Checkpoint[TestState]) error {
+	return nil
+}
+
+// TODO: Implement in Phase 8
+func (m *mockStore) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (Checkpoint[TestState], error) {
+	var zero Checkpoint[TestState]
+	return zero, ErrNotFound
+}
+
+// TODO: Implement in Phase 8
+func (m *mockStore) CheckIdempotency(ctx context.Context, key string) (bool, error) {
+	return false, nil
+}
+
+// TODO: Implement in Phase 8
+func (m *mockStore) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error) {
+	return nil, nil
+}
+
+// TODO: Implement in Phase 8
+func (m *mockStore) MarkEventsEmitted(ctx context.Context, eventIDs []string) error {
+	return nil
 }
 
 // TestStore_SaveStep verifies SaveStep method behavior.

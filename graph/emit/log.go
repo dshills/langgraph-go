@@ -1,6 +1,7 @@
 package emit
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -119,4 +120,19 @@ func (l *LogEmitter) emitText(event Event) {
 	}
 
 	fmt.Fprint(l.writer, "\n")
+}
+
+// TODO: Implement in Phase 8
+// EmitBatch sends multiple events in a single operation for improved performance.
+func (l *LogEmitter) EmitBatch(ctx context.Context, events []Event) error {
+	for _, event := range events {
+		l.Emit(event)
+	}
+	return nil
+}
+
+// TODO: Implement in Phase 8
+// Flush ensures all buffered events are sent to the backend.
+func (l *LogEmitter) Flush(ctx context.Context) error {
+	return nil
 }

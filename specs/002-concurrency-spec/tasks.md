@@ -40,14 +40,14 @@ This document provides a complete, dependency-ordered task breakdown for impleme
 
 **Tasks**:
 
-- [ ] T001 Review existing engine.go implementation in graph/engine.go to understand current execution model
-- [ ] T002 Review existing Store interface in graph/store/store.go to understand checkpoint patterns
-- [ ] T003 Review existing Emitter interface in graph/emit/emitter.go to understand event emission
-- [ ] T004 [P] Create placeholder for scheduler.go in graph/scheduler.go with package declaration
-- [ ] T005 [P] Create placeholder for replay.go in graph/replay.go with package declaration
-- [ ] T006 [P] Create placeholder for checkpoint.go in graph/checkpoint.go with package declaration
-- [ ] T007 [P] Create placeholder for policy.go in graph/policy.go with package declaration
-- [ ] T008 [P] Create test files: scheduler_test.go, replay_test.go, checkpoint_test.go, policy_test.go in graph/
+- [X] T001 Review existing engine.go implementation in graph/engine.go to understand current execution model
+- [X] T002 Review existing Store interface in graph/store/store.go to understand checkpoint patterns
+- [X] T003 Review existing Emitter interface in graph/emit/emitter.go to understand event emission
+- [X] T004 [P] Create placeholder for scheduler.go in graph/scheduler.go with package declaration
+- [X] T005 [P] Create placeholder for replay.go in graph/replay.go with package declaration
+- [X] T006 [P] Create placeholder for checkpoint.go in graph/checkpoint.go with package declaration
+- [X] T007 [P] Create placeholder for policy.go in graph/policy.go with package declaration
+- [X] T008 [P] Create test files: scheduler_test.go, replay_test.go, checkpoint_test.go, policy_test.go in graph/
 
 **Acceptance**: All new files created, existing code reviewed, ready for feature implementation
 
@@ -63,28 +63,28 @@ This document provides a complete, dependency-ordered task breakdown for impleme
 
 ### Core Type Definitions
 
-- [ ] T009 [P] Define WorkItem[S any] struct in graph/scheduler.go (StepID, OrderKey, NodeID, State, Attempt, ParentNodeID, EdgeIndex)
-- [ ] T010 [P] Define NodePolicy struct in graph/policy.go (Timeout, RetryPolicy, IdempotencyKeyFunc)
-- [ ] T011 [P] Define RetryPolicy struct in graph/policy.go (MaxAttempts, BaseDelay, MaxDelay, Retryable func)
-- [ ] T012 [P] Define SideEffectPolicy struct in graph/policy.go (Recordable, RequiresIdempotency bool)
-- [ ] T013 [P] Define Checkpoint[S any] struct in graph/checkpoint.go (RunID, StepID, State, Frontier, RNGSeed, RecordedIOs, IdempotencyKey, Timestamp, Label)
-- [ ] T014 [P] Define RecordedIO struct in graph/replay.go (NodeID, Attempt, Request, Response, Hash, Timestamp, Duration)
+- [X] T009 [P] Define WorkItem[S any] struct in graph/scheduler.go (StepID, OrderKey, NodeID, State, Attempt, ParentNodeID, EdgeIndex)
+- [X] T010 [P] Define NodePolicy struct in graph/policy.go (Timeout, RetryPolicy, IdempotencyKeyFunc)
+- [X] T011 [P] Define RetryPolicy struct in graph/policy.go (MaxAttempts, BaseDelay, MaxDelay, Retryable func)
+- [X] T012 [P] Define SideEffectPolicy struct in graph/policy.go (Recordable, RequiresIdempotency bool)
+- [X] T013 [P] Define Checkpoint[S any] struct in graph/checkpoint.go (RunID, StepID, State, Frontier, RNGSeed, RecordedIOs, IdempotencyKey, Timestamp, Label)
+- [X] T014 [P] Define RecordedIO struct in graph/replay.go (NodeID, Attempt, Request, Response, Hash, Timestamp, Duration)
 
 ### Interface Enhancements
 
-- [ ] T015 Enhance Options struct in graph/engine.go (add MaxConcurrentNodes, QueueDepth, BackpressureTimeout, DefaultNodeTimeout, RunWallClockBudget, ReplayMode, StrictReplay)
-- [ ] T016 [P] Add optional Policy() NodePolicy method to Node[S] interface documentation in graph/node.go (backward compatible via DefaultPolicy)
-- [ ] T017 [P] Add optional Effects() SideEffectPolicy method to Node[S] interface documentation in graph/node.go
-- [ ] T018 [P] Add SaveCheckpointV2, LoadCheckpointV2, CheckIdempotency, PendingEvents, MarkEventsEmitted methods to Store[S] interface in graph/store/store.go
-- [ ] T019 [P] Add EmitBatch and Flush methods to Emitter interface in graph/emit/emitter.go
+- [X] T015 Enhance Options struct in graph/engine.go (add MaxConcurrentNodes, QueueDepth, BackpressureTimeout, DefaultNodeTimeout, RunWallClockBudget, ReplayMode, StrictReplay)
+- [X] T016 [P] Add optional Policy() NodePolicy method to Node[S] interface documentation in graph/node.go (backward compatible via DefaultPolicy)
+- [X] T017 [P] Add optional Effects() SideEffectPolicy method to Node[S] interface documentation in graph/node.go
+- [X] T018 [P] Add SaveCheckpointV2, LoadCheckpointV2, CheckIdempotency, PendingEvents, MarkEventsEmitted methods to Store[S] interface in graph/store/store.go
+- [X] T019 [P] Add EmitBatch and Flush methods to Emitter interface in graph/emit/emitter.go
 
 ### Error Types
 
-- [ ] T020 [P] Define error constants in graph/checkpoint.go (ErrReplayMismatch, ErrNoProgress, ErrBackpressureTimeout, ErrIdempotencyViolation, ErrMaxAttemptsExceeded)
+- [X] T020 [P] Define error constants in graph/checkpoint.go (ErrReplayMismatch, ErrNoProgress, ErrBackpressureTimeout, ErrIdempotencyViolation, ErrMaxAttemptsExceeded)
 
 ### Context Keys
 
-- [ ] T021 [P] Define context key constants in graph/engine.go (RunIDKey, StepIDKey, NodeIDKey, OrderKeyKey, AttemptKey, RNGKey)
+- [X] T021 [P] Define context key constants in graph/engine.go (RunIDKey, StepIDKey, NodeIDKey, OrderKeyKey, AttemptKey, RNGKey)
 
 **Acceptance**: All foundational types defined, interfaces enhanced with backward compatibility, no breaking changes
 
@@ -102,33 +102,33 @@ This document provides a complete, dependency-ordered task breakdown for impleme
 
 ### Tests (TDD - Write First)
 
-- [ ] T022 [US1] Write test for deterministic order key generation in graph/scheduler_test.go (TestOrderKeyGeneration)
-- [ ] T023 [US1] Write test for frontier queue ordering in graph/scheduler_test.go (TestFrontierOrdering)
-- [ ] T024 [US1] Write test for concurrent node execution in graph/engine_test.go (TestConcurrentExecution)
-- [ ] T025 [US1] Write test for fan-out routing in graph/engine_test.go (TestFanOutRouting)
-- [ ] T026 [US1] Write test for deterministic state merging in graph/state_test.go (TestDeterministicMerge)
-- [ ] T027 [US1] Write benchmark for concurrent vs sequential execution in graph/benchmark_test.go (BenchmarkConcurrentExecution)
+- [X] T022 [US1] Write test for deterministic order key generation in graph/scheduler_test.go (TestOrderKeyGeneration)
+- [X] T023 [US1] Write test for frontier queue ordering in graph/scheduler_test.go (TestFrontierOrdering)
+- [X] T024 [US1] Write test for concurrent node execution in graph/engine_test.go (TestConcurrentExecution)
+- [X] T025 [US1] Write test for fan-out routing in graph/engine_test.go (TestFanOutRouting)
+- [X] T026 [US1] Write test for deterministic state merging in graph/state_test.go (TestDeterministicMerge)
+- [X] T027 [US1] Write benchmark for concurrent vs sequential execution in graph/benchmark_test.go (BenchmarkConcurrentExecution)
 
 ### Scheduler Implementation
 
-- [ ] T028 [US1] Implement computeOrderKey function in graph/scheduler.go (hash path_hash + edge_index using SHA-256)
-- [ ] T029 [US1] Implement Frontier type with priority queue in graph/scheduler.go (heap + buffered channel)
-- [ ] T030 [US1] Implement Frontier.Enqueue method in graph/scheduler.go (blocking with backpressure)
-- [ ] T031 [US1] Implement Frontier.Dequeue method in graph/scheduler.go (min OrderKey extraction)
-- [ ] T032 [US1] Implement Frontier.Len method in graph/scheduler.go
+- [X] T028 [US1] Implement computeOrderKey function in graph/scheduler.go (hash path_hash + edge_index using SHA-256)
+- [X] T029 [US1] Implement Frontier type with priority queue in graph/scheduler.go (heap + buffered channel)
+- [X] T030 [US1] Implement Frontier.Enqueue method in graph/scheduler.go (blocking with backpressure)
+- [X] T031 [US1] Implement Frontier.Dequeue method in graph/scheduler.go (min OrderKey extraction)
+- [X] T032 [US1] Implement Frontier.Len method in graph/scheduler.go
 
 ### Engine Enhancements
 
-- [ ] T033 [US1] Add scheduler field to Engine[S] struct in graph/engine.go
-- [ ] T034 [US1] Initialize Frontier in Engine.Run method in graph/engine.go (create queue with Options.QueueDepth)
-- [ ] T035 [US1] Implement concurrent node execution loop in graph/engine.go (goroutine pool up to MaxConcurrentNodes)
-- [ ] T036 [US1] Implement work item creation for fan-out routing in graph/engine.go (Next.Many creates multiple items)
-- [ ] T037 [US1] Implement state copy function for fan-out in graph/state.go (JSON marshal/unmarshal deep copy)
-- [ ] T038 [US1] Enhance reducer application to use order key ordering in graph/engine.go (sort deltas before merging)
+- [X] T033 [US1] Add scheduler field to Engine[S] struct in graph/engine.go
+- [X] T034 [US1] Initialize Frontier in Engine.Run method in graph/engine.go (create queue with Options.QueueDepth)
+- [X] T035 [US1] Implement concurrent node execution loop in graph/engine.go (goroutine pool up to MaxConcurrentNodes)
+- [X] T036 [US1] Implement work item creation for fan-out routing in graph/engine.go (Next.Many creates multiple items)
+- [X] T037 [US1] Implement state copy function for fan-out in graph/state.go (JSON marshal/unmarshal deep copy)
+- [X] T038 [US1] Enhance reducer application to use order key ordering in graph/engine.go (sort deltas before merging)
 
 ### Validation
 
-- [ ] T039 [US1] Run all US1 tests and verify they pass (go test -run TestConcurrent -v ./graph)
+- [X] T039 [US1] Run all US1 tests and verify they pass (go test -run TestConcurrent -v ./graph)
 
 **Acceptance Criteria**:
 - ✅ Graph with 3 independent 1-second nodes completes in ~1 second (not 3 seconds)

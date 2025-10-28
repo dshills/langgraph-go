@@ -166,14 +166,30 @@ func TestNew_Constructor_Validation(t *testing.T) {
 
 // mockEmitter is a test implementation of emit.Emitter.
 type mockEmitter struct {
+	mu     sync.Mutex
 	events []emit.Event
 }
 
 func (m *mockEmitter) Emit(event emit.Event) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.events == nil {
 		m.events = make([]emit.Event, 0)
 	}
 	m.events = append(m.events, event)
+}
+
+// TODO: Implement in Phase 8
+func (m *mockEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+	for _, event := range events {
+		m.Emit(event)
+	}
+	return nil
+}
+
+// TODO: Implement in Phase 8
+func (m *mockEmitter) Flush(ctx context.Context) error {
+	return nil
 }
 
 // TestEngine_Add verifies Engine.Add(nodeID, node) behavior (T049).
@@ -808,6 +824,32 @@ func (f *failingStore[S]) SaveCheckpoint(ctx context.Context, cpID string, state
 func (f *failingStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (S, int, error) {
 	var zero S
 	return zero, 0, store.ErrNotFound
+}
+
+// TODO: Implement in Phase 8
+func (f *failingStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint store.Checkpoint[S]) error {
+	return &EngineError{Message: "simulated store failure", Code: "STORE_FAIL"}
+}
+
+// TODO: Implement in Phase 8
+func (f *failingStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (store.Checkpoint[S], error) {
+	var zero store.Checkpoint[S]
+	return zero, store.ErrNotFound
+}
+
+// TODO: Implement in Phase 8
+func (f *failingStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, error) {
+	return false, nil
+}
+
+// TODO: Implement in Phase 8
+func (f *failingStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error) {
+	return nil, nil
+}
+
+// TODO: Implement in Phase 8
+func (f *failingStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string) error {
+	return nil
 }
 
 // TestEngine_SaveCheckpoint verifies checkpoint save at specific steps (T061).
@@ -3858,4 +3900,336 @@ func (m *mockToolForEngine) Call(ctx context.Context, input map[string]interface
 		return nil, m.err
 	}
 	return m.output, nil
+}
+
+// TestConcurrentExecution (T024) verifies that independent nodes execute
+// concurrently when MaxConcurrentNodes is configured.
+//
+// According to spec.md SC-001: Graphs with 5 independent nodes complete
+// execution in 20% of sequential time (demonstrating parallelism).
+//
+// Requirements:
+// - Graph with 3 independent nodes (each sleeps 100ms) completes in ~100ms (not ~300ms)
+// - All nodes execute and state correctly merged
+// - MaxConcurrentNodes setting controls parallelism
+//
+// This test should FAIL initially because concurrent execution isn't implemented yet.
+func TestConcurrentExecution(t *testing.T) {
+	t.Run("parallel execution with 3 independent nodes", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+
+		// Configure engine for concurrent execution
+		opts := Options{
+			MaxSteps:           20,
+			MaxConcurrentNodes: 3, // Allow 3 nodes to run concurrently
+		}
+		engine := New(reducer, st, emitter, opts)
+
+		// Track execution times
+		var execMu sync.Mutex
+		execTimes := make(map[string]time.Time)
+
+		// Create 3 independent nodes that each sleep 100ms
+		for i := 1; i <= 3; i++ {
+			nodeID := "node" + string(rune('0'+i))
+			counter := i
+
+			engine.Add(nodeID, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+				execMu.Lock()
+				execTimes[nodeID] = time.Now()
+				execMu.Unlock()
+
+				// Sleep to simulate work
+				time.Sleep(100 * time.Millisecond)
+
+				return NodeResult[TestState]{
+					Delta: TestState{Counter: counter},
+					Route: Stop(), // All nodes are independent terminals
+				}
+			}))
+		}
+
+		// Start from all 3 nodes simultaneously (fan-out from start)
+		engine.Add("start", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Route: Next{Many: []string{"node1", "node2", "node3"}},
+			}
+		}))
+		engine.StartAt("start")
+
+		// Execute and measure total time
+		startTime := time.Now()
+		finalState, err := engine.Run(context.Background(), "concurrent-test", TestState{})
+		elapsed := time.Since(startTime)
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify all nodes executed (state should have counter = 1+2+3 = 6)
+		if finalState.Counter != 6 {
+			t.Errorf("expected Counter = 6, got %d (not all nodes executed)", finalState.Counter)
+		}
+
+		// Verify concurrent execution: should complete in ~100ms, not ~300ms
+		// Allow some overhead for scheduling, but should be < 200ms
+		if elapsed > 200*time.Millisecond {
+			t.Errorf("execution took %v, expected ~100ms (concurrent), got sequential time", elapsed)
+		}
+
+		// Verify all 3 nodes started within a short window (indicating concurrency)
+		execMu.Lock()
+		if len(execTimes) != 3 {
+			t.Errorf("expected 3 execution timestamps, got %d", len(execTimes))
+		}
+
+		var times []time.Time
+		for _, ts := range execTimes {
+			times = append(times, ts)
+		}
+		execMu.Unlock()
+
+		// Check that all nodes started within 50ms of each other
+		if len(times) == 3 {
+			var minTime, maxTime time.Time
+			minTime = times[0]
+			maxTime = times[0]
+			for _, t := range times[1:] {
+				if t.Before(minTime) {
+					minTime = t
+				}
+				if t.After(maxTime) {
+					maxTime = t
+				}
+			}
+			spread := maxTime.Sub(minTime)
+			if spread > 50*time.Millisecond {
+				t.Errorf("nodes started with %v spread, expected concurrent start (<50ms)", spread)
+			}
+		}
+	})
+
+	t.Run("respects MaxConcurrentNodes limit", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+
+		// Configure engine with limit of 2 concurrent nodes
+		opts := Options{
+			MaxSteps:           20,
+			MaxConcurrentNodes: 2, // Only 2 nodes can run at once
+		}
+		engine := New(reducer, st, emitter, opts)
+
+		// Track concurrent execution count
+		var execMu sync.Mutex
+		currentConcurrent := 0
+		maxConcurrent := 0
+
+		// Create 5 nodes that track concurrency
+		for i := 1; i <= 5; i++ {
+			nodeID := "node" + string(rune('0'+i))
+			counter := i
+
+			engine.Add(nodeID, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+				execMu.Lock()
+				currentConcurrent++
+				if currentConcurrent > maxConcurrent {
+					maxConcurrent = currentConcurrent
+				}
+				execMu.Unlock()
+
+				// Sleep to ensure overlap detection
+				time.Sleep(50 * time.Millisecond)
+
+				execMu.Lock()
+				currentConcurrent--
+				execMu.Unlock()
+
+				return NodeResult[TestState]{
+					Delta: TestState{Counter: counter},
+					Route: Stop(),
+				}
+			}))
+		}
+
+		// Start all 5 nodes simultaneously
+		engine.Add("start", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Route: Next{Many: []string{"node1", "node2", "node3", "node4", "node5"}},
+			}
+		}))
+		engine.StartAt("start")
+
+		_, err := engine.Run(context.Background(), "limit-test", TestState{})
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify max concurrent never exceeded the limit
+		execMu.Lock()
+		observed := maxConcurrent
+		execMu.Unlock()
+
+		if observed > 2 {
+			t.Errorf("MaxConcurrentNodes=2 but observed %d concurrent executions", observed)
+		}
+	})
+}
+
+// TestFanOutRouting (T025) verifies that a node can route to multiple
+// child nodes simultaneously using Next.Many, and that branches execute
+// concurrently and merge deterministically.
+//
+// According to spec.md FR-003: System MUST support fan-out routing where
+// one node spawns multiple concurrent branches.
+//
+// Requirements:
+// - One node returns Next.Many with 5 node IDs
+// - All 5 branches execute concurrently
+// - State merges deterministically at join point
+//
+// This test should FAIL initially because fan-out routing isn't implemented yet.
+func TestFanOutRouting(t *testing.T) {
+	t.Run("fan-out to 5 concurrent branches", func(t *testing.T) {
+		reducer := func(prev, delta TestState) TestState {
+			prev.Counter += delta.Counter
+			if delta.Value != "" {
+				if prev.Value == "" {
+					prev.Value = delta.Value
+				} else {
+					prev.Value += "," + delta.Value
+				}
+			}
+			return prev
+		}
+
+		st := store.NewMemStore[TestState]()
+		emitter := &mockEmitter{}
+
+		opts := Options{
+			MaxSteps:           20,
+			MaxConcurrentNodes: 5,
+		}
+		engine := New(reducer, st, emitter, opts)
+
+		// Track execution order
+		var execMu sync.Mutex
+		execOrder := make([]string, 0)
+		execTimes := make(map[string]time.Time)
+
+		// Create 5 branch nodes
+		for i := 1; i <= 5; i++ {
+			// Capture loop variables to avoid closure capture issues
+			branchID := "branch" + string(rune('0'+i))
+			counter := i
+
+			// Create a closure with captured variables
+			func(bid string, cnt int) {
+				engine.Add(bid, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+					execMu.Lock()
+					execOrder = append(execOrder, bid)
+					execTimes[bid] = time.Now()
+					execMu.Unlock()
+
+					// Small delay to ensure concurrent execution
+					time.Sleep(20 * time.Millisecond)
+
+					return NodeResult[TestState]{
+						Delta: TestState{
+							Counter: cnt,
+							Value:   bid,
+						},
+						Route: Goto("join"),
+					}
+				}))
+			}(branchID, counter)
+		}
+
+		// Join node that merges results
+		engine.Add("join", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Delta: TestState{}, // No delta, just observe merged state
+				Route: Stop(),
+			}
+		}))
+
+		// Fan-out node
+		engine.Add("fanout", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Route: Next{Many: []string{"branch1", "branch2", "branch3", "branch4", "branch5"}},
+			}
+		}))
+
+		engine.StartAt("fanout")
+
+		// Execute
+		startTime := time.Now()
+		finalState, err := engine.Run(context.Background(), "fanout-test", TestState{})
+		elapsed := time.Since(startTime)
+
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+
+		// Verify all branches executed (counter should be 1+2+3+4+5 = 15)
+		if finalState.Counter != 15 {
+			t.Errorf("expected Counter = 15, got %d", finalState.Counter)
+		}
+
+		// Verify concurrent execution (should be ~20ms, not ~100ms sequential)
+		if elapsed > 100*time.Millisecond {
+			t.Errorf("execution took %v, expected ~20ms with concurrency", elapsed)
+		}
+
+		// Verify all branches started concurrently (within 30ms window)
+		execMu.Lock()
+		if len(execTimes) != 5 {
+			t.Errorf("expected 5 branch executions, got %d", len(execTimes))
+		}
+
+		var times []time.Time
+		for _, ts := range execTimes {
+			times = append(times, ts)
+		}
+		execMu.Unlock()
+
+		if len(times) == 5 {
+			var minTime, maxTime time.Time
+			minTime = times[0]
+			maxTime = times[0]
+			for _, t := range times[1:] {
+				if t.Before(minTime) {
+					minTime = t
+				}
+				if t.After(maxTime) {
+					maxTime = t
+				}
+			}
+			spread := maxTime.Sub(minTime)
+			if spread > 30*time.Millisecond {
+				t.Errorf("branches started with %v spread, expected concurrent start (<30ms)", spread)
+			}
+		}
+
+		// Verify state merge includes all branch values
+		// (deterministic merge order is tested in TestDeterministicMerge)
+		if !strings.Contains(finalState.Value, "branch1") ||
+			!strings.Contains(finalState.Value, "branch2") ||
+			!strings.Contains(finalState.Value, "branch3") ||
+			!strings.Contains(finalState.Value, "branch4") ||
+			!strings.Contains(finalState.Value, "branch5") {
+			t.Errorf("final state Value missing branches: %s", finalState.Value)
+		}
+	})
 }

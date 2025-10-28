@@ -4,9 +4,52 @@ import (
 	"context"
 	"sort"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/dshills/langgraph-go/graph/emit"
 	"github.com/dshills/langgraph-go/graph/store"
+)
+
+// contextKey is a private type used for context value keys to avoid collisions.
+// Using a private type ensures that context keys from this package don't conflict
+// with keys from other packages, following Go's context best practices.
+type contextKey string
+
+// Context keys for propagating execution metadata to nodes.
+// These values are injected into the context passed to Node.Run() and can be
+// retrieved by nodes to access execution metadata such as the current run ID,
+// step number, and node ID.
+//
+// Example usage in a node:
+//
+//	func (n *MyNode) Run(ctx context.Context, state MyState) NodeResult[MyState] {
+//	    runID := ctx.Value(RunIDKey).(string)
+//	    stepID := ctx.Value(StepIDKey).(int)
+//	    // Use metadata for logging, tracing, etc.
+//	}
+const (
+	// RunIDKey is the context key for the unique workflow run identifier.
+	RunIDKey contextKey = "langgraph.run_id"
+
+	// StepIDKey is the context key for the current execution step number.
+	StepIDKey contextKey = "langgraph.step_id"
+
+	// NodeIDKey is the context key for the current node identifier.
+	NodeIDKey contextKey = "langgraph.node_id"
+
+	// OrderKeyKey is the context key for the deterministic ordering key.
+	// This hash determines the order in which concurrent node results are merged.
+	OrderKeyKey contextKey = "langgraph.order_key"
+
+	// AttemptKey is the context key for the current retry attempt number (0-based).
+	// Value is 0 for first execution, incremented on each retry.
+	AttemptKey contextKey = "langgraph.attempt"
+
+	// RNGKey is the context key for the seeded random number generator.
+	// Provides deterministic randomness for replay scenarios.
+	// Type: *rand.Rand (from math/rand package)
+	RNGKey contextKey = "langgraph.rng"
 )
 
 // Reducer is a function that merges a partial state update (delta) into the previous state.
@@ -87,6 +130,12 @@ type Engine[S any] struct {
 
 	// opts contains execution configuration
 	opts Options
+
+	// frontier manages the execution frontier queue for concurrent node execution.
+	// It is initialized in Run() with capacity from Options.QueueDepth and handles
+	// work item scheduling with deterministic ordering via OrderKey.
+	// Nil when MaxConcurrentNodes = 0 (sequential execution mode).
+	frontier *Frontier[S]
 }
 
 // Options configures Engine execution behavior.
@@ -117,7 +166,71 @@ type Options struct {
 	// Retries specifies how many times to retry a node on transient errors.
 	// If 0, nodes are not retried.
 	// Transient errors are identified by checking if error implements Retryable interface.
+	// Deprecated: Use NodePolicy.RetryPolicy for per-node retry configuration.
 	Retries int
+
+	// MaxConcurrentNodes limits the number of nodes executing in parallel.
+	// Default: 8. Set to 0 for sequential execution (backward compatible).
+	//
+	// Tuning guidance:
+	//   - CPU-bound workflows: Set to runtime.NumCPU()
+	//   - I/O-bound workflows: Set to 10-50 depending on external service limits
+	//   - Memory-constrained: Reduce to prevent excessive state copies
+	//
+	// Each concurrent node holds a deep copy of state, so memory usage scales
+	// linearly with MaxConcurrentNodes.
+	MaxConcurrentNodes int
+
+	// QueueDepth sets the capacity of the execution frontier queue.
+	// Default: 1024. Increase for workflows with large fan-outs.
+	//
+	// When the queue fills, new work items block until space is available.
+	// This provides backpressure to prevent unbounded memory growth.
+	//
+	// Recommended: MaxConcurrentNodes × 100 for initial estimate.
+	QueueDepth int
+
+	// BackpressureTimeout is the maximum time to wait when the frontier queue is full.
+	// Default: 30s. If exceeded, Run() returns ErrBackpressureTimeout.
+	//
+	// Set lower for fast-failing systems, higher for workflows with bursty fan-outs.
+	BackpressureTimeout time.Duration
+
+	// DefaultNodeTimeout is the maximum execution time for nodes without explicit Policy().Timeout.
+	// Default: 30s. Individual nodes can override via NodePolicy.Timeout.
+	//
+	// Prevents single slow nodes from blocking workflow progress indefinitely.
+	// When exceeded, node execution is cancelled and returns context.DeadlineExceeded.
+	DefaultNodeTimeout time.Duration
+
+	// RunWallClockBudget is the maximum total execution time for Run().
+	// Default: 10m. If exceeded, Run() returns context.DeadlineExceeded.
+	//
+	// Use this to enforce hard deadlines on entire workflow execution.
+	// Set to 0 to disable (workflow runs until completion or MaxSteps).
+	RunWallClockBudget time.Duration
+
+	// ReplayMode enables deterministic replay using recorded I/O.
+	// Default: false (record mode - captures I/O for later replay).
+	//
+	// When true, nodes with SideEffectPolicy.Recordable=true will use recorded
+	// responses instead of executing live I/O. This enables:
+	//   - Debugging: Replay production executions locally
+	//   - Testing: Verify workflow logic without external dependencies
+	//   - Auditing: Reconstruct exact execution flow from checkpoints
+	//
+	// Requires prior execution with ReplayMode=false to record I/O.
+	ReplayMode bool
+
+	// StrictReplay controls replay mismatch behavior.
+	// Default: true (fail on I/O hash mismatch).
+	//
+	// When true, replay mode verifies recorded I/O hashes match expected values.
+	// If a mismatch is detected (indicating logic changes), Run() returns ErrReplayMismatch.
+	//
+	// Set to false to allow "best effort" replay that tolerates minor changes.
+	// Useful when debugging with modified node logic.
+	StrictReplay bool
 }
 
 // New creates a new Engine with the given configuration.
@@ -346,7 +459,19 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 		}
 	}
 
-	// Initialize execution state
+	// Initialize Frontier for concurrent execution if MaxConcurrentNodes > 0 (T034)
+	if e.opts.MaxConcurrentNodes > 0 {
+		queueDepth := e.opts.QueueDepth
+		if queueDepth == 0 {
+			queueDepth = 1024 // Default queue depth
+		}
+		e.frontier = NewFrontier[S](ctx, queueDepth)
+
+		// Use concurrent execution path (T035)
+		return e.runConcurrent(ctx, runID, initial)
+	}
+
+	// Initialize execution state (sequential execution path)
 	currentState := initial
 	currentNode := e.startNode
 	step := 0
@@ -500,6 +625,289 @@ func (e *Engine[S]) evaluateEdges(fromNode string, state S) string {
 
 	// No matching edge found
 	return ""
+}
+
+// nodeResult represents the outcome of a single node execution in concurrent mode.
+// Used internally by runConcurrent for collecting and merging results.
+type nodeResult[S any] struct {
+	nodeID   string
+	delta    S
+	route    Next
+	orderKey uint64
+	err      error
+}
+
+// runConcurrent executes the workflow using concurrent node execution with the Frontier scheduler (T035).
+//
+// This method implements a worker pool pattern where:
+//  1. Up to MaxConcurrentNodes goroutines execute nodes concurrently
+//  2. Workers dequeue WorkItems from the Frontier (priority queue by OrderKey)
+//  3. After executing a node, workers create new WorkItems for next hops
+//  4. State deltas are collected and merged deterministically by OrderKey
+//  5. WaitGroup tracks active workers for graceful shutdown
+//
+// The concurrent execution maintains deterministic replay through:
+//   - OrderKey-based work item prioritization (deterministic across runs)
+//   - Ordered delta merging (sort by OrderKey before applying reducer)
+//   - Deep state copies for fan-out branches (isolation)
+//
+// Returns final state after workflow completes or error if execution fails.
+func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) (S, error) {
+	var zero S
+
+	// Result channel for collecting node execution outcomes
+	results := make(chan nodeResult[S], e.opts.MaxConcurrentNodes)
+
+	// WaitGroup tracks active workers
+	var wg sync.WaitGroup
+
+	// Enqueue initial work item
+	initialItem := WorkItem[S]{
+		StepID:       0,
+		OrderKey:     computeOrderKey("__start__", 0),
+		NodeID:       e.startNode,
+		State:        initial,
+		Attempt:      0,
+		ParentNodeID: "__start__",
+		EdgeIndex:    0,
+	}
+
+	if err := e.frontier.Enqueue(ctx, initialItem); err != nil {
+		return zero, err
+	}
+
+	// Track step counter and collected deltas
+	var stepCounter atomic.Int32
+	var collectedResults []nodeResult[S]
+
+	// Spawn worker goroutines (up to MaxConcurrentNodes)
+	maxWorkers := e.opts.MaxConcurrentNodes
+	if maxWorkers == 0 {
+		maxWorkers = 8 // Default if not specified
+	}
+
+	workerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	for i := 0; i < maxWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			for {
+				// Dequeue next work item (use base context, not worker context, to allow shutdown signals)
+				item, err := e.frontier.Dequeue(ctx)
+				if err != nil {
+					// Context cancelled or frontier closed
+					return
+				}
+
+				currentStep := stepCounter.Add(1)
+
+				// Check MaxSteps limit
+				if e.opts.MaxSteps > 0 && int(currentStep) > e.opts.MaxSteps {
+					results <- nodeResult[S]{
+						err: &EngineError{
+							Message: "workflow exceeded MaxSteps limit",
+							Code:    "MAX_STEPS_EXCEEDED",
+						},
+					}
+					cancel()
+					return
+				}
+
+				// Get node implementation
+				e.mu.RLock()
+				nodeImpl, exists := e.nodes[item.NodeID]
+				e.mu.RUnlock()
+
+				if !exists {
+					results <- nodeResult[S]{
+						err: &EngineError{
+							Message: "node not found during execution: " + item.NodeID,
+							Code:    "NODE_NOT_FOUND",
+						},
+					}
+					cancel()
+					return
+				}
+
+				// Emit node_start event
+				e.emitNodeStart(runID, item.NodeID, item.StepID)
+
+				// Execute node
+				result := nodeImpl.Run(workerCtx, item.State)
+
+				// Handle node error
+				if result.Err != nil {
+					e.emitError(runID, item.NodeID, item.StepID, result.Err)
+					results <- nodeResult[S]{err: result.Err}
+					cancel()
+					return
+				}
+
+				// Emit node_end event
+				e.emitNodeEnd(runID, item.NodeID, item.StepID, result.Delta)
+
+				// Send result to collection channel
+				results <- nodeResult[S]{
+					nodeID:   item.NodeID,
+					delta:    result.Delta,
+					route:    result.Route,
+					orderKey: item.OrderKey,
+					err:      nil,
+				}
+
+				// Handle routing (T036)
+				if result.Route.Terminal {
+					// Terminal node - stop workflow
+					e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
+						"terminal": true,
+					})
+					// Don't cancel context here - let workers finish naturally
+					// cancel() would cause cascade failures for other workers
+					return
+				}
+
+				// Fan-out routing (Next.Many)
+				if len(result.Route.Many) > 0 {
+					e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
+						"parallel": true,
+						"branches": result.Route.Many,
+					})
+
+					for edgeIdx, branchID := range result.Route.Many {
+						// Deep copy state for branch isolation
+						branchState, err := deepCopyState(item.State)
+						if err != nil {
+							results <- nodeResult[S]{err: err}
+							cancel()
+							return
+						}
+
+						// Create work item for branch
+						branchItem := WorkItem[S]{
+							StepID:       item.StepID + 1,
+							OrderKey:     computeOrderKey(item.NodeID, edgeIdx),
+							NodeID:       branchID,
+							State:        branchState,
+							Attempt:      0,
+							ParentNodeID: item.NodeID,
+							EdgeIndex:    edgeIdx,
+						}
+
+						if err := e.frontier.Enqueue(workerCtx, branchItem); err != nil {
+							results <- nodeResult[S]{err: err}
+							cancel()
+							return
+						}
+					}
+					continue
+				}
+
+				// Single next node (Goto)
+				if result.Route.To != "" {
+					e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
+						"next_node": result.Route.To,
+					})
+
+					nextItem := WorkItem[S]{
+						StepID:       item.StepID + 1,
+						OrderKey:     computeOrderKey(item.NodeID, 0),
+						NodeID:       result.Route.To,
+						State:        item.State,
+						Attempt:      0,
+						ParentNodeID: item.NodeID,
+						EdgeIndex:    0,
+					}
+
+					if err := e.frontier.Enqueue(workerCtx, nextItem); err != nil {
+						results <- nodeResult[S]{err: err}
+						cancel()
+						return
+					}
+					continue
+				}
+
+				// Edge-based routing fallback
+				nextNode := e.evaluateEdges(item.NodeID, item.State)
+				if nextNode == "" {
+					results <- nodeResult[S]{
+						err: &EngineError{
+							Message: "no valid route from node: " + item.NodeID,
+							Code:    "NO_ROUTE",
+						},
+					}
+					cancel()
+					return
+				}
+
+				e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
+					"next_node": nextNode,
+					"via_edge":  true,
+				})
+
+				nextItem := WorkItem[S]{
+					StepID:       item.StepID + 1,
+					OrderKey:     computeOrderKey(item.NodeID, 0),
+					NodeID:       nextNode,
+					State:        item.State,
+					Attempt:      0,
+					ParentNodeID: item.NodeID,
+					EdgeIndex:    0,
+				}
+
+				if err := e.frontier.Enqueue(workerCtx, nextItem); err != nil {
+					results <- nodeResult[S]{err: err}
+					cancel()
+					return
+				}
+			}
+		}()
+	}
+
+	// Wait for workers to complete in a separate goroutine
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Collect results from workers
+	for result := range results {
+		if result.err != nil {
+			return zero, result.err
+		}
+		collectedResults = append(collectedResults, result)
+	}
+
+	// Merge deltas deterministically by OrderKey (T038)
+	finalState := e.mergeDeltas(initial, collectedResults)
+
+	return finalState, nil
+}
+
+// mergeDeltas merges collected node deltas into final state using deterministic ordering (T038).
+//
+// Deltas are sorted by OrderKey (ascending) before applying the reducer to ensure:
+//   - Deterministic results regardless of goroutine completion order
+//   - Identical state across replays with the same execution graph
+//   - Predictable merge order for debugging
+//
+// The OrderKey captures the execution path (parent node + edge index), so sorting by
+// OrderKey effectively recreates the logical execution order of the graph.
+func (e *Engine[S]) mergeDeltas(initial S, results []nodeResult[S]) S {
+	// Sort results by OrderKey for deterministic merge (T038)
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].orderKey < results[j].orderKey
+	})
+
+	// Apply reducer to merge deltas in order
+	finalState := initial
+	for _, result := range results {
+		finalState = e.reducer(finalState, result.delta)
+	}
+
+	return finalState
 }
 
 // executeParallel executes multiple branches in parallel with isolated state copies (T104-T108).
