@@ -205,3 +205,14 @@ func (e *simpleEmitter) Emit(event emit.Event) {
 		fmt.Printf("  [Event] Step %d, Node %q: %s\n", event.Step, event.NodeID, event.Msg)
 	}
 }
+
+func (e *simpleEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+	for _, event := range events {
+		e.Emit(event)
+	}
+	return nil
+}
+
+func (e *simpleEmitter) Flush(ctx context.Context) error {
+	return nil
+}

@@ -19,6 +19,17 @@ func (e *simpleEmitter) Emit(event emit.Event) {
 	// In production, you might log to stdout, file, or observability platform
 }
 
+func (e *simpleEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+	for _, event := range events {
+		e.Emit(event)
+	}
+	return nil
+}
+
+func (e *simpleEmitter) Flush(ctx context.Context) error {
+	return nil
+}
+
 // ProcessingState represents the workflow state for parallel data processing.
 type ProcessingState struct {
 	Input   string   // Input data to process
