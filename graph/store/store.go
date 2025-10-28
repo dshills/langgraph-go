@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/dshills/langgraph-go/graph/emit"
 )
@@ -83,14 +84,14 @@ type Store[S any] interface {
 	//   - Idempotency key to prevent duplicate commits
 	//
 	// Parameters:
-	//   - checkpoint: Complete checkpoint with all execution context
+	//   - checkpoint: Complete checkpoint with all execution context (CheckpointV2 type)
 	//
 	// Returns error if persistence fails or idempotency key already exists.
 	//
 	// This method extends SaveCheckpoint with support for concurrent execution
 	// and deterministic replay. Use this for v0.2.0+ features, or use the original
 	// SaveCheckpoint for simpler checkpointing needs.
-	SaveCheckpointV2(ctx context.Context, checkpoint Checkpoint[S]) error
+	SaveCheckpointV2(ctx context.Context, checkpoint CheckpointV2[S]) error
 
 	// LoadCheckpointV2 retrieves an enhanced checkpoint by run ID and step ID.
 	//
@@ -105,9 +106,9 @@ type Store[S any] interface {
 	//   - stepID: Step number to load checkpoint from
 	//
 	// Returns:
-	//   - checkpoint: Complete checkpoint with execution context
+	//   - checkpoint: Complete checkpoint with execution context (CheckpointV2 type)
 	//   - error: ErrNotFound if checkpoint doesn't exist
-	LoadCheckpointV2(ctx context.Context, runID string, stepID int) (Checkpoint[S], error)
+	LoadCheckpointV2(ctx context.Context, runID string, stepID int) (CheckpointV2[S], error)
 
 	// CheckIdempotency verifies if an idempotency key has been used.
 	//
@@ -178,6 +179,9 @@ type StepRecord[S any] struct {
 
 // Checkpoint represents a named snapshot of workflow state.
 // Used by Store implementations to persist and restore checkpoints.
+//
+// Deprecated: Use CheckpointV2 for enhanced checkpointing features.
+// This type is kept for backward compatibility with the original SaveCheckpoint/LoadCheckpoint methods.
 type Checkpoint[S any] struct {
 	// ID is the unique checkpoint identifier.
 	ID string
@@ -187,4 +191,56 @@ type Checkpoint[S any] struct {
 
 	// Step is the step number when this checkpoint was created.
 	Step int
+}
+
+// CheckpointV2 represents an enhanced checkpoint with full execution context for deterministic replay.
+//
+// This type contains all information needed to resume execution from a specific point:
+//   - Current accumulated state
+//   - Work items ready to execute (frontier)
+//   - Recorded I/O for replay
+//   - RNG seed for deterministic random number generation
+//   - Idempotency key for preventing duplicate commits
+//
+// CheckpointV2 supports both automatic resumption after failures and
+// user-initiated labeled snapshots for debugging or branching workflows.
+//
+// This type is generic over the state type S, which must be JSON-serializable.
+type CheckpointV2[S any] struct {
+	// RunID uniquely identifies the execution this checkpoint belongs to
+	RunID string `json:"run_id"`
+
+	// StepID is the execution step number at checkpoint time.
+	// Monotonically increasing within a run.
+	StepID int `json:"step_id"`
+
+	// State is the current accumulated state after applying all deltas up to StepID.
+	// Must be JSON-serializable for persistence.
+	State S `json:"state"`
+
+	// Frontier contains the work items ready to execute at this checkpoint.
+	// Must be JSON-serializable. Type is interface{} to avoid circular dependency.
+	// Expected to be []WorkItem[S] from graph package.
+	Frontier interface{} `json:"frontier"`
+
+	// RNGSeed is the seed for deterministic random number generation.
+	// Computed from RunID to ensure consistent random values across replays.
+	RNGSeed int64 `json:"rng_seed"`
+
+	// RecordedIOs contains all captured external interactions up to this checkpoint.
+	// Must be JSON-serializable. Type is interface{} to avoid circular dependency.
+	// Expected to be []RecordedIO from graph package.
+	RecordedIOs interface{} `json:"recorded_ios"`
+
+	// IdempotencyKey is a hash of (RunID, StepID, State, Frontier) that prevents
+	// duplicate checkpoint commits. Format: "sha256:hex_encoded_hash"
+	IdempotencyKey string `json:"idempotency_key"`
+
+	// Timestamp records when this checkpoint was created
+	Timestamp time.Time `json:"timestamp"`
+
+	// Label is an optional user-defined name for this checkpoint, useful for
+	// debugging or creating named save points (e.g., "before_summary", "after_validation").
+	// Empty string for automatic checkpoints.
+	Label string `json:"label,omitempty"`
 }

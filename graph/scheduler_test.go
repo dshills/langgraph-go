@@ -191,6 +191,288 @@ func TestFrontierOrdering(t *testing.T) {
 	})
 }
 
+// TestBackpressureBlock (T060) verifies that Frontier.Enqueue blocks when queue is full.
+//
+// According to spec.md FR-011: System MUST implement backpressure by blocking admission
+// when frontier queue reaches QueueDepth capacity.
+//
+// Requirements:
+// - Enqueue blocks when channel capacity is reached
+// - Enqueue succeeds once space becomes available
+// - Blocking respects context cancellation
+// - Multiple goroutines can safely block on full queue
+//
+// This test fills the frontier queue to capacity and verifies that subsequent
+// enqueue operations block until dequeue operations free up capacity.
+func TestBackpressureBlock(t *testing.T) {
+	t.Run("enqueue blocks when queue is full", func(t *testing.T) {
+		ctx := context.Background()
+		capacity := 5
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity)
+
+		// Fill the frontier to capacity
+		for i := 0; i < capacity; i++ {
+			item := graph.WorkItem[SchedulerTestState]{
+				StepID:       i,
+				OrderKey:     uint64(i * 100),
+				NodeID:       "node" + string(rune('0'+i)),
+				State:        SchedulerTestState{Counter: i},
+				Attempt:      0,
+				ParentNodeID: "parent",
+				EdgeIndex:    i,
+			}
+			if err := frontier.Enqueue(ctx, item); err != nil {
+				t.Fatalf("enqueue %d failed: %v", i, err)
+			}
+		}
+
+		// Verify frontier is full
+		if frontier.Len() != capacity {
+			t.Errorf("expected Len = %d, got %d", capacity, frontier.Len())
+		}
+
+		// Try to enqueue one more item - should block
+		blocked := make(chan bool, 1)
+		enqueueErr := make(chan error, 1)
+
+		go func() {
+			// Signal that we're about to block
+			blocked <- true
+
+			// This should block because queue is full
+			extraItem := graph.WorkItem[SchedulerTestState]{
+				StepID:       100,
+				OrderKey:     1000,
+				NodeID:       "blocked_node",
+				State:        SchedulerTestState{Counter: 100},
+				Attempt:      0,
+				ParentNodeID: "parent",
+				EdgeIndex:    10,
+			}
+			err := frontier.Enqueue(ctx, extraItem)
+			enqueueErr <- err
+		}()
+
+		// Wait for goroutine to start blocking
+		<-blocked
+
+		// Give it time to block on the channel
+		time.Sleep(50 * time.Millisecond)
+
+		// Verify enqueue hasn't completed yet (still blocked)
+		select {
+		case <-enqueueErr:
+			t.Fatal("enqueue should be blocked but completed immediately")
+		default:
+			// Good - still blocked
+			t.Log("Enqueue correctly blocked on full queue")
+		}
+
+		// Now dequeue one item to free up capacity
+		_, err := frontier.Dequeue(ctx)
+		if err != nil {
+			t.Fatalf("dequeue failed: %v", err)
+		}
+
+		// Wait for blocked enqueue to complete
+		select {
+		case err := <-enqueueErr:
+			if err != nil {
+				t.Errorf("enqueue failed after space freed: %v", err)
+			}
+			t.Log("Enqueue succeeded after capacity freed")
+		case <-time.After(500 * time.Millisecond):
+			t.Fatal("enqueue did not unblock after dequeue")
+		}
+
+		// Verify final queue length
+		if frontier.Len() != capacity {
+			t.Errorf("expected Len = %d after enqueue/dequeue, got %d", capacity, frontier.Len())
+		}
+	})
+
+	t.Run("enqueue respects context cancellation when blocked", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		capacity := 3
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity)
+
+		// Fill the frontier to capacity
+		for i := 0; i < capacity; i++ {
+			item := graph.WorkItem[SchedulerTestState]{
+				StepID:       i,
+				OrderKey:     uint64(i * 100),
+				NodeID:       "node" + string(rune('0'+i)),
+				State:        SchedulerTestState{Counter: i},
+				Attempt:      0,
+				ParentNodeID: "parent",
+				EdgeIndex:    i,
+			}
+			if err := frontier.Enqueue(ctx, item); err != nil {
+				t.Fatalf("enqueue %d failed: %v", i, err)
+			}
+		}
+
+		// Try to enqueue with context that will be cancelled
+		enqueueErr := make(chan error, 1)
+
+		go func() {
+			// This should block, then fail when context is cancelled
+			extraItem := graph.WorkItem[SchedulerTestState]{
+				StepID:       100,
+				OrderKey:     1000,
+				NodeID:       "cancelled_node",
+				State:        SchedulerTestState{Counter: 100},
+				Attempt:      0,
+				ParentNodeID: "parent",
+				EdgeIndex:    10,
+			}
+			err := frontier.Enqueue(ctx, extraItem)
+			enqueueErr <- err
+		}()
+
+		// Give goroutine time to start blocking
+		time.Sleep(50 * time.Millisecond)
+
+		// Cancel the context
+		cancel()
+
+		// Wait for enqueue to fail with context error
+		select {
+		case err := <-enqueueErr:
+			if err == nil {
+				t.Error("expected context cancellation error, got nil")
+			}
+			if err != context.Canceled {
+				t.Errorf("expected context.Canceled, got %v", err)
+			}
+			t.Log("Enqueue correctly failed with context cancellation")
+		case <-time.After(500 * time.Millisecond):
+			t.Fatal("enqueue did not fail after context cancellation")
+		}
+	})
+
+	t.Run("multiple goroutines can block on full queue", func(t *testing.T) {
+		ctx := context.Background()
+		capacity := 2
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity)
+
+		// Fill the frontier to capacity
+		for i := 0; i < capacity; i++ {
+			item := graph.WorkItem[SchedulerTestState]{
+				StepID:       i,
+				OrderKey:     uint64(i * 100),
+				NodeID:       "node" + string(rune('0'+i)),
+				State:        SchedulerTestState{Counter: i},
+				Attempt:      0,
+				ParentNodeID: "parent",
+				EdgeIndex:    i,
+			}
+			if err := frontier.Enqueue(ctx, item); err != nil {
+				t.Fatalf("enqueue %d failed: %v", i, err)
+			}
+		}
+
+		// Start 3 goroutines that will all block on enqueue
+		numBlockedGoroutines := 3
+		enqueueErrs := make(chan error, numBlockedGoroutines)
+
+		for i := 0; i < numBlockedGoroutines; i++ {
+			go func(id int) {
+				extraItem := graph.WorkItem[SchedulerTestState]{
+					StepID:       100 + id,
+					OrderKey:     uint64(1000 + id*100),
+					NodeID:       "blocked_node_" + string(rune('0'+id)),
+					State:        SchedulerTestState{Counter: 100 + id},
+					Attempt:      0,
+					ParentNodeID: "parent",
+					EdgeIndex:    10 + id,
+				}
+				err := frontier.Enqueue(ctx, extraItem)
+				enqueueErrs <- err
+			}(i)
+		}
+
+		// Give goroutines time to block
+		time.Sleep(50 * time.Millisecond)
+
+		// All 3 goroutines should be blocked
+		select {
+		case <-enqueueErrs:
+			t.Fatal("goroutine should be blocked but completed immediately")
+		default:
+			t.Log("All goroutines correctly blocked")
+		}
+
+		// Dequeue items one by one and verify blocked goroutines unblock
+		for i := 0; i < numBlockedGoroutines; i++ {
+			// Dequeue to free capacity
+			_, err := frontier.Dequeue(ctx)
+			if err != nil {
+				t.Fatalf("dequeue %d failed: %v", i, err)
+			}
+
+			// Wait for one blocked goroutine to complete
+			select {
+			case err := <-enqueueErrs:
+				if err != nil {
+					t.Errorf("enqueue %d failed: %v", i, err)
+				}
+				t.Logf("Goroutine %d unblocked after dequeue", i)
+			case <-time.After(500 * time.Millisecond):
+				t.Fatalf("no goroutine unblocked after dequeue %d", i)
+			}
+		}
+
+		// Verify final queue state
+		if frontier.Len() != capacity {
+			t.Errorf("expected Len = %d after all operations, got %d", capacity, frontier.Len())
+		}
+	})
+}
+
+// TestBackpressureTimeout (T061) verifies that backpressure timeout triggers checkpoint/pause.
+//
+// According to spec.md FR-012: System MUST checkpoint and pause execution when backpressure
+// blocks longer than BackpressureTimeout.
+//
+// Requirements:
+// - Engine detects when enqueue blocks for longer than BackpressureTimeout
+// - Checkpoint is saved before pausing
+// - Error returned indicates backpressure timeout condition
+// - Execution can be resumed from checkpoint after backpressure clears
+//
+// This test verifies that the engine handles sustained backpressure by checkpointing
+// and gracefully pausing execution rather than hanging indefinitely.
+func TestBackpressureTimeout(t *testing.T) {
+	t.Run("backpressure timeout triggers checkpoint and pause", func(t *testing.T) {
+		// Note: This test will be implemented after T064 adds backpressure timeout
+		// logic to Frontier.Enqueue. For now, we document the expected behavior.
+
+		t.Skip("Backpressure timeout implementation pending (T064)")
+
+		// Expected test flow:
+		// 1. Create engine with small QueueDepth and short BackpressureTimeout
+		// 2. Create nodes that produce work faster than it can be consumed
+		// 3. Fill the frontier queue to capacity
+		// 4. Verify that engine detects timeout condition
+		// 5. Verify checkpoint is saved with current frontier state
+		// 6. Verify engine returns ErrBackpressureTimeout
+		// 7. Verify execution can be resumed from checkpoint
+	})
+
+	t.Run("backpressure timeout emits observability event", func(t *testing.T) {
+		// Note: This test will be implemented after T069 adds backpressure event emission
+
+		t.Skip("Backpressure event emission pending (T069)")
+
+		// Expected test flow:
+		// 1. Create engine with emitter that captures events
+		// 2. Trigger backpressure timeout condition
+		// 3. Verify emitter received "backpressure_timeout" event
+		// 4. Verify event metadata includes queue depth, timeout duration, etc.
+	})
+}
+
 // SchedulerTestState is a simple state type for scheduler testing
 type SchedulerTestState struct {
 	Value   string

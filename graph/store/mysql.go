@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dshills/langgraph-go/graph/emit"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -135,6 +136,61 @@ func (m *MySQLStore[S]) createTables(ctx context.Context) error {
 
 	if _, err := m.db.ExecContext(ctx, checkpointsTable); err != nil {
 		return fmt.Errorf("failed to create workflow_checkpoints table: %w", err)
+	}
+
+	// workflow_checkpoints_v2 table: stores enhanced checkpoints with full execution context
+	checkpointsV2Table := `
+		CREATE TABLE IF NOT EXISTS workflow_checkpoints_v2 (
+			id BIGINT AUTO_INCREMENT PRIMARY KEY,
+			run_id VARCHAR(255) NOT NULL,
+			step_id INT NOT NULL,
+			state JSON NOT NULL,
+			frontier JSON NOT NULL,
+			rng_seed BIGINT NOT NULL,
+			recorded_ios JSON NOT NULL,
+			idempotency_key VARCHAR(255) NOT NULL UNIQUE,
+			timestamp TIMESTAMP NOT NULL,
+			label VARCHAR(255) DEFAULT '',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			INDEX idx_run_id (run_id),
+			INDEX idx_run_step (run_id, step_id),
+			INDEX idx_label (run_id, label),
+			UNIQUE KEY unique_run_step (run_id, step_id)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+	`
+
+	if _, err := m.db.ExecContext(ctx, checkpointsV2Table); err != nil {
+		return fmt.Errorf("failed to create workflow_checkpoints_v2 table: %w", err)
+	}
+
+	// idempotency_keys table: tracks used idempotency keys to prevent duplicate commits
+	idempotencyTable := `
+		CREATE TABLE IF NOT EXISTS idempotency_keys (
+			key_value VARCHAR(255) NOT NULL PRIMARY KEY,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			INDEX idx_created (created_at)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+	`
+
+	if _, err := m.db.ExecContext(ctx, idempotencyTable); err != nil {
+		return fmt.Errorf("failed to create idempotency_keys table: %w", err)
+	}
+
+	// events_outbox table: stores events for transactional outbox pattern
+	eventsOutboxTable := `
+		CREATE TABLE IF NOT EXISTS events_outbox (
+			id VARCHAR(255) NOT NULL PRIMARY KEY,
+			run_id VARCHAR(255) NOT NULL,
+			event_data JSON NOT NULL,
+			emitted_at TIMESTAMP NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			INDEX idx_pending (emitted_at, created_at),
+			INDEX idx_run_id (run_id)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+	`
+
+	if _, err := m.db.ExecContext(ctx, eventsOutboxTable); err != nil {
+		return fmt.Errorf("failed to create events_outbox table: %w", err)
 	}
 
 	return nil
@@ -474,6 +530,297 @@ func (m *MySQLStore[S]) WithTransaction(ctx context.Context, fn func(context.Con
 	// Commit on success
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// SaveCheckpointV2 persists an enhanced checkpoint with full execution context.
+//
+// This method saves a complete checkpoint including:
+//   - Current state after all deltas applied
+//   - Frontier of pending work items
+//   - Recorded I/O for deterministic replay
+//   - RNG seed for random value consistency
+//   - Idempotency key to prevent duplicate commits
+//
+// The operation is performed in a transaction to ensure atomicity.
+// If the idempotency key already exists, returns an error (prevents duplicate saves).
+//
+// Thread-safe for concurrent writes.
+func (m *MySQLStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint CheckpointV2[S]) error {
+	m.mu.RLock()
+	if m.closed {
+		m.mu.RUnlock()
+		return fmt.Errorf("store is closed")
+	}
+	m.mu.RUnlock()
+
+	// Serialize JSON fields
+	stateJSON, err := json.Marshal(checkpoint.State)
+	if err != nil {
+		return fmt.Errorf("failed to marshal state: %w", err)
+	}
+
+	frontierJSON, err := json.Marshal(checkpoint.Frontier)
+	if err != nil {
+		return fmt.Errorf("failed to marshal frontier: %w", err)
+	}
+
+	recordedIOsJSON, err := json.Marshal(checkpoint.RecordedIOs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal recorded IOs: %w", err)
+	}
+
+	// Begin transaction for atomic insert
+	tx, err := m.db.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelReadCommitted,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Ensure rollback on error
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Insert idempotency key first (will fail if duplicate)
+	idempotencyQuery := `
+		INSERT INTO idempotency_keys (key_value)
+		VALUES (?)
+	`
+
+	_, err = tx.ExecContext(ctx, idempotencyQuery, checkpoint.IdempotencyKey)
+	if err != nil {
+		// Check if it's a duplicate key error
+		return fmt.Errorf("idempotency key already exists or insert failed: %w", err)
+	}
+
+	// Insert checkpoint
+	checkpointQuery := `
+		INSERT INTO workflow_checkpoints_v2
+		(run_id, step_id, state, frontier, rng_seed, recorded_ios, idempotency_key, timestamp, label)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE
+			state = VALUES(state),
+			frontier = VALUES(frontier),
+			rng_seed = VALUES(rng_seed),
+			recorded_ios = VALUES(recorded_ios),
+			idempotency_key = VALUES(idempotency_key),
+			timestamp = VALUES(timestamp),
+			label = VALUES(label)
+	`
+
+	_, err = tx.ExecContext(ctx, checkpointQuery,
+		checkpoint.RunID,
+		checkpoint.StepID,
+		stateJSON,
+		frontierJSON,
+		checkpoint.RNGSeed,
+		recordedIOsJSON,
+		checkpoint.IdempotencyKey,
+		checkpoint.Timestamp,
+		checkpoint.Label,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to save checkpoint: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// LoadCheckpointV2 retrieves an enhanced checkpoint by run ID and step ID.
+//
+// This method can also load checkpoints by label if stepID is 0 and a label is stored.
+// Returns ErrNotFound if no checkpoint exists for the given identifiers.
+func (m *MySQLStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (CheckpointV2[S], error) {
+	m.mu.RLock()
+	if m.closed {
+		m.mu.RUnlock()
+		var zero CheckpointV2[S]
+		return zero, fmt.Errorf("store is closed")
+	}
+	m.mu.RUnlock()
+
+	query := `
+		SELECT run_id, step_id, state, frontier, rng_seed, recorded_ios, idempotency_key, timestamp, label
+		FROM workflow_checkpoints_v2
+		WHERE run_id = ? AND step_id = ?
+		LIMIT 1
+	`
+
+	var (
+		stateJSON       []byte
+		frontierJSON    []byte
+		recordedIOsJSON []byte
+		checkpoint      CheckpointV2[S]
+	)
+
+	err := m.db.QueryRowContext(ctx, query, runID, stepID).Scan(
+		&checkpoint.RunID,
+		&checkpoint.StepID,
+		&stateJSON,
+		&frontierJSON,
+		&checkpoint.RNGSeed,
+		&recordedIOsJSON,
+		&checkpoint.IdempotencyKey,
+		&checkpoint.Timestamp,
+		&checkpoint.Label,
+	)
+
+	if err == sql.ErrNoRows {
+		var zero CheckpointV2[S]
+		return zero, ErrNotFound
+	}
+	if err != nil {
+		var zero CheckpointV2[S]
+		return zero, fmt.Errorf("failed to load checkpoint: %w", err)
+	}
+
+	// Deserialize JSON fields
+	if err := json.Unmarshal(stateJSON, &checkpoint.State); err != nil {
+		var zero CheckpointV2[S]
+		return zero, fmt.Errorf("failed to unmarshal state: %w", err)
+	}
+
+	if err := json.Unmarshal(frontierJSON, &checkpoint.Frontier); err != nil {
+		var zero CheckpointV2[S]
+		return zero, fmt.Errorf("failed to unmarshal frontier: %w", err)
+	}
+
+	if err := json.Unmarshal(recordedIOsJSON, &checkpoint.RecordedIOs); err != nil {
+		var zero CheckpointV2[S]
+		return zero, fmt.Errorf("failed to unmarshal recorded IOs: %w", err)
+	}
+
+	return checkpoint, nil
+}
+
+// CheckIdempotency verifies if an idempotency key has been used.
+//
+// Returns true if the key exists in the idempotency_keys table.
+// Returns false if the key doesn't exist (safe to use).
+// Returns error only on database access failures.
+//
+// This uses a unique constraint on the key for race-safe duplicate detection.
+func (m *MySQLStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, error) {
+	m.mu.RLock()
+	if m.closed {
+		m.mu.RUnlock()
+		return false, fmt.Errorf("store is closed")
+	}
+	m.mu.RUnlock()
+
+	query := `
+		SELECT COUNT(*) FROM idempotency_keys WHERE key_value = ?
+	`
+
+	var count int
+	err := m.db.QueryRowContext(ctx, query, key).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("failed to check idempotency: %w", err)
+	}
+
+	return count > 0, nil
+}
+
+// PendingEvents retrieves events from the outbox that haven't been emitted yet.
+//
+// Returns events where emitted_at IS NULL, ordered by created_at.
+// Limited to the specified number of events for batching.
+func (m *MySQLStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error) {
+	m.mu.RLock()
+	if m.closed {
+		m.mu.RUnlock()
+		return nil, fmt.Errorf("store is closed")
+	}
+	m.mu.RUnlock()
+
+	query := `
+		SELECT id, run_id, event_data
+		FROM events_outbox
+		WHERE emitted_at IS NULL
+		ORDER BY created_at ASC
+		LIMIT ?
+	`
+
+	rows, err := m.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query pending events: %w", err)
+	}
+	defer rows.Close()
+
+	var events []emit.Event
+	for rows.Next() {
+		var (
+			id        string
+			runID     string
+			eventJSON []byte
+		)
+
+		if err := rows.Scan(&id, &runID, &eventJSON); err != nil {
+			return nil, fmt.Errorf("failed to scan event row: %w", err)
+		}
+
+		var event emit.Event
+		if err := json.Unmarshal(eventJSON, &event); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal event data: %w", err)
+		}
+
+		events = append(events, event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating event rows: %w", err)
+	}
+
+	return events, nil
+}
+
+// MarkEventsEmitted marks events as successfully emitted to prevent re-delivery.
+//
+// Updates the emitted_at timestamp for the specified event IDs.
+// This ensures the events won't be returned by PendingEvents again.
+func (m *MySQLStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string) error {
+	m.mu.RLock()
+	if m.closed {
+		m.mu.RUnlock()
+		return fmt.Errorf("store is closed")
+	}
+	m.mu.RUnlock()
+
+	if len(eventIDs) == 0 {
+		return nil // No-op for empty list
+	}
+
+	// Build IN clause with placeholders
+	placeholders := ""
+	args := make([]interface{}, len(eventIDs))
+	for i, id := range eventIDs {
+		if i > 0 {
+			placeholders += ", "
+		}
+		placeholders += "?"
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`
+		UPDATE events_outbox
+		SET emitted_at = NOW()
+		WHERE id IN (%s)
+	`, placeholders)
+
+	_, err := m.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to mark events as emitted: %w", err)
 	}
 
 	return nil

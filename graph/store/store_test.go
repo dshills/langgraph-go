@@ -68,13 +68,13 @@ func (m *mockStore) LoadCheckpoint(ctx context.Context, cpID string) (TestState,
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) SaveCheckpointV2(ctx context.Context, checkpoint Checkpoint[TestState]) error {
+func (m *mockStore) SaveCheckpointV2(ctx context.Context, checkpoint CheckpointV2[TestState]) error {
 	return nil
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (Checkpoint[TestState], error) {
-	var zero Checkpoint[TestState]
+func (m *mockStore) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (CheckpointV2[TestState], error) {
+	var zero CheckpointV2[TestState]
 	return zero, ErrNotFound
 }
 

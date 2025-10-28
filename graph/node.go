@@ -115,6 +115,12 @@ func Goto(nodeID string) Next {
 	return Next{To: nodeID}
 }
 
+// Many returns a Next that routes to multiple nodes in parallel (fan-out).
+// All specified nodes will execute concurrently with isolated state copies.
+func Many(nodeIDs []string) Next {
+	return Next{Many: nodeIDs}
+}
+
 // NodeFunc is a function adapter that implements the Node interface.
 // It allows using plain functions as nodes without creating custom types.
 //

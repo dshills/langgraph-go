@@ -1,6 +1,9 @@
 package graph
 
-import "time"
+import (
+	"math/rand"
+	"time"
+)
 
 // Policy defines node execution policies and retry strategies
 
@@ -72,4 +75,60 @@ type SideEffectPolicy struct {
 	//
 	// If true, the node must provide an IdempotencyKeyFunc in its NodePolicy.
 	RequiresIdempotency bool
+}
+
+// computeBackoff calculates the delay before retrying a failed node execution
+// using exponential backoff with jitter (T086).
+//
+// The backoff formula follows research.md section 7:
+//
+//	delay = min(base * 2^attempt, maxDelay) + jitter(0, base)
+//
+// Where:
+//   - attempt: Retry attempt number (0 for first retry, 1 for second, etc.)
+//   - base: Base delay from RetryPolicy.BaseDelay
+//   - maxDelay: Maximum cap from RetryPolicy.MaxDelay
+//   - jitter: Random value between 0 and base to prevent thundering herd
+//
+// The exponential component (2^attempt) doubles the delay with each retry,
+// reducing load on failing services. Jitter randomizes retry timing across
+// concurrent nodes to avoid synchronized retry storms.
+//
+// Parameters:
+//   - attempt: Zero-based retry attempt number (0 = first retry)
+//   - base: Base delay for exponential calculation
+//   - maxDelay: Maximum allowed delay (caps exponential growth)
+//   - rng: Random number generator for jitter (use context RNG for determinism)
+//
+// Returns:
+//   - Computed delay duration including exponential backoff and jitter
+//
+// Example delays with base=1s, maxDelay=30s:
+//   - attempt 0: 1s + jitter(0, 1s) = 1-2s
+//   - attempt 1: 2s + jitter(0, 1s) = 2-3s
+//   - attempt 2: 4s + jitter(0, 1s) = 4-5s
+//   - attempt 3: 8s + jitter(0, 1s) = 8-9s
+//   - attempt 10: 30s + jitter(0, 1s) = 30-31s (capped)
+func computeBackoff(attempt int, base, maxDelay time.Duration, rng *rand.Rand) time.Duration {
+	// Compute exponential delay: base * 2^attempt
+	// Use bit shift for efficient 2^attempt calculation
+	exponentialDelay := base * (1 << attempt)
+
+	// Cap at maxDelay to prevent unbounded growth
+	if exponentialDelay > maxDelay {
+		exponentialDelay = maxDelay
+	}
+
+	// Add jitter: random value between 0 and base
+	// This prevents synchronized retries (thundering herd)
+	var jitter time.Duration
+	if rng != nil {
+		jitter = time.Duration(rng.Int63n(int64(base)))
+	} else {
+		// Fallback to time-based random if no RNG provided
+		// Not deterministic, but safe for non-replay scenarios
+		jitter = time.Duration(rand.Int63n(int64(base)))
+	}
+
+	return exponentialDelay + jitter
 }

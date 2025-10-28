@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"sync"
+	"sync/atomic"
 )
 
 // Scheduler manages concurrent node execution with deterministic ordering
@@ -128,6 +129,12 @@ type Frontier[S any] struct {
 	capacity int              // Maximum queue depth
 	ctx      context.Context  // Context for cancellation
 	mu       sync.Mutex       // Protects heap and len operations
+
+	// Metrics tracking (T068) - use atomic operations for thread-safe updates
+	totalEnqueued      atomic.Int64 // Total work items enqueued
+	totalDequeued      atomic.Int64 // Total work items dequeued
+	backpressureEvents atomic.Int32 // Count of backpressure triggers
+	peakQueueDepth     atomic.Int32 // Maximum queue depth observed
 }
 
 // NewFrontier creates a new Frontier with the specified capacity and context.
@@ -154,6 +161,16 @@ func NewFrontier[S any](ctx context.Context, capacity int) *Frontier[S] {
 // Returns an error if the context is cancelled before the item can be enqueued.
 // This blocking behavior provides natural backpressure when nodes produce work
 // faster than the system can process it.
+//
+// Backpressure Implementation (T063):
+// The buffered channel f.queue enforces capacity limits. When the channel reaches
+// its configured capacity (set via NewFrontier), the send operation on line 172
+// blocks until a receiver (Dequeue) consumes an item, freeing up space. This
+// implements FR-011: System MUST implement backpressure by blocking admission
+// when frontier queue reaches QueueDepth capacity.
+//
+// The select statement ensures that context cancellation is respected even while
+// blocked on channel send, providing graceful shutdown during backpressure.
 func (f *Frontier[S]) Enqueue(ctx context.Context, item WorkItem[S]) error {
 	// Check context first for fast failure
 	if ctx.Err() != nil {
@@ -163,13 +180,31 @@ func (f *Frontier[S]) Enqueue(ctx context.Context, item WorkItem[S]) error {
 	// Add to heap under lock
 	f.mu.Lock()
 	heap.Push(&f.heap, item)
+	currentDepth := int32(f.heap.Len())
 	f.mu.Unlock()
 
-	// Send to channel (may block if full)
+	// Update metrics: track peak queue depth (T068)
+	for {
+		oldPeak := f.peakQueueDepth.Load()
+		if currentDepth <= oldPeak || f.peakQueueDepth.CompareAndSwap(oldPeak, currentDepth) {
+			break
+		}
+	}
+
+	// Check if we're at capacity (backpressure condition)
+	if currentDepth >= int32(f.capacity) {
+		// Increment backpressure event counter (T068, T069)
+		f.backpressureEvents.Add(1)
+	}
+
+	// Send to channel (may block if full - this is the backpressure mechanism)
+	// The buffered channel enforces QueueDepth capacity (T063)
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	case f.queue <- item:
+		// Update metrics: increment total enqueued (T068)
+		f.totalEnqueued.Add(1)
 		return nil
 	}
 }
@@ -207,6 +242,10 @@ func (f *Frontier[S]) Dequeue(ctx context.Context) (WorkItem[S], error) {
 		}
 
 		item := heap.Pop(&f.heap).(WorkItem[S])
+
+		// Update metrics: increment total dequeued (T068)
+		f.totalDequeued.Add(1)
+
 		return item, nil
 	}
 }
@@ -217,4 +256,82 @@ func (f *Frontier[S]) Len() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.heap.Len()
+}
+
+// SchedulerMetrics tracks execution metrics for monitoring and observability (T067).
+//
+// These metrics provide insight into the runtime behavior of the concurrent scheduler,
+// enabling operators to:
+//   - Detect bottlenecks and capacity issues
+//   - Monitor backpressure conditions
+//   - Tune concurrency parameters (MaxConcurrentNodes, QueueDepth)
+//   - Alert on unhealthy execution patterns
+//
+// Metrics are updated atomically by the scheduler and can be safely read concurrently.
+//
+// According to spec.md FR-027: System MUST expose metrics for queue_depth,
+// step_latency_ms, active_nodes, and step_count.
+type SchedulerMetrics struct {
+	// ActiveNodes is the current number of nodes executing concurrently.
+	// This value should never exceed MaxConcurrentNodes.
+	// Use atomic.LoadInt32() to read safely from multiple goroutines.
+	ActiveNodes int32
+
+	// QueueDepth is the current number of work items waiting in the frontier.
+	// High queue depth indicates work is being produced faster than consumed.
+	// When this reaches capacity, backpressure kicks in.
+	QueueDepth int32
+
+	// QueueCapacity is the maximum queue depth configured via Options.QueueDepth.
+	// This is the capacity at which backpressure will block new work items.
+	QueueCapacity int32
+
+	// TotalSteps is the cumulative count of execution steps since run start.
+	// Monotonically increasing counter.
+	TotalSteps int64
+
+	// TotalEnqueued is the total number of work items enqueued since run start.
+	// Useful for calculating throughput (enqueued/second).
+	TotalEnqueued int64
+
+	// TotalDequeued is the total number of work items dequeued since run start.
+	// Should equal TotalEnqueued when run completes.
+	TotalDequeued int64
+
+	// BackpressureEvents counts how many times backpressure was triggered.
+	// High count indicates sustained overload or insufficient concurrency.
+	BackpressureEvents int32
+
+	// PeakActiveNodes is the maximum concurrent execution observed during this run.
+	// Should be <= MaxConcurrentNodes.
+	PeakActiveNodes int32
+
+	// PeakQueueDepth is the maximum queue depth observed during this run.
+	// If this equals QueueCapacity, backpressure was triggered.
+	PeakQueueDepth int32
+}
+
+// Metrics returns a snapshot of current scheduler metrics (T068).
+//
+// The returned SchedulerMetrics is a point-in-time snapshot and may be stale
+// immediately after return if execution is ongoing. For consistent reads,
+// call this method when execution is paused or completed.
+//
+// This method is thread-safe and uses atomic operations to read metric values.
+func (f *Frontier[S]) Metrics() SchedulerMetrics {
+	f.mu.Lock()
+	currentQueueDepth := int32(f.heap.Len())
+	f.mu.Unlock()
+
+	return SchedulerMetrics{
+		ActiveNodes:        0, // Will be populated by Engine (T065)
+		QueueDepth:         currentQueueDepth,
+		QueueCapacity:      int32(f.capacity),
+		TotalSteps:         0,                           // Will be tracked by Engine
+		TotalEnqueued:      f.totalEnqueued.Load(),      // T068
+		TotalDequeued:      f.totalDequeued.Load(),      // T068
+		BackpressureEvents: f.backpressureEvents.Load(), // T068
+		PeakActiveNodes:    0,                           // Will be tracked by Engine (T065)
+		PeakQueueDepth:     f.peakQueueDepth.Load(),     // T068
+	}
 }

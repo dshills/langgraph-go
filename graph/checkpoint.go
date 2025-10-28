@@ -1,7 +1,12 @@
 package graph
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"sort"
 	"time"
 )
 
@@ -85,4 +90,70 @@ type Checkpoint[S any] struct {
 	// debugging or creating named save points (e.g., "before_summary", "after_validation").
 	// Empty string for automatic checkpoints.
 	Label string `json:"label,omitempty"`
+}
+
+// computeIdempotencyKey generates a deterministic hash for preventing duplicate checkpoint commits.
+//
+// The key is computed from:
+//  1. Run ID - uniquely identifies the execution
+//  2. Step ID - identifies the scheduler tick
+//  3. Sorted work items - captures the frontier inputs (sorted by OrderKey for determinism)
+//  4. State hash - captures the accumulated state after delta merging
+//
+// This ensures that identical execution contexts produce identical idempotency keys,
+// enabling exactly-once checkpoint commits even during retries or crash recovery.
+//
+// The hash uses SHA-256 for collision resistance and is returned as a hex-encoded string
+// with "sha256:" prefix for format versioning.
+//
+// Algorithm:
+//  1. Create SHA-256 hasher
+//  2. Write run ID (string bytes)
+//  3. Write step ID (8-byte big-endian int64)
+//  4. For each work item (sorted by OrderKey):
+//     - Write node ID (string bytes)
+//     - Write order key (8-byte big-endian uint64)
+//  5. Marshal state to JSON and write bytes
+//  6. Return "sha256:" + hex-encoded hash
+//
+// Returns error if state JSON marshaling fails.
+func computeIdempotencyKey[S any](runID string, stepID int, items []WorkItem[S], state S) (string, error) {
+	// Create SHA-256 hasher
+	h := sha256.New()
+
+	// Write run ID
+	h.Write([]byte(runID))
+
+	// Write step ID as 8-byte big-endian int64
+	stepBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(stepBytes, uint64(stepID))
+	h.Write(stepBytes)
+
+	// Sort work items by OrderKey for deterministic ordering
+	sortedItems := make([]WorkItem[S], len(items))
+	copy(sortedItems, items)
+	sort.Slice(sortedItems, func(i, j int) bool {
+		return sortedItems[i].OrderKey < sortedItems[j].OrderKey
+	})
+
+	// Write each work item's identifying information
+	for _, item := range sortedItems {
+		// Write node ID
+		h.Write([]byte(item.NodeID))
+
+		// Write order key as 8-byte big-endian uint64
+		orderKeyBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(orderKeyBytes, item.OrderKey)
+		h.Write(orderKeyBytes)
+	}
+
+	// Marshal state to JSON and write
+	stateJSON, err := json.Marshal(state)
+	if err != nil {
+		return "", err
+	}
+	h.Write(stateJSON)
+
+	// Return hex-encoded hash with format prefix
+	return "sha256:" + hex.EncodeToString(h.Sum(nil)), nil
 }
