@@ -1,31 +1,25 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Production Hardening and Documentation Enhancements
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Branch**: `003-production-hardening` | **Date**: 2025-10-28 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/003-production-hardening/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+This feature hardens the v0.2.0 concurrent execution implementation for production use by adding formal documentation of guarantees (determinism, exactly-once), comprehensive observability (Prometheus metrics + enhanced OpenTelemetry), frictionless development experience (SQLite store), enhanced CI testing, and improved API ergonomics (functional options, typed errors, cost tracking). The primary requirements are: (1) document ordering function and atomic commit contracts, (2) add 6 Prometheus metrics and enhanced OTel attributes, (3) implement SQLite store, (4) create CI tests proving determinism/ordering/exactly-once, (5) add functional options pattern, and (6) complete documentation for conflict policies, HITL, and competitive positioning. This is a polish/documentation-heavy feature building on existing 002 implementation.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Go 1.21+ (same as feature 002)
+**Primary Dependencies**: Builds on v0.2.0 implementation, adds: SQLite library (modernc.org/sqlite or mattn/go-sqlite3), Prometheus client (github.com/prometheus/client_golang)
+**Storage**: Adds SQLite store to existing MemStore and MySQLStore implementations
+**Testing**: Go testing framework, enhanced CI test suite for determinism/ordering/exactly-once guarantees
+**Target Platform**: Linux/macOS/Windows servers, same as v0.2.0
+**Project Type**: Single library project with enhanced documentation and examples
+**Performance Goals**: No performance degradation from v0.2.0, SQLite store comparable to MemStore for <10k checkpoints
+**Constraints**: Maintain 100% backward compatibility with v0.2.0, no breaking API changes, SQLite single-process only (document limitation)
+**Scale/Scope**: Documentation enhancements (~1,500 lines), SQLite store (~500 lines), Prometheus metrics (~300 lines), enhanced tests (~800 lines), API refactoring (~400 lines)
 
 ## Constitution Check
 
@@ -102,3 +96,43 @@ directories captured above]
 |-----------|------------|-------------------------------------|
 | [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
 | [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+
+[Gates determined based on constitution file]
+
+### Principle I-V: Type Safety & Determinism ✅
+**Status**: PASS - Feature enhances existing v0.2.0 without changing core contracts
+
+### TDD ✅  
+**Status**: PASS - Enhanced test suite with contract tests
+
+### GATE RESULT**: ✅ PASS
+
+## Project Structure
+
+This feature enhances existing v0.2.0 codebase:
+
+```
+graph/store/
+├── sqlite.go          # NEW: SQLite store implementation
+├── sqlite_test.go     # NEW: SQLite store tests
+
+graph/
+├── determinism_test.go    # NEW: Contract tests for ordering
+├── exactly_once_test.go   # NEW: Contract tests for idempotency  
+├── observability_test.go  # NEW: Metrics validation tests
+├── options.go             # NEW: Functional options pattern
+├── metrics.go             # NEW: Prometheus metrics
+├── cost.go                # NEW: Cost tracking
+
+docs/
+├── store-guarantees.md    # NEW: Store contract documentation
+├── why-go.md              # NEW: Go vs Python comparison
+├── observability.md       # Enhanced with Prometheus
+└── (existing docs enhanced)
+
+examples/
+├── prometheus_monitoring/ # NEW: Metrics example
+└── (existing examples enhanced)
+```
+
+**Structure Decision**: Enhance existing /graph package with new modules. Add SQLite store alongside MemStore and MySQLStore. Documentation primarily in /docs.
