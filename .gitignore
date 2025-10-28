@@ -79,3 +79,10 @@ credentials/
 examples/*/concurrent_workflow
 examples/*/replay_demo
 examples/*/ai_research_assistant
+
+# Example binaries
+examples/*/checkpoint
+examples/*/parallel
+examples/*/routing
+examples/*/tracing
+examples/*/llm
