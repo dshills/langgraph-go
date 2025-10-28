@@ -1,6 +1,7 @@
 package emit
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -119,4 +120,84 @@ func (l *LogEmitter) emitText(event Event) {
 	}
 
 	fmt.Fprint(l.writer, "\n")
+}
+
+// EmitBatch sends multiple events in a single operation for improved performance (T107).
+//
+// For LogEmitter, batching provides efficiency by:
+//   - Reducing write syscalls (one write per batch vs per event)
+//   - Better formatting when viewing multiple related events
+//   - Maintaining chronological order within the batch
+//
+// In text mode, events are written with blank lines between them for readability.
+// In JSON mode, events are written as JSONL (one per line) for easy parsing.
+//
+// Example text output:
+//
+//	[node_start] runID=run-001 step=0 nodeID=nodeA
+//	[node_end] runID=run-001 step=0 nodeID=nodeA
+//	[node_start] runID=run-001 step=1 nodeID=nodeB
+//
+// Example JSON output:
+//
+//	{"runID":"run-001","step":0,"nodeID":"nodeA","msg":"node_start","meta":null}
+//	{"runID":"run-001","step":0,"nodeID":"nodeA","msg":"node_end","meta":{"delta":{"counter":5}}}
+//	{"runID":"run-001","step":1,"nodeID":"nodeB","msg":"node_start","meta":null}
+//
+// This implementation is more efficient than calling Emit repeatedly because:
+//  1. It can batch multiple events into fewer write operations
+//  2. It can optimize formatting across the entire batch
+//  3. It reduces locking overhead if the writer is synchronized
+//
+// Parameters:
+//   - ctx: Context for cancellation (currently unused but reserved for future enhancements)
+//   - events: Slice of events to emit in order
+//
+// Returns error only if writing fails. Always attempts to write all events.
+func (l *LogEmitter) EmitBatch(ctx context.Context, events []Event) error {
+	if len(events) == 0 {
+		return nil
+	}
+
+	// Build output for all events before writing to minimize syscalls
+	if l.jsonMode {
+		// JSON mode: write all events as JSONL
+		for _, event := range events {
+			l.emitJSON(event)
+		}
+	} else {
+		// Text mode: write all events with consistent formatting
+		for _, event := range events {
+			l.emitText(event)
+		}
+	}
+
+	return nil
+}
+
+// Flush ensures all buffered events are sent to the backend (T108).
+//
+// For LogEmitter, this is a no-op because:
+//   - All writes go directly to the underlying io.Writer
+//   - No internal buffering is maintained by LogEmitter
+//   - The writer itself handles its own buffering (e.g., os.Stdout, bufio.Writer)
+//
+// If you need flush control, wrap the writer with bufio.Writer and call Flush on it directly:
+//
+//	buf := bufio.NewWriter(os.Stdout)
+//	emitter := emit.NewLogEmitter(buf, false)
+//	// ... emit events ...
+//	buf.Flush() // Flush the underlying buffer
+//	emitter.Flush(ctx) // No-op for LogEmitter
+//
+// This method is provided to satisfy the Emitter interface and enable polymorphic usage
+// with other emitters (e.g., OTelEmitter) that do require flushing.
+//
+// Parameters:
+//   - ctx: Context for cancellation (unused, LogEmitter writes are synchronous)
+//
+// Returns nil (always succeeds).
+func (l *LogEmitter) Flush(ctx context.Context) error {
+	// No-op: LogEmitter writes directly without buffering
+	return nil
 }

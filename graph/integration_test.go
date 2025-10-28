@@ -335,6 +335,19 @@ func (e *integrationEmitter) Emit(event emit.Event) {
 	e.events = append(e.events, event)
 }
 
+// TODO: Implement in Phase 8
+func (e *integrationEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+	for _, event := range events {
+		e.Emit(event)
+	}
+	return nil
+}
+
+// TODO: Implement in Phase 8
+func (e *integrationEmitter) Flush(ctx context.Context) error {
+	return nil
+}
+
 // TestIntegration_ConfidenceBasedRouting verifies confidence-based conditional routing (T099).
 func TestIntegration_ConfidenceBasedRouting(t *testing.T) {
 	t.Run("route based on confidence score with multiple paths", func(t *testing.T) {
@@ -1511,5 +1524,64 @@ func TestIntegration_EventTracingCapture(t *testing.T) {
 		})
 
 		t.Log("Integration test passed: 10-node workflow with comprehensive event tracing")
+	})
+}
+
+// TestQueueDepthMetrics (T062) verifies metrics tracking for queue depth and concurrency.
+//
+// According to spec.md FR-027: System MUST expose metrics for queue_depth, step_latency_ms,
+// active_nodes, and step_count.
+//
+// Requirements:
+// - Queue depth is tracked as nodes are enqueued/dequeued
+// - Active node count reflects concurrent execution
+// - Metrics are accessible for monitoring and observability
+// - Metrics remain accurate under high concurrency
+//
+// This test creates a workflow with fan-out and monitors metrics throughout execution.
+func TestQueueDepthMetrics(t *testing.T) {
+	t.Run("tracks queue depth and active nodes during execution", func(t *testing.T) {
+		// Note: This test will be fully implemented after T067-T068 add SchedulerMetrics
+		// For now, we verify that the structure for metrics exists
+
+		t.Skip("SchedulerMetrics implementation pending (T067-T068)")
+
+		// Expected test flow:
+		// 1. Create engine with metrics tracking enabled
+		// 2. Create workflow with fan-out (spawn 10 parallel branches)
+		// 3. Execute workflow and collect metrics snapshots
+		// 4. Verify queue_depth increases when nodes spawn work
+		// 5. Verify queue_depth decreases as work is consumed
+		// 6. Verify active_nodes stays within MaxConcurrentNodes limit
+		// 7. Verify step_count increments correctly
+		// 8. Verify metrics are accessible via Frontier.Metrics() or similar API
+	})
+
+	t.Run("metrics accurately reflect backpressure conditions", func(t *testing.T) {
+		// Note: This test will be implemented after backpressure metrics are added
+
+		t.Skip("Backpressure metrics pending (T068-T069)")
+
+		// Expected test flow:
+		// 1. Create engine with small QueueDepth
+		// 2. Create nodes that produce work faster than consumed
+		// 3. Monitor queue_depth metric as it reaches capacity
+		// 4. Verify metrics show queue is full when backpressure triggers
+		// 5. Verify backpressure event is emitted with correct metrics
+		// 6. Verify queue_depth decreases when work is consumed
+	})
+
+	t.Run("metrics remain accurate under high concurrency", func(t *testing.T) {
+		// Note: This test will verify thread-safe metric updates
+
+		t.Skip("Concurrent metrics validation pending (T067-T068)")
+
+		// Expected test flow:
+		// 1. Create engine with MaxConcurrentNodes=10
+		// 2. Spawn 100 parallel work items
+		// 3. Collect metrics snapshots from multiple goroutines
+		// 4. Verify no race conditions in metric updates (run with -race)
+		// 5. Verify final metrics match expected values
+		// 6. Verify active_nodes never exceeds MaxConcurrentNodes
 	})
 }

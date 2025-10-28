@@ -144,6 +144,57 @@ engine.LoadCheckpoint("after-step-1")
 final, err := engine.Run(ctx, runID, initialState)
 ```
 
+### Concurrent Execution
+
+**New in v0.2.0**: Execute independent nodes in parallel with deterministic results:
+
+```go
+// Enable concurrent execution with worker pool
+opts := graph.Options{
+    MaxConcurrentNodes: 10,  // Execute up to 10 nodes in parallel
+    QueueDepth:         1000, // Frontier queue capacity
+}
+
+engine := graph.New(reducer, store, emitter, opts)
+
+// Graph with parallel branches executes concurrently
+// Fan-out: one node spawns multiple parallel branches
+engine.Add("start", startNode)
+engine.Add("branchA", branchANode) // Executes in parallel
+engine.Add("branchB", branchBNode) // Executes in parallel
+engine.Add("branchC", branchCNode) // Executes in parallel
+engine.Add("merge", mergeNode)     // Results merge deterministically
+
+// Results are deterministic regardless of completion order
+final, err := engine.Run(ctx, runID, initialState)
+```
+
+**Key Features:**
+
+- ⚡ **Performance**: 2-5x speedup for workflows with independent nodes
+- 🎯 **Deterministic**: Same results regardless of execution order
+- 🔄 **Replay**: Record and replay executions exactly for debugging
+- 🛡️ **Backpressure**: Automatic queue management prevents resource exhaustion
+- 📊 **Observability**: Built-in metrics for queue depth and active workers
+
+**Deterministic Replay** for debugging production issues:
+
+```go
+// Original execution automatically recorded
+final, err := engine.Run(ctx, "prod-run-123", initialState)
+
+// Load checkpoint from production
+checkpoint, _ := store.LoadCheckpointV2(ctx, "prod-run-123", "")
+
+// Replay execution exactly (no external API calls)
+opts := graph.Options{ReplayMode: true}
+replayResult, _ := engine.ReplayRun(ctx, "debug-replay", checkpoint)
+
+// Identical results, full debugging context
+```
+
+See [Concurrency Guide](./docs/concurrency.md) and [Replay Guide](./docs/replay.md) for details.
+
 ## Architecture
 
 ```
@@ -180,12 +231,14 @@ final, err := engine.Run(ctx, runID, initialState)
 - ✅ **Stateful Execution** - Checkpoint and resume workflows
 - ✅ **Conditional Routing** - Dynamic control flow based on state
 - ✅ **Parallel Execution** - Fan-out to concurrent nodes
+- ✅ **Concurrent Execution** - Worker pool with deterministic ordering (v0.2.0)
+- ✅ **Deterministic Replay** - Record and replay executions exactly (v0.2.0)
 - ✅ **LLM Integration** - OpenAI, Anthropic, Google Gemini
 - ✅ **Tool Support** - HTTP tools and custom tool integration
 - ✅ **Persistence** - MySQL/Aurora store for production use
 - ✅ **Event Tracing** - Comprehensive observability with multiple emitters
 - ✅ **Type Safety** - Go generics for compile-time safety
-- ✅ **Production Ready** - Error handling, retries, timeouts
+- ✅ **Production Ready** - Error handling, retries, timeouts, backpressure
 
 ## Examples
 
@@ -221,6 +274,12 @@ make examples
 - [Parallel Execution](./docs/guides/06-parallel.md) - Concurrent node execution
 - [LLM Integration](./docs/guides/07-llm-integration.md) - Multi-provider LLM support
 - [Event Tracing](./docs/guides/08-event-tracing.md) - Observability and monitoring
+
+### Advanced Topics (v0.2.0)
+
+- [Concurrency Model](./docs/concurrency.md) - Worker pool, ordering, backpressure
+- [Deterministic Replay](./docs/replay.md) - Record and replay executions
+- [Migration Guide v0.1→v0.2](./docs/migration-v0.2.md) - Upgrade from v0.1.x
 
 ### Reference
 

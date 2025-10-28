@@ -192,3 +192,10 @@ Nodes can return multiple next hops via `Next{Many: []string{...}}` to enable pa
 - Full specification: `specs/SPEC.md`
 - Specify templates: `.specify/templates/`
 - Project constitution: `.specify/memory/constitution.md` (currently template only)
+
+## Active Technologies
+- Go 1.21+ (requires generics support) + Go standard library only (core framework), optional adapters for OpenTelemetry SDK, MySQL driver (002-concurrency-spec)
+- Store interface supports in-memory (testing) and MySQL/Aurora (production) implementations (002-concurrency-spec)
+
+## Recent Changes
+- 002-concurrency-spec: Added Go 1.21+ (requires generics support) + Go standard library only (core framework), optional adapters for OpenTelemetry SDK, MySQL driver

@@ -210,3 +210,23 @@ func (m *MultiEmitter) Emit(event emit.Event) {
 		emitter.Emit(event)
 	}
 }
+
+func (m *MultiEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+	for _, emitter := range m.emitters {
+		if err := emitter.EmitBatch(ctx, events); err != nil {
+			// Continue emitting to other emitters even if one fails
+			continue
+		}
+	}
+	return nil
+}
+
+func (m *MultiEmitter) Flush(ctx context.Context) error {
+	for _, emitter := range m.emitters {
+		if err := emitter.Flush(ctx); err != nil {
+			// Continue flushing other emitters even if one fails
+			continue
+		}
+	}
+	return nil
+}

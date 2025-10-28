@@ -76,3 +76,19 @@ settings.local.json
 *_secret*.json
 secrets/
 credentials/
+examples/*/concurrent_workflow
+examples/*/replay_demo
+examples/*/ai_research_assistant
+
+# Example binaries
+examples/*/checkpoint
+examples/*/parallel
+examples/*/routing
+examples/*/tracing
+examples/*/llm
+examples/*/benchmarks
+examples/*/chatbot
+examples/*/data-pipeline
+examples/*/interactive-workflow
+examples/*/research-pipeline
+examples/*/tools

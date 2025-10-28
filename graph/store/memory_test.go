@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
+
+	"github.com/dshills/langgraph-go/graph/emit"
 )
 
 // TestMemStore_Construction verifies MemStore[S] can be constructed (T033).
@@ -566,5 +569,558 @@ func TestMemStore_JSONDeserialization(t *testing.T) {
 		if err == nil {
 			t.Error("expected error for invalid JSON")
 		}
+	})
+}
+
+// TestMemStore_SaveCheckpointV2 verifies enhanced checkpoint save functionality (T094, T099).
+func TestMemStore_SaveCheckpointV2(t *testing.T) {
+	t.Run("save checkpoint with idempotency key", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		checkpoint := CheckpointV2[TestState]{
+			RunID:          "run-001",
+			StepID:         5,
+			State:          TestState{Value: "test", Counter: 42},
+			IdempotencyKey: "idem-key-001",
+		}
+
+		err := store.SaveCheckpointV2(ctx, checkpoint)
+		if err != nil {
+			t.Fatalf("SaveCheckpointV2 failed: %v", err)
+		}
+
+		// Verify checkpoint can be loaded
+		loaded, err := store.LoadCheckpointV2(ctx, "run-001", 5)
+		if err != nil {
+			t.Fatalf("LoadCheckpointV2 failed: %v", err)
+		}
+
+		if loaded.RunID != checkpoint.RunID {
+			t.Errorf("expected RunID = %q, got %q", checkpoint.RunID, loaded.RunID)
+		}
+		if loaded.StepID != checkpoint.StepID {
+			t.Errorf("expected StepID = %d, got %d", checkpoint.StepID, loaded.StepID)
+		}
+		if loaded.State.Value != checkpoint.State.Value {
+			t.Errorf("expected State.Value = %q, got %q", checkpoint.State.Value, loaded.State.Value)
+		}
+	})
+
+	t.Run("duplicate idempotency key returns error", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		checkpoint := CheckpointV2[TestState]{
+			RunID:          "run-001",
+			StepID:         1,
+			State:          TestState{Value: "first"},
+			IdempotencyKey: "duplicate-key",
+		}
+
+		// First save should succeed
+		err := store.SaveCheckpointV2(ctx, checkpoint)
+		if err != nil {
+			t.Fatalf("first SaveCheckpointV2 failed: %v", err)
+		}
+
+		// Second save with same idempotency key should fail
+		checkpoint2 := CheckpointV2[TestState]{
+			RunID:          "run-002",
+			StepID:         2,
+			State:          TestState{Value: "second"},
+			IdempotencyKey: "duplicate-key",
+		}
+
+		err = store.SaveCheckpointV2(ctx, checkpoint2)
+		if err == nil {
+			t.Error("expected error for duplicate idempotency key")
+		}
+		if !errors.Is(err, errors.New("duplicate checkpoint")) && err != nil && err.Error() != "duplicate checkpoint: idempotency key \"duplicate-key\" already exists" {
+			// Check if error message contains expected text
+			if err.Error() == "" || err.Error()[:len("duplicate checkpoint")] != "duplicate checkpoint" {
+				t.Errorf("unexpected error message: %v", err)
+			}
+		}
+	})
+
+	t.Run("save checkpoint with label", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		checkpoint := CheckpointV2[TestState]{
+			RunID:          "run-001",
+			StepID:         10,
+			State:          TestState{Value: "labeled", Counter: 100},
+			Label:          "before-validation",
+			IdempotencyKey: "label-key-001",
+		}
+
+		err := store.SaveCheckpointV2(ctx, checkpoint)
+		if err != nil {
+			t.Fatalf("SaveCheckpointV2 failed: %v", err)
+		}
+
+		// Verify label is indexed (internal verification)
+		store.mu.RLock()
+		labelKey, exists := store.labelIndex["before-validation"]
+		store.mu.RUnlock()
+
+		if !exists {
+			t.Error("label not indexed")
+		}
+		if labelKey != "run-001:10" {
+			t.Errorf("expected label to map to 'run-001:10', got %q", labelKey)
+		}
+	})
+
+	t.Run("save checkpoint without idempotency key", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		checkpoint := CheckpointV2[TestState]{
+			RunID:          "run-001",
+			StepID:         1,
+			State:          TestState{Value: "no-idem-key"},
+			IdempotencyKey: "", // Empty idempotency key
+		}
+
+		err := store.SaveCheckpointV2(ctx, checkpoint)
+		if err != nil {
+			t.Fatalf("SaveCheckpointV2 should succeed without idempotency key: %v", err)
+		}
+	})
+}
+
+// TestMemStore_LoadCheckpointV2 verifies enhanced checkpoint load functionality (T095, T099).
+func TestMemStore_LoadCheckpointV2(t *testing.T) {
+	t.Run("load existing checkpoint", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		checkpoint := CheckpointV2[TestState]{
+			RunID:          "run-001",
+			StepID:         7,
+			State:          TestState{Value: "load-test", Counter: 77},
+			IdempotencyKey: "load-key-001",
+		}
+
+		_ = store.SaveCheckpointV2(ctx, checkpoint)
+
+		loaded, err := store.LoadCheckpointV2(ctx, "run-001", 7)
+		if err != nil {
+			t.Fatalf("LoadCheckpointV2 failed: %v", err)
+		}
+
+		if loaded.StepID != 7 {
+			t.Errorf("expected StepID = 7, got %d", loaded.StepID)
+		}
+		if loaded.State.Counter != 77 {
+			t.Errorf("expected Counter = 77, got %d", loaded.State.Counter)
+		}
+	})
+
+	t.Run("load nonexistent checkpoint", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		_, err := store.LoadCheckpointV2(ctx, "nonexistent-run", 99)
+		if !errors.Is(err, ErrNotFound) {
+			t.Errorf("expected ErrNotFound, got %v", err)
+		}
+	})
+
+	t.Run("load different steps from same run", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Save multiple checkpoints for same run
+		for i := 1; i <= 5; i++ {
+			checkpoint := CheckpointV2[TestState]{
+				RunID:          "run-001",
+				StepID:         i,
+				State:          TestState{Counter: i * 10},
+				IdempotencyKey: fmt.Sprintf("key-%d", i),
+			}
+			_ = store.SaveCheckpointV2(ctx, checkpoint)
+		}
+
+		// Load step 3
+		cp3, err := store.LoadCheckpointV2(ctx, "run-001", 3)
+		if err != nil {
+			t.Fatalf("failed to load step 3: %v", err)
+		}
+		if cp3.State.Counter != 30 {
+			t.Errorf("expected Counter = 30, got %d", cp3.State.Counter)
+		}
+
+		// Load step 5
+		cp5, err := store.LoadCheckpointV2(ctx, "run-001", 5)
+		if err != nil {
+			t.Fatalf("failed to load step 5: %v", err)
+		}
+		if cp5.State.Counter != 50 {
+			t.Errorf("expected Counter = 50, got %d", cp5.State.Counter)
+		}
+	})
+}
+
+// TestMemStore_CheckIdempotency verifies idempotency key checking (T096, T099).
+func TestMemStore_CheckIdempotency(t *testing.T) {
+	t.Run("check unused key", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		exists, err := store.CheckIdempotency(ctx, "unused-key")
+		if err != nil {
+			t.Fatalf("CheckIdempotency failed: %v", err)
+		}
+		if exists {
+			t.Error("expected key to not exist")
+		}
+	})
+
+	t.Run("check used key", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Save checkpoint with idempotency key
+		checkpoint := CheckpointV2[TestState]{
+			RunID:          "run-001",
+			StepID:         1,
+			State:          TestState{Value: "test"},
+			IdempotencyKey: "used-key",
+		}
+		_ = store.SaveCheckpointV2(ctx, checkpoint)
+
+		// Check if key exists
+		exists, err := store.CheckIdempotency(ctx, "used-key")
+		if err != nil {
+			t.Fatalf("CheckIdempotency failed: %v", err)
+		}
+		if !exists {
+			t.Error("expected key to exist")
+		}
+	})
+
+	t.Run("check multiple keys", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Save multiple checkpoints
+		keys := []string{"key-1", "key-2", "key-3"}
+		for i, key := range keys {
+			checkpoint := CheckpointV2[TestState]{
+				RunID:          "run-001",
+				StepID:         i + 1,
+				State:          TestState{Counter: i},
+				IdempotencyKey: key,
+			}
+			_ = store.SaveCheckpointV2(ctx, checkpoint)
+		}
+
+		// Verify all keys exist
+		for _, key := range keys {
+			exists, err := store.CheckIdempotency(ctx, key)
+			if err != nil {
+				t.Fatalf("CheckIdempotency(%s) failed: %v", key, err)
+			}
+			if !exists {
+				t.Errorf("expected key %s to exist", key)
+			}
+		}
+
+		// Verify unused key doesn't exist
+		exists, _ := store.CheckIdempotency(ctx, "unused-key")
+		if exists {
+			t.Error("expected unused-key to not exist")
+		}
+	})
+}
+
+// TestMemStore_PendingEvents verifies event queue retrieval (T097, T099).
+func TestMemStore_PendingEvents(t *testing.T) {
+	t.Run("retrieve pending events", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Add events to pending queue
+		store.mu.Lock()
+		store.pendingEvents = []emit.Event{
+			{RunID: "run-001", Step: 1, NodeID: "node1", Msg: "event1", Meta: map[string]interface{}{"event_id": "e1"}},
+			{RunID: "run-001", Step: 2, NodeID: "node2", Msg: "event2", Meta: map[string]interface{}{"event_id": "e2"}},
+			{RunID: "run-001", Step: 3, NodeID: "node3", Msg: "event3", Meta: map[string]interface{}{"event_id": "e3"}},
+		}
+		store.mu.Unlock()
+
+		// Retrieve all events
+		events, err := store.PendingEvents(ctx, 0)
+		if err != nil {
+			t.Fatalf("PendingEvents failed: %v", err)
+		}
+
+		if len(events) != 3 {
+			t.Errorf("expected 3 events, got %d", len(events))
+		}
+	})
+
+	t.Run("retrieve with limit", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Add 10 events
+		store.mu.Lock()
+		for i := 1; i <= 10; i++ {
+			event := emit.Event{
+				RunID:  "run-001",
+				Step:   i,
+				NodeID: fmt.Sprintf("node%d", i),
+				Msg:    fmt.Sprintf("event%d", i),
+				Meta:   map[string]interface{}{"event_id": fmt.Sprintf("e%d", i)},
+			}
+			store.pendingEvents = append(store.pendingEvents, event)
+		}
+		store.mu.Unlock()
+
+		// Retrieve only 5 events
+		events, err := store.PendingEvents(ctx, 5)
+		if err != nil {
+			t.Fatalf("PendingEvents failed: %v", err)
+		}
+
+		if len(events) != 5 {
+			t.Errorf("expected 5 events, got %d", len(events))
+		}
+
+		// Verify correct events returned (first 5)
+		for i := 0; i < 5; i++ {
+			if events[i].Step != i+1 {
+				t.Errorf("expected event %d to have Step = %d, got %d", i, i+1, events[i].Step)
+			}
+		}
+	})
+
+	t.Run("empty queue returns empty list", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		events, err := store.PendingEvents(ctx, 10)
+		if err != nil {
+			t.Fatalf("PendingEvents failed: %v", err)
+		}
+
+		if len(events) != 0 {
+			t.Errorf("expected 0 events, got %d", len(events))
+		}
+	})
+}
+
+// TestMemStore_MarkEventsEmitted verifies event emission marking (T098, T099).
+func TestMemStore_MarkEventsEmitted(t *testing.T) {
+	t.Run("mark events as emitted", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Add events to pending queue
+		store.mu.Lock()
+		store.pendingEvents = []emit.Event{
+			{RunID: "run-001", Step: 1, Msg: "event1", Meta: map[string]interface{}{"event_id": "e1"}},
+			{RunID: "run-001", Step: 2, Msg: "event2", Meta: map[string]interface{}{"event_id": "e2"}},
+			{RunID: "run-001", Step: 3, Msg: "event3", Meta: map[string]interface{}{"event_id": "e3"}},
+		}
+		store.mu.Unlock()
+
+		// Mark e1 and e3 as emitted
+		err := store.MarkEventsEmitted(ctx, []string{"e1", "e3"})
+		if err != nil {
+			t.Fatalf("MarkEventsEmitted failed: %v", err)
+		}
+
+		// Verify only e2 remains
+		events, _ := store.PendingEvents(ctx, 0)
+		if len(events) != 1 {
+			t.Errorf("expected 1 pending event, got %d", len(events))
+		}
+		if len(events) > 0 && events[0].Step != 2 {
+			t.Errorf("expected remaining event to be step 2, got step %d", events[0].Step)
+		}
+	})
+
+	t.Run("mark all events as emitted", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Add events
+		store.mu.Lock()
+		store.pendingEvents = []emit.Event{
+			{RunID: "run-001", Step: 1, Msg: "event1", Meta: map[string]interface{}{"event_id": "e1"}},
+			{RunID: "run-001", Step: 2, Msg: "event2", Meta: map[string]interface{}{"event_id": "e2"}},
+		}
+		store.mu.Unlock()
+
+		// Mark all as emitted
+		err := store.MarkEventsEmitted(ctx, []string{"e1", "e2"})
+		if err != nil {
+			t.Fatalf("MarkEventsEmitted failed: %v", err)
+		}
+
+		// Verify queue is empty
+		events, _ := store.PendingEvents(ctx, 0)
+		if len(events) != 0 {
+			t.Errorf("expected empty queue, got %d events", len(events))
+		}
+	})
+
+	t.Run("mark nonexistent event ID is no-op", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Add one event
+		store.mu.Lock()
+		store.pendingEvents = []emit.Event{
+			{RunID: "run-001", Step: 1, Msg: "event1", Meta: map[string]interface{}{"event_id": "e1"}},
+		}
+		store.mu.Unlock()
+
+		// Mark nonexistent event
+		err := store.MarkEventsEmitted(ctx, []string{"nonexistent"})
+		if err != nil {
+			t.Fatalf("MarkEventsEmitted failed: %v", err)
+		}
+
+		// Verify original event remains
+		events, _ := store.PendingEvents(ctx, 0)
+		if len(events) != 1 {
+			t.Errorf("expected 1 event, got %d", len(events))
+		}
+	})
+
+	t.Run("mark empty list is no-op", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		err := store.MarkEventsEmitted(ctx, []string{})
+		if err != nil {
+			t.Errorf("MarkEventsEmitted with empty list should not error: %v", err)
+		}
+	})
+}
+
+// TestMemStore_ConcurrentV2Operations verifies thread-safety of new methods (T099).
+func TestMemStore_ConcurrentV2Operations(t *testing.T) {
+	t.Run("concurrent SaveCheckpointV2", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		var wg sync.WaitGroup
+		errors := make(chan error, 10)
+
+		// Launch 10 goroutines saving checkpoints
+		for i := 1; i <= 10; i++ {
+			wg.Add(1)
+			go func(step int) {
+				defer wg.Done()
+				checkpoint := CheckpointV2[TestState]{
+					RunID:          "run-001",
+					StepID:         step,
+					State:          TestState{Counter: step},
+					IdempotencyKey: fmt.Sprintf("key-%d", step),
+				}
+				if err := store.SaveCheckpointV2(ctx, checkpoint); err != nil {
+					errors <- err
+				}
+			}(i)
+		}
+
+		wg.Wait()
+		close(errors)
+
+		// Check no errors occurred
+		for err := range errors {
+			t.Errorf("concurrent SaveCheckpointV2 failed: %v", err)
+		}
+
+		// Verify all checkpoints saved
+		for i := 1; i <= 10; i++ {
+			_, err := store.LoadCheckpointV2(ctx, "run-001", i)
+			if err != nil {
+				t.Errorf("checkpoint %d not saved: %v", i, err)
+			}
+		}
+	})
+
+	t.Run("concurrent CheckIdempotency", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Pre-populate some keys
+		for i := 1; i <= 5; i++ {
+			checkpoint := CheckpointV2[TestState]{
+				RunID:          "run-001",
+				StepID:         i,
+				State:          TestState{},
+				IdempotencyKey: fmt.Sprintf("key-%d", i),
+			}
+			_ = store.SaveCheckpointV2(ctx, checkpoint)
+		}
+
+		var wg sync.WaitGroup
+		// Launch concurrent idempotency checks
+		for i := 1; i <= 20; i++ {
+			wg.Add(1)
+			go func(n int) {
+				defer wg.Done()
+				key := fmt.Sprintf("key-%d", n%10)
+				_, _ = store.CheckIdempotency(ctx, key)
+			}(i)
+		}
+
+		wg.Wait()
+		// Test passes if no race conditions detected
+	})
+
+	t.Run("concurrent PendingEvents and MarkEventsEmitted", func(t *testing.T) {
+		store := NewMemStore[TestState]()
+		ctx := context.Background()
+
+		// Pre-populate events
+		store.mu.Lock()
+		for i := 1; i <= 20; i++ {
+			event := emit.Event{
+				RunID:  "run-001",
+				Step:   i,
+				NodeID: fmt.Sprintf("node%d", i),
+				Msg:    fmt.Sprintf("event%d", i),
+				Meta:   map[string]interface{}{"event_id": fmt.Sprintf("e%d", i)},
+			}
+			store.pendingEvents = append(store.pendingEvents, event)
+		}
+		store.mu.Unlock()
+
+		var wg sync.WaitGroup
+
+		// Reader goroutines
+		for i := 0; i < 5; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for j := 0; j < 10; j++ {
+					_, _ = store.PendingEvents(ctx, 5)
+				}
+			}()
+		}
+
+		// Writer goroutines (marking emitted)
+		for i := 0; i < 3; i++ {
+			wg.Add(1)
+			go func(n int) {
+				defer wg.Done()
+				ids := []string{fmt.Sprintf("e%d", n*2+1), fmt.Sprintf("e%d", n*2+2)}
+				_ = store.MarkEventsEmitted(ctx, ids)
+			}(i)
+		}
+
+		wg.Wait()
+		// Test passes if no race conditions detected
 	})
 }

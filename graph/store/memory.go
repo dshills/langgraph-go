@@ -3,7 +3,10 @@ package store
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
+
+	"github.com/dshills/langgraph-go/graph/emit"
 )
 
 // MemStore is an in-memory implementation of Store[S].
@@ -25,9 +28,14 @@ import (
 //
 // Type parameter S is the state type to persist.
 type MemStore[S any] struct {
-	mu          sync.RWMutex
-	steps       map[string][]StepRecord[S] // runID -> list of steps
-	checkpoints map[string]Checkpoint[S]   // checkpointID -> checkpoint
+	mu             sync.RWMutex
+	steps          map[string][]StepRecord[S] // runID -> list of steps
+	checkpoints    map[string]Checkpoint[S]   // checkpointID -> checkpoint
+	checkpointsV2  map[string]CheckpointV2[S] // "runID:stepID" -> checkpoint
+	labelIndex     map[string]string          // label -> "runID:stepID"
+	idempotencyMap map[string]bool            // idempotency key -> exists
+	pendingEvents  []emit.Event               // pending events queue
+	eventIDSet     map[string]int             // eventID -> index in pendingEvents
 }
 
 // NewMemStore creates a new in-memory store.
@@ -38,8 +46,13 @@ type MemStore[S any] struct {
 //	engine := graph.New(reducer, store, emitter, opts)
 func NewMemStore[S any]() *MemStore[S] {
 	return &MemStore[S]{
-		steps:       make(map[string][]StepRecord[S]),
-		checkpoints: make(map[string]Checkpoint[S]),
+		steps:          make(map[string][]StepRecord[S]),
+		checkpoints:    make(map[string]Checkpoint[S]),
+		checkpointsV2:  make(map[string]CheckpointV2[S]),
+		labelIndex:     make(map[string]string),
+		idempotencyMap: make(map[string]bool),
+		pendingEvents:  make([]emit.Event, 0),
+		eventIDSet:     make(map[string]int),
 	}
 }
 
@@ -128,8 +141,12 @@ func (m *MemStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (state S,
 // Used for persisting MemStore contents to disk or transmitting over network.
 // The generic type S must be JSON-serializable (implement json.Marshaler or have exported fields).
 type serializableMemStore[S any] struct {
-	Steps       map[string][]StepRecord[S] `json:"steps"`
-	Checkpoints map[string]Checkpoint[S]   `json:"checkpoints"`
+	Steps          map[string][]StepRecord[S] `json:"steps"`
+	Checkpoints    map[string]Checkpoint[S]   `json:"checkpoints"`
+	CheckpointsV2  map[string]CheckpointV2[S] `json:"checkpoints_v2"`
+	LabelIndex     map[string]string          `json:"label_index"`
+	IdempotencyMap map[string]bool            `json:"idempotency_map"`
+	PendingEvents  []emit.Event               `json:"pending_events"`
 }
 
 // MarshalJSON serializes the MemStore to JSON (T072).
@@ -154,8 +171,12 @@ func (m *MemStore[S]) MarshalJSON() ([]byte, error) {
 
 	// Create serializable representation
 	s := serializableMemStore[S]{
-		Steps:       m.steps,
-		Checkpoints: m.checkpoints,
+		Steps:          m.steps,
+		Checkpoints:    m.checkpoints,
+		CheckpointsV2:  m.checkpointsV2,
+		LabelIndex:     m.labelIndex,
+		IdempotencyMap: m.idempotencyMap,
+		PendingEvents:  m.pendingEvents,
 	}
 
 	return json.Marshal(s)
@@ -189,6 +210,10 @@ func (m *MemStore[S]) UnmarshalJSON(data []byte) error {
 	// Replace store contents
 	m.steps = s.Steps
 	m.checkpoints = s.Checkpoints
+	m.checkpointsV2 = s.CheckpointsV2
+	m.labelIndex = s.LabelIndex
+	m.idempotencyMap = s.IdempotencyMap
+	m.pendingEvents = s.PendingEvents
 
 	// Initialize empty maps if nil (for empty JSON objects)
 	if m.steps == nil {
@@ -197,6 +222,166 @@ func (m *MemStore[S]) UnmarshalJSON(data []byte) error {
 	if m.checkpoints == nil {
 		m.checkpoints = make(map[string]Checkpoint[S])
 	}
+	if m.checkpointsV2 == nil {
+		m.checkpointsV2 = make(map[string]CheckpointV2[S])
+	}
+	if m.labelIndex == nil {
+		m.labelIndex = make(map[string]string)
+	}
+	if m.idempotencyMap == nil {
+		m.idempotencyMap = make(map[string]bool)
+	}
+	if m.pendingEvents == nil {
+		m.pendingEvents = make([]emit.Event, 0)
+	}
+
+	// Rebuild eventIDSet from pendingEvents
+	m.eventIDSet = make(map[string]int)
+	for i, event := range m.pendingEvents {
+		if event.Meta != nil {
+			if id, ok := event.Meta["event_id"].(string); ok {
+				m.eventIDSet[id] = i
+			}
+		}
+	}
+
+	return nil
+}
+
+// SaveCheckpointV2 persists an enhanced checkpoint with full execution context (T094).
+//
+// Stores checkpoint indexed by (runID, stepID) and optionally by label if provided.
+// Returns error if the idempotency key already exists (duplicate commit prevention).
+//
+// Thread-safe for concurrent access.
+func (m *MemStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint CheckpointV2[S]) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Check idempotency key to prevent duplicate commits
+	if checkpoint.IdempotencyKey != "" {
+		if m.idempotencyMap[checkpoint.IdempotencyKey] {
+			return fmt.Errorf("duplicate checkpoint: idempotency key %q already exists", checkpoint.IdempotencyKey)
+		}
+		// Mark idempotency key as used
+		m.idempotencyMap[checkpoint.IdempotencyKey] = true
+	}
+
+	// Create composite key for primary index
+	key := fmt.Sprintf("%s:%d", checkpoint.RunID, checkpoint.StepID)
+	m.checkpointsV2[key] = checkpoint
+
+	// If labeled, also index by label for named checkpoint retrieval
+	if checkpoint.Label != "" {
+		m.labelIndex[checkpoint.Label] = key
+	}
+
+	return nil
+}
+
+// LoadCheckpointV2 retrieves an enhanced checkpoint by run ID and step ID (T095).
+//
+// Returns ErrNotFound if the checkpoint doesn't exist.
+// Thread-safe for concurrent reads.
+func (m *MemStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (CheckpointV2[S], error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	key := fmt.Sprintf("%s:%d", runID, stepID)
+	checkpoint, exists := m.checkpointsV2[key]
+	if !exists {
+		var zero CheckpointV2[S]
+		return zero, ErrNotFound
+	}
+
+	return checkpoint, nil
+}
+
+// CheckIdempotency verifies if an idempotency key has been used (T096).
+//
+// Returns (true, nil) if the key exists (has been used).
+// Returns (false, nil) if the key doesn't exist (safe to use).
+// Only returns error on store access failure (never for this in-memory implementation).
+//
+// Thread-safe for concurrent access.
+func (m *MemStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	exists := m.idempotencyMap[key]
+	return exists, nil
+}
+
+// PendingEvents retrieves events from the transactional outbox that haven't been emitted (T097).
+//
+// Returns up to 'limit' pending events ordered by insertion order.
+// Empty list is not an error - it means no events are pending.
+//
+// Thread-safe for concurrent access.
+func (m *MemStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	// Return up to 'limit' events
+	count := len(m.pendingEvents)
+	if limit > 0 && limit < count {
+		count = limit
+	}
+
+	// Return a copy to prevent external modification
+	result := make([]emit.Event, count)
+	copy(result, m.pendingEvents[:count])
+
+	return result, nil
+}
+
+// MarkEventsEmitted marks events as successfully emitted to prevent re-delivery (T098).
+//
+// Removes events from the pending queue by their IDs.
+// Event IDs should be stored in the event's Meta map with key "event_id".
+// If an event ID is not found, it is silently ignored (idempotent operation).
+//
+// Thread-safe for concurrent access.
+func (m *MemStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if len(eventIDs) == 0 {
+		return nil // No-op for empty list
+	}
+
+	// Build set of IDs to remove for O(1) lookup
+	toRemove := make(map[string]bool, len(eventIDs))
+	for _, id := range eventIDs {
+		toRemove[id] = true
+	}
+
+	// Filter out events with matching IDs
+	filtered := make([]emit.Event, 0, len(m.pendingEvents))
+	newEventIDSet := make(map[string]int)
+
+	for i, event := range m.pendingEvents {
+		// Get event ID from Meta map
+		eventID := ""
+		if event.Meta != nil {
+			if id, ok := event.Meta["event_id"].(string); ok {
+				eventID = id
+			}
+		}
+
+		// Keep event if not in removal set
+		if !toRemove[eventID] {
+			newEventIDSet[eventID] = len(filtered)
+			filtered = append(filtered, event)
+		} else {
+			// Event is being removed, delete from original index
+			delete(m.eventIDSet, eventID)
+		}
+		_ = i // Prevent unused variable warning
+	}
+
+	m.pendingEvents = filtered
+	m.eventIDSet = newEventIDSet
 
 	return nil
 }

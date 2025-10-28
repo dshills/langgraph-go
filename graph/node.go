@@ -15,6 +15,45 @@ import "context"
 //   - Handle errors
 //
 // Type parameter S is the state type shared across the workflow.
+//
+// Optional Methods:
+//
+// Nodes can optionally implement Policy() NodePolicy to configure execution behavior
+// such as timeouts, retry policies, and idempotency keys. If not implemented, the
+// engine uses default settings from Options.
+//
+// To maintain backward compatibility, embed DefaultPolicy in your node struct to
+// get a zero-value Policy() implementation:
+//
+//	type MyNode struct {
+//	    DefaultPolicy  // Provides Policy() returning zero value
+//	    // ... your fields
+//	}
+//
+// For custom policies, implement the method directly:
+//
+//	func (n *MyNode) Policy() NodePolicy {
+//	    return NodePolicy{
+//	        Timeout: 30 * time.Second,
+//	        RetryPolicy: &RetryPolicy{MaxAttempts: 3},
+//	    }
+//	}
+//
+// Nodes can also optionally implement Effects() SideEffectPolicy to declare their
+// I/O characteristics for deterministic replay. If not implemented, the node is
+// assumed to be pure (no external side effects).
+//
+// For nodes with external I/O (LLM calls, API requests, database queries):
+//
+//	func (n *MyNode) Effects() SideEffectPolicy {
+//	    return SideEffectPolicy{
+//	        Recordable:          true,  // I/O can be captured for replay
+//	        RequiresIdempotency: true,  // Use idempotency keys
+//	    }
+//	}
+//
+// Pure nodes (computation only, no I/O) don't need to implement Effects() - the
+// default zero value indicates no side effects.
 type Node[S any] interface {
 	// Run executes the node's logic with the given context and state.
 	// It returns a NodeResult containing state changes, routing decisions,
@@ -74,6 +113,12 @@ func Stop() Next {
 // Goto returns a Next that routes to the specified node.
 func Goto(nodeID string) Next {
 	return Next{To: nodeID}
+}
+
+// Many returns a Next that routes to multiple nodes in parallel (fan-out).
+// All specified nodes will execute concurrently with isolated state copies.
+func Many(nodeIDs []string) Next {
+	return Next{Many: nodeIDs}
 }
 
 // NodeFunc is a function adapter that implements the Node interface.

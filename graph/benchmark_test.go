@@ -341,3 +341,260 @@ func BenchmarkStateAllocation(b *testing.B) {
 	}
 	b.StopTimer()
 }
+
+// BenchmarkConcurrentExecution (T027) benchmarks concurrent execution
+// with varying numbers of parallel nodes to measure scheduler overhead.
+//
+// According to spec.md SC-001: Graphs with 5 independent nodes complete
+// execution in 20% of sequential time (demonstrating parallelism).
+//
+// Requirements:
+// - Benchmark with 1, 10, 50, 100 concurrent nodes
+// - Measure scheduler overhead
+// - Compare concurrent vs sequential execution time
+//
+// This benchmark should show performance improvements with concurrency.
+func BenchmarkConcurrentExecution(b *testing.B) {
+	b.Skip("Implementation pending - T035 will implement concurrent execution")
+
+	concurrencyLevels := []int{1, 10, 50, 100}
+
+	for _, nodeCount := range concurrencyLevels {
+		b.Run(fmt.Sprintf("nodes=%d", nodeCount), func(b *testing.B) {
+			st := store.NewMemStore[BenchState]()
+			emitter := emit.NewNullEmitter()
+
+			// Configure for concurrent execution
+			opts := Options{
+				MaxSteps:           nodeCount + 10,
+				MaxConcurrentNodes: nodeCount, // Allow all to run concurrently
+			}
+			engine := New(benchReducer, st, emitter, opts)
+
+			// Create N independent nodes
+			for i := 0; i < nodeCount; i++ {
+				nodeID := fmt.Sprintf("node%d", i)
+				counter := i + 1
+
+				engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+					// Minimal work - just return delta
+					return NodeResult[BenchState]{
+						Delta: BenchState{Counter: counter},
+						Route: Stop(),
+					}
+				}))
+			}
+
+			// Fan-out to all nodes
+			nodeIDs := make([]string, nodeCount)
+			for i := 0; i < nodeCount; i++ {
+				nodeIDs[i] = fmt.Sprintf("node%d", i)
+			}
+
+			engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+				return NodeResult[BenchState]{
+					Route: Next{Many: nodeIDs},
+				}
+			}))
+			engine.StartAt("start")
+
+			// Run benchmark
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				runID := fmt.Sprintf("bench-concurrent-%d-%d", nodeCount, i)
+				initialState := BenchState{
+					Counter: 0,
+					Data:    make(map[string]interface{}),
+				}
+
+				_, err := engine.Run(context.Background(), runID, initialState)
+				if err != nil {
+					b.Fatalf("Run failed: %v", err)
+				}
+			}
+			b.StopTimer()
+
+			// Report metrics
+			opsPerSec := float64(b.N) / b.Elapsed().Seconds()
+			usPerOp := b.Elapsed().Seconds() * 1000000 / float64(b.N)
+			b.ReportMetric(opsPerSec, "runs/sec")
+			b.ReportMetric(usPerOp, "μs/run")
+			b.ReportMetric(float64(nodeCount), "nodes")
+
+			// Calculate throughput (nodes processed per second)
+			nodesPerSec := float64(b.N*nodeCount) / b.Elapsed().Seconds()
+			b.ReportMetric(nodesPerSec, "nodes/sec")
+		})
+	}
+}
+
+// BenchmarkSequentialVsConcurrent compares sequential vs concurrent execution
+// to measure the parallel speedup factor.
+//
+// This benchmark demonstrates the performance benefit of concurrent execution.
+func BenchmarkSequentialVsConcurrent(b *testing.B) {
+	b.Skip("Implementation pending - T035 will implement concurrent execution")
+
+	nodeCount := 10
+
+	b.Run("sequential", func(b *testing.B) {
+		st := store.NewMemStore[BenchState]()
+		emitter := emit.NewNullEmitter()
+
+		opts := Options{
+			MaxSteps:           nodeCount + 10,
+			MaxConcurrentNodes: 1, // Force sequential execution
+		}
+		engine := New(benchReducer, st, emitter, opts)
+
+		// Create chain of sequential nodes
+		for i := 0; i < nodeCount; i++ {
+			nodeID := fmt.Sprintf("node%d", i)
+			nextNodeID := fmt.Sprintf("node%d", i+1)
+			counter := i + 1
+
+			isLast := (i == nodeCount-1)
+
+			engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+				var route Next
+				if isLast {
+					route = Stop()
+				} else {
+					route = Goto(nextNodeID)
+				}
+
+				return NodeResult[BenchState]{
+					Delta: BenchState{Counter: counter},
+					Route: route,
+				}
+			}))
+		}
+
+		engine.StartAt("node0")
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			runID := fmt.Sprintf("bench-seq-%d", i)
+			_, err := engine.Run(context.Background(), runID, BenchState{})
+			if err != nil {
+				b.Fatalf("Run failed: %v", err)
+			}
+		}
+		b.StopTimer()
+
+		usPerOp := b.Elapsed().Seconds() * 1000000 / float64(b.N)
+		b.ReportMetric(usPerOp, "μs/run")
+	})
+
+	b.Run("concurrent", func(b *testing.B) {
+		st := store.NewMemStore[BenchState]()
+		emitter := emit.NewNullEmitter()
+
+		opts := Options{
+			MaxSteps:           nodeCount + 10,
+			MaxConcurrentNodes: nodeCount, // Allow full concurrency
+		}
+		engine := New(benchReducer, st, emitter, opts)
+
+		// Create N independent nodes
+		nodeIDs := make([]string, nodeCount)
+		for i := 0; i < nodeCount; i++ {
+			nodeID := fmt.Sprintf("node%d", i)
+			nodeIDs[i] = nodeID
+			counter := i + 1
+
+			engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+				return NodeResult[BenchState]{
+					Delta: BenchState{Counter: counter},
+					Route: Stop(),
+				}
+			}))
+		}
+
+		// Fan-out to all nodes
+		engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+			return NodeResult[BenchState]{
+				Route: Next{Many: nodeIDs},
+			}
+		}))
+		engine.StartAt("start")
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			runID := fmt.Sprintf("bench-conc-%d", i)
+			_, err := engine.Run(context.Background(), runID, BenchState{})
+			if err != nil {
+				b.Fatalf("Run failed: %v", err)
+			}
+		}
+		b.StopTimer()
+
+		usPerOp := b.Elapsed().Seconds() * 1000000 / float64(b.N)
+		b.ReportMetric(usPerOp, "μs/run")
+	})
+}
+
+// BenchmarkSchedulerOverhead measures the overhead of the scheduler
+// by comparing workflow execution time with minimal node work.
+func BenchmarkSchedulerOverhead(b *testing.B) {
+	b.Skip("Implementation pending - T035 will implement scheduler")
+
+	b.Run("1_node", func(b *testing.B) {
+		benchSchedulerOverheadWithNodes(b, 1)
+	})
+
+	b.Run("10_nodes", func(b *testing.B) {
+		benchSchedulerOverheadWithNodes(b, 10)
+	})
+
+	b.Run("100_nodes", func(b *testing.B) {
+		benchSchedulerOverheadWithNodes(b, 100)
+	})
+}
+
+func benchSchedulerOverheadWithNodes(b *testing.B, nodeCount int) {
+	st := store.NewMemStore[BenchState]()
+	emitter := emit.NewNullEmitter()
+
+	opts := Options{
+		MaxSteps:           nodeCount + 10,
+		MaxConcurrentNodes: nodeCount,
+	}
+	engine := New(benchReducer, st, emitter, opts)
+
+	// Create nodes with minimal work (just counter increment)
+	nodeIDs := make([]string, nodeCount)
+	for i := 0; i < nodeCount; i++ {
+		nodeID := fmt.Sprintf("node%d", i)
+		nodeIDs[i] = nodeID
+
+		engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+			return NodeResult[BenchState]{
+				Delta: BenchState{Counter: 1},
+				Route: Stop(),
+			}
+		}))
+	}
+
+	engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+		return NodeResult[BenchState]{
+			Route: Next{Many: nodeIDs},
+		}
+	}))
+	engine.StartAt("start")
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		runID := fmt.Sprintf("bench-overhead-%d", i)
+		_, err := engine.Run(context.Background(), runID, BenchState{})
+		if err != nil {
+			b.Fatalf("Run failed: %v", err)
+		}
+	}
+	b.StopTimer()
+
+	// Report overhead per node
+	nsPerNode := b.Elapsed().Nanoseconds() / int64(b.N*nodeCount)
+	b.ReportMetric(float64(nsPerNode), "ns/node")
+}
