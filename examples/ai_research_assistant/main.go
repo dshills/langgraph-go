@@ -12,6 +12,10 @@ import (
 
 	"github.com/dshills/langgraph-go/graph"
 	"github.com/dshills/langgraph-go/graph/emit"
+	"github.com/dshills/langgraph-go/graph/model"
+	"github.com/dshills/langgraph-go/graph/model/anthropic"
+	"github.com/dshills/langgraph-go/graph/model/google"
+	"github.com/dshills/langgraph-go/graph/model/openai"
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
@@ -134,15 +138,52 @@ func researchReducer(prev, delta ResearchState) ResearchState {
 
 // GPTAnalysisNode uses GPT-4 to provide initial analysis of the research topic.
 // Demonstrates: LLM integration, retry policies, recordable I/O for replay.
-type GPTAnalysisNode struct{}
+type GPTAnalysisNode struct {
+	model model.ChatModel
+}
 
 func (n *GPTAnalysisNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n🤖 [GPT-4] Analyzing topic...")
 
-	// Simulate API call (in real implementation, this would call OpenAI)
-	time.Sleep(gptAnalysisDelay)
+	var analysis string
 
-	analysis := fmt.Sprintf(`GPT-4 Analysis of "%s":
+	// Use real LLM if available, otherwise simulate
+	if n.model != nil {
+		prompt := fmt.Sprintf("Analyze the research topic '%s'. Provide key points, technical assessment, and recommendations.", state.Topic)
+		messages := []model.Message{
+			{Role: model.RoleUser, Content: prompt},
+		}
+
+		out, err := n.model.Chat(ctx, messages, nil)
+		if err != nil {
+			log.Printf("⚠️  GPT-4 API call failed: %v (falling back to simulation)", err)
+			// Fall back to simulation on error
+			time.Sleep(gptAnalysisDelay)
+			analysis = n.simulatedAnalysis(state.Topic)
+		} else {
+			analysis = fmt.Sprintf(`GPT-4 Analysis of "%s":
+
+%s`, state.Topic, out.Text)
+		}
+	} else {
+		// Simulate API call when no model is available
+		time.Sleep(gptAnalysisDelay)
+		analysis = n.simulatedAnalysis(state.Topic)
+	}
+
+	fmt.Println("   ✓ Analysis complete")
+
+	return graph.NodeResult[ResearchState]{
+		Delta: ResearchState{
+			GPTAnalysis:  analysis,
+			LLMCallsMade: 1,
+		},
+		Route: graph.Stop(), // Fan-in will collect all results
+	}
+}
+
+func (n *GPTAnalysisNode) simulatedAnalysis(topic string) string {
+	return fmt.Sprintf(`GPT-4 Analysis of "%s":
 
 Key Points:
 • This is an emerging field with significant recent developments
@@ -158,17 +199,7 @@ Technical Assessment:
 Recommendations:
 • Focus on practical applications over theoretical aspects
 • Review recent papers from 2024 for latest techniques
-• Consider scalability implications for production use`, state.Topic)
-
-	fmt.Println("   ✓ Analysis complete")
-
-	return graph.NodeResult[ResearchState]{
-		Delta: ResearchState{
-			GPTAnalysis:  analysis,
-			LLMCallsMade: 1,
-		},
-		Route: graph.Stop(), // Fan-in will collect all results
-	}
+• Consider scalability implications for production use`, topic)
 }
 
 func (n *GPTAnalysisNode) Policy() graph.NodePolicy {
@@ -199,15 +230,52 @@ func (n *GPTAnalysisNode) Effects() graph.SideEffectPolicy {
 
 // ClaudeAnalysisNode uses Claude for detailed analysis.
 // Runs concurrently with GPT node.
-type ClaudeAnalysisNode struct{}
+type ClaudeAnalysisNode struct {
+	model model.ChatModel
+}
 
 func (n *ClaudeAnalysisNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n🧠 [Claude] Analyzing topic...")
 
-	// Simulate API call
-	time.Sleep(claudeAnalysisDelay)
+	var analysis string
 
-	analysis := fmt.Sprintf(`Claude Analysis of "%s":
+	// Use real LLM if available, otherwise simulate
+	if n.model != nil {
+		prompt := fmt.Sprintf("Provide a systematic review of '%s' including historical context, current state, strengths, challenges, and critical success factors.", state.Topic)
+		messages := []model.Message{
+			{Role: model.RoleUser, Content: prompt},
+		}
+
+		out, err := n.model.Chat(ctx, messages, nil)
+		if err != nil {
+			log.Printf("⚠️  Claude API call failed: %v (falling back to simulation)", err)
+			// Fall back to simulation on error
+			time.Sleep(claudeAnalysisDelay)
+			analysis = n.simulatedAnalysis(state.Topic)
+		} else {
+			analysis = fmt.Sprintf(`Claude Analysis of "%s":
+
+%s`, state.Topic, out.Text)
+		}
+	} else {
+		// Simulate API call when no model is available
+		time.Sleep(claudeAnalysisDelay)
+		analysis = n.simulatedAnalysis(state.Topic)
+	}
+
+	fmt.Println("   ✓ Analysis complete")
+
+	return graph.NodeResult[ResearchState]{
+		Delta: ResearchState{
+			ClaudeAnalysis: analysis,
+			LLMCallsMade:   1,
+		},
+		Route: graph.Stop(),
+	}
+}
+
+func (n *ClaudeAnalysisNode) simulatedAnalysis(topic string) string {
+	return fmt.Sprintf(`Claude Analysis of "%s":
 
 Systematic Review:
 1. Historical Context: Rapid evolution over past 3-5 years
@@ -227,17 +295,7 @@ Challenges:
 Critical Success Factors:
 • Clear documentation and examples
 • Active community support
-• Proven production use cases`, state.Topic)
-
-	fmt.Println("   ✓ Analysis complete")
-
-	return graph.NodeResult[ResearchState]{
-		Delta: ResearchState{
-			ClaudeAnalysis: analysis,
-			LLMCallsMade:   1,
-		},
-		Route: graph.Stop(),
-	}
+• Proven production use cases`, topic)
 }
 
 func (n *ClaudeAnalysisNode) Policy() graph.NodePolicy {
@@ -266,15 +324,52 @@ func (n *ClaudeAnalysisNode) Effects() graph.SideEffectPolicy {
 
 // GeminiAnalysisNode uses Gemini for comparative analysis.
 // Runs concurrently with GPT and Claude nodes.
-type GeminiAnalysisNode struct{}
+type GeminiAnalysisNode struct {
+	model model.ChatModel
+}
 
 func (n *GeminiAnalysisNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n✨ [Gemini] Analyzing topic...")
 
-	// Simulate API call
-	time.Sleep(geminiAnalysisDelay)
+	var analysis string
 
-	analysis := fmt.Sprintf(`Gemini Analysis of "%s":
+	// Use real LLM if available, otherwise simulate
+	if n.model != nil {
+		prompt := fmt.Sprintf("Analyze the market and adoption of '%s'. Include adoption rate, industry leaders, risk factors, and opportunities.", state.Topic)
+		messages := []model.Message{
+			{Role: model.RoleUser, Content: prompt},
+		}
+
+		out, err := n.model.Chat(ctx, messages, nil)
+		if err != nil {
+			log.Printf("⚠️  Gemini API call failed: %v (falling back to simulation)", err)
+			// Fall back to simulation on error
+			time.Sleep(geminiAnalysisDelay)
+			analysis = n.simulatedAnalysis(state.Topic)
+		} else {
+			analysis = fmt.Sprintf(`Gemini Analysis of "%s":
+
+%s`, state.Topic, out.Text)
+		}
+	} else {
+		// Simulate API call when no model is available
+		time.Sleep(geminiAnalysisDelay)
+		analysis = n.simulatedAnalysis(state.Topic)
+	}
+
+	fmt.Println("   ✓ Analysis complete")
+
+	return graph.NodeResult[ResearchState]{
+		Delta: ResearchState{
+			GeminiAnalysis: analysis,
+			LLMCallsMade:   1,
+		},
+		Route: graph.Stop(),
+	}
+}
+
+func (n *GeminiAnalysisNode) simulatedAnalysis(topic string) string {
+	return fmt.Sprintf(`Gemini Analysis of "%s":
 
 Market Analysis:
 • Adoption Rate: Accelerating in enterprise contexts
@@ -294,17 +389,7 @@ Risk Factors:
 Opportunity Areas:
 • Early adopter advantage
 • Strong performance characteristics
-• Growing community momentum`, state.Topic)
-
-	fmt.Println("   ✓ Analysis complete")
-
-	return graph.NodeResult[ResearchState]{
-		Delta: ResearchState{
-			GeminiAnalysis: analysis,
-			LLMCallsMade:   1,
-		},
-		Route: graph.Stop(),
-	}
+• Growing community momentum`, topic)
 }
 
 func (n *GeminiAnalysisNode) Policy() graph.NodePolicy {
@@ -690,8 +775,45 @@ func formatPapers(papers []Paper) string {
 // Main Application
 //==============================================================================
 
+// initModels creates LLM models from environment variables if available.
+// Returns nil for any model where the API key is not set.
+func initModels() (gptModel, claudeModel, geminiModel model.ChatModel) {
+	if key := os.Getenv("OPENAI_API_KEY"); key != "" {
+		gptModel = openai.NewChatModel(key, "gpt-4o")
+	}
+	if key := os.Getenv("ANTHROPIC_API_KEY"); key != "" {
+		claudeModel = anthropic.NewChatModel(key, "claude-sonnet-4-5-20250929")
+	}
+	if key := os.Getenv("GOOGLE_API_KEY"); key != "" {
+		geminiModel = google.NewChatModel(key, "gemini-2.5-flash")
+	}
+	return
+}
+
 func main() {
 	printHeader()
+
+	// Initialize LLM models from environment variables
+	gptModel, claudeModel, geminiModel := initModels()
+
+	// Report which models are available
+	fmt.Println("🔑 API Key Status:")
+	if gptModel != nil {
+		fmt.Println("   ✓ OpenAI (GPT-4) - API key found, will use real LLM")
+	} else {
+		fmt.Println("   ○ OpenAI (GPT-4) - No API key, will simulate")
+	}
+	if claudeModel != nil {
+		fmt.Println("   ✓ Anthropic (Claude) - API key found, will use real LLM")
+	} else {
+		fmt.Println("   ○ Anthropic (Claude) - No API key, will simulate")
+	}
+	if geminiModel != nil {
+		fmt.Println("   ✓ Google (Gemini) - API key found, will use real LLM")
+	} else {
+		fmt.Println("   ○ Google (Gemini) - No API key, will simulate")
+	}
+	fmt.Println()
 
 	// Configuration
 	topic := "LangGraph-Go"
@@ -720,11 +842,11 @@ func main() {
 	if enableReplay {
 		runReplayDemo(topic, researchDepth, maxSources)
 	} else {
-		runResearchWorkflow(topic, researchDepth, maxSources, useConcurrency)
+		runResearchWorkflow(topic, researchDepth, maxSources, useConcurrency, gptModel, claudeModel, geminiModel)
 	}
 }
 
-func runResearchWorkflow(topic, depth string, maxSources int, concurrent bool) {
+func runResearchWorkflow(topic, depth string, maxSources int, concurrent bool, gptModel, claudeModel, geminiModel model.ChatModel) {
 	ctx := context.Background()
 
 	// Configure for concurrent execution
@@ -747,8 +869,8 @@ func runResearchWorkflow(topic, depth string, maxSources int, concurrent bool) {
 	emitter := &detailedEmitter{showEvents: false}
 	engine := graph.New(researchReducer, memStore, emitter, opts)
 
-	// Build the workflow graph
-	buildResearchGraph(engine)
+	// Build the workflow graph with LLM models
+	buildResearchGraph(engine, gptModel, claudeModel, geminiModel)
 
 	// Execute
 	initialState := ResearchState{
@@ -795,7 +917,7 @@ func runResearchWorkflow(topic, depth string, maxSources int, concurrent bool) {
 	}
 }
 
-func buildResearchGraph(engine *graph.Engine[ResearchState]) {
+func buildResearchGraph(engine *graph.Engine[ResearchState], gptModel, claudeModel, geminiModel model.ChatModel) {
 	// Fan-out entry node - launches all parallel research tasks
 	fanout := graph.NodeFunc[ResearchState](func(ctx context.Context, s ResearchState) graph.NodeResult[ResearchState] {
 		return graph.NodeResult[ResearchState]{
@@ -812,11 +934,11 @@ func buildResearchGraph(engine *graph.Engine[ResearchState]) {
 		}
 	})
 
-	// Add all nodes
+	// Add all nodes with their respective models
 	engine.Add("fanout", fanout)
-	engine.Add("gpt_analysis", &GPTAnalysisNode{})
-	engine.Add("claude_analysis", &ClaudeAnalysisNode{})
-	engine.Add("gemini_analysis", &GeminiAnalysisNode{})
+	engine.Add("gpt_analysis", &GPTAnalysisNode{model: gptModel})
+	engine.Add("claude_analysis", &ClaudeAnalysisNode{model: claudeModel})
+	engine.Add("gemini_analysis", &GeminiAnalysisNode{model: geminiModel})
 	engine.Add("fetch_arxiv", &FetchArxivPapersNode{})
 	engine.Add("fetch_github", &FetchGitHubProjectsNode{})
 	engine.Add("fetch_wikipedia", &FetchWikipediaNode{})
