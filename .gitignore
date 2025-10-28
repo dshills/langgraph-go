@@ -76,3 +76,5 @@ settings.local.json
 *_secret*.json
 secrets/
 credentials/
+examples/*/concurrent_workflow
+examples/*/replay_demo
