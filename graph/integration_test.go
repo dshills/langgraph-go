@@ -15,6 +15,12 @@ import (
 
 // TestIntegration_CheckpointResumeWorkflow verifies end-to-end checkpoint and resume cycle (T076).
 func TestIntegration_CheckpointResumeWorkflow(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	t.Run("complete checkpoint/resume workflow cycle", func(t *testing.T) {
 		// Create engine with realistic configuration
 		reducer := func(prev, delta TestState) TestState {
@@ -164,6 +170,9 @@ func TestIntegration_CheckpointResumeWorkflow(t *testing.T) {
 
 // TestIntegration_WorkflowCrashRecovery verifies 5-node workflow crash and recovery scenario (T077).
 func TestIntegration_WorkflowCrashRecovery(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	t.Run("5-node workflow with crash and recovery", func(t *testing.T) {
 		// Create engine
 		reducer := func(prev, delta TestState) TestState {
@@ -350,6 +359,9 @@ func (e *integrationEmitter) Flush(ctx context.Context) error {
 
 // TestIntegration_ConfidenceBasedRouting verifies confidence-based conditional routing (T099).
 func TestIntegration_ConfidenceBasedRouting(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	t.Run("route based on confidence score with multiple paths", func(t *testing.T) {
 		reducer := func(prev, delta TestState) TestState {
 			if delta.Value != "" {
@@ -453,6 +465,9 @@ func TestIntegration_ConfidenceBasedRouting(t *testing.T) {
 
 // TestIntegration_LoopWithExitCondition verifies loop with conditional exit (T100).
 func TestIntegration_LoopWithExitCondition(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	t.Run("loop until condition met with max attempts protection", func(t *testing.T) {
 		reducer := func(prev, delta TestState) TestState {
 			if delta.Value != "" {
@@ -541,6 +556,9 @@ func TestIntegration_LoopWithExitCondition(t *testing.T) {
 
 // TestIntegration_ParallelExecution tests 4-branch parallel execution workflow (T118).
 func TestIntegration_ParallelExecution(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	t.Run("4-branch parallel fan-out workflow", func(t *testing.T) {
 		// State for parallel processing with result collection
 		type ParallelState struct {
@@ -684,6 +702,9 @@ func TestIntegration_ParallelExecution(t *testing.T) {
 
 // TestIntegration_ParallelErrorHandling tests error handling in parallel branches (T119).
 func TestIntegration_ParallelErrorHandling(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	t.Run("error in one parallel branch stops execution", func(t *testing.T) {
 		type ParallelState struct {
 			Results []string
@@ -873,6 +894,9 @@ func TestIntegration_ParallelErrorHandling(t *testing.T) {
 
 // TestIntegration_MultiProviderWorkflow tests workflow with multiple LLM providers (T150).
 func TestIntegration_MultiProviderWorkflow(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	ctx := context.Background()
 
 	t.Run("provider switching based on task", func(t *testing.T) {
@@ -1238,6 +1262,9 @@ func TestIntegration_MultiProviderWorkflow(t *testing.T) {
 
 // TestIntegration_ProviderSelectionStrategy tests logic for choosing the right provider (T150).
 func TestIntegration_ProviderSelectionStrategy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	ctx := context.Background()
 
 	t.Run("select based on task type", func(t *testing.T) {
@@ -1300,6 +1327,9 @@ func TestIntegration_ProviderSelectionStrategy(t *testing.T) {
 //   - State changes
 //   - Event filtering and querying
 func TestIntegration_EventTracingCapture(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	t.Run("10-node sequential workflow with full event capture", func(t *testing.T) {
 		// Create buffered emitter to capture events
 		emitter := emit.NewBufferedEmitter()

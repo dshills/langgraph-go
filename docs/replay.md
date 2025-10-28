@@ -778,8 +778,508 @@ for i := 0; i < 10; i++ {
 // go tool pprof cpu.prof
 ```
 
+## Exactly-Once Semantics
+
+Replay and resumption depend on **exactly-once execution guarantees** provided by the checkpoint system. This ensures that each step in a workflow executes exactly one time, even with crashes, retries, or concurrent execution attempts.
+
+### How Exactly-Once Works
+
+**Atomic Commits**: Every checkpoint commit is atomic
+```go
+// All components committed together in a database transaction:
+// - State snapshot
+// - Frontier queue
+// - Recorded I/O
+// - Idempotency key
+
+// If any component fails, entire checkpoint is rolled back
+```
+
+**Idempotency Keys**: Duplicate commits are detected and rejected
+```go
+// Idempotency key is computed from:
+idempotencyKey = SHA256(runID + stepID + sortedFrontier + stateJSON)
+
+// Same inputs always produce same key
+// Duplicate key → Database rejects commit
+// Result: Step never executes twice
+```
+
+**Crash Recovery**: Resume safely from last checkpoint
+```go
+// 1. Load last successful checkpoint
+checkpoint, err := store.LoadCheckpointV2(ctx, runID, lastStepID)
+
+// 2. Resume execution from frontier
+for _, item := range checkpoint.Frontier {
+    result := node.Run(ctx, item.State)
+
+    // 3. Attempt to commit (may be duplicate from before crash)
+    err := store.SaveCheckpointV2(ctx, newCheckpoint)
+
+    if isIdempotencyViolation(err) {
+        // Step already committed before crash → Skip
+        log.Info("Step already committed, continuing")
+        continue
+    }
+
+    // Step committed successfully
+}
+```
+
+### Replay with Exactly-Once
+
+During replay, idempotency ensures consistent behavior:
+
+```go
+// Original execution
+checkpoint1 := buildCheckpoint(runID, step1, state1, frontier1)
+store.SaveCheckpointV2(ctx, checkpoint1) // ✓ Succeeds
+
+// Replay execution (same runID, same inputs)
+checkpoint1Replay := buildCheckpoint(runID, step1, state1, frontier1)
+store.SaveCheckpointV2(ctx, checkpoint1Replay) // ✗ Fails (duplicate key)
+
+// Engine recognizes idempotency violation and continues
+// Result: State is consistent with original execution
+```
+
+**Benefits for Replay:**
+
+✅ **Deterministic State**: Same inputs → Same checkpoints → Same state
+✅ **No Duplicates**: Recorded I/O prevents duplicate external operations
+✅ **Safe Retries**: Can replay any number of times without side effects
+✅ **Audit Trail**: Idempotency keys prove step was executed exactly once
+
+### Example: Payment Processing
+
+Exactly-once semantics are critical for financial operations:
+
+```go
+type PaymentState struct {
+    CustomerID   string
+    Amount       float64
+    Charged      bool
+    TransactionID string
+}
+
+// Payment node with exactly-once guarantee
+func (n *PaymentNode) Run(ctx context.Context, state PaymentState) NodeResult[PaymentState] {
+    if isReplay(ctx) {
+        // During replay: Use recorded transaction ID
+        recorded := getRecordedIO(ctx)
+        return NodeResult[PaymentState]{
+            Delta: PaymentState{
+                Charged:       true,
+                TransactionID: recorded.Response.(string),
+            },
+            Route: Goto("confirm"),
+        }
+    }
+
+    // Normal execution: Charge payment
+    txID, err := chargeCustomer(state.CustomerID, state.Amount)
+    if err != nil {
+        return NodeResult[PaymentState]{Err: err}
+    }
+
+    // Record I/O for replay
+    recordIO(ctx, RecordedIO{
+        NodeID:   "payment",
+        Request:  map[string]interface{}{"customer": state.CustomerID, "amount": state.Amount},
+        Response: txID,
+    })
+
+    delta := PaymentState{
+        Charged:       true,
+        TransactionID: txID,
+    }
+
+    // This checkpoint commit is atomic and idempotent
+    // - If commit fails: Payment can be safely retried (same transaction)
+    // - If commit succeeds: Payment never charged again (idempotency key prevents duplicate)
+    return NodeResult[PaymentState]{Delta: delta, Route: Goto("confirm")}
+}
+```
+
+**Guarantee**: Customer is charged exactly once, even with:
+- Process crashes after charge but before commit
+- Network retries causing duplicate SaveCheckpointV2 calls
+- Replay executions using recorded I/O
+- Concurrent workers attempting same payment
+
+### Testing Exactly-Once
+
+Verify exactly-once behavior with stress tests:
+
+```go
+func TestReplayWithExactlyOnce(t *testing.T) {
+    // 1. Run workflow to completion
+    final1, err := engine.Run(ctx, "payment-run", initialState)
+    assert.NoError(t, err)
+
+    // 2. Load final checkpoint
+    checkpoint, _ := store.LoadCheckpointV2(ctx, "payment-run", finalStepID)
+
+    // 3. Replay 100 times
+    for i := 0; i < 100; i++ {
+        final2, err := engine.ReplayRun(ctx, fmt.Sprintf("replay-%d", i), checkpoint)
+        assert.NoError(t, err)
+
+        // Verify same final state
+        assert.Equal(t, final1, final2)
+
+        // Verify same transaction ID (not recharged)
+        assert.Equal(t, final1.TransactionID, final2.TransactionID)
+    }
+
+    // Verify customer was charged exactly once (not 101 times!)
+    charges := queryCustomerCharges(customerID)
+    assert.Equal(t, 1, len(charges))
+}
+```
+
+For detailed exactly-once guarantees, see [Store Guarantees](./store-guarantees.md).
+
+## Replay Guardrails
+
+LangGraph-Go provides strict guardrails to ensure replay accuracy and catch divergence early.
+
+### Hard Fail on Mismatch
+
+When `StrictReplay: true` (default for replay mode), any deviation from recorded execution triggers an immediate error:
+
+```go
+opts := graph.Options{
+    ReplayMode:   true,
+    StrictReplay: true, // Enforce exact matching
+}
+
+// If node output differs from recorded:
+// Error: ErrReplayMismatch - Divergence detected at node "api-call"
+//   Expected hash: 0x1234abcd
+//   Got hash:      0x5678efgh
+//   Step: 42
+//   Node: api-call
+//   Attempt: 0
+```
+
+**What triggers ErrReplayMismatch:**
+
+1. **Output Hash Mismatch**: Node produces different output than recorded
+2. **Routing Difference**: Node routes to different next node
+3. **Error Status Change**: Node succeeds when recorded failure, or vice versa
+4. **Missing Recorded I/O**: No recorded response found for current attempt
+5. **State Divergence**: Accumulated state differs from checkpoint at same step
+
+**Why hard fail?**
+
+- ✅ Catch code changes that break replay compatibility
+- ✅ Detect non-deterministic behavior immediately
+- ✅ Prevent silent data corruption
+- ✅ Force investigation of divergence root cause
+
+### Divergent Node Identification
+
+When mismatch occurs, the engine provides detailed diagnostics:
+
+```go
+// Error structure
+type ReplayMismatchError struct {
+    StepID       int       // Which step diverged
+    NodeID       string    // Which node caused divergence
+    Attempt      int       // Retry attempt number
+    ExpectedHash string    // Recorded output hash
+    ActualHash   string    // Current output hash
+    ExpectedRoute Next     // Recorded routing decision
+    ActualRoute   Next     // Current routing decision
+    Timestamp    time.Time // When divergence detected
+}
+
+// Usage
+err := engine.ReplayRun(ctx, "replay-001", checkpoint)
+if replayErr, ok := err.(*ReplayMismatchError); ok {
+    log.Printf("Divergence at step %d, node '%s'", replayErr.StepID, replayErr.NodeID)
+    log.Printf("Expected: %s -> %s", replayErr.ExpectedHash, replayErr.ExpectedRoute.Goto)
+    log.Printf("Got:      %s -> %s", replayErr.ActualHash, replayErr.ActualRoute.Goto)
+
+    // Load original checkpoint at divergence point
+    origCheckpoint, _ := store.LoadCheckpointV2(ctx, originalRunID, fmt.Sprintf("step-%d", replayErr.StepID))
+
+    // Compare states
+    log.Printf("State at divergence (original): %+v", origCheckpoint.State)
+    log.Printf("State at divergence (replay):   %+v", getCurrentState(replayErr.StepID))
+}
+```
+
+### Divergence Analysis Tools
+
+**1. Identify Exact Divergence Point**
+
+```go
+// Binary search through checkpoints to find first divergence
+func findFirstDivergence(ctx context.Context, originalRunID, replayRunID string) (int, error) {
+    orig, _ := store.LoadCheckpointV2(ctx, originalRunID, "")
+    maxStep := orig.StepID
+
+    low, high := 0, maxStep
+
+    for low < high {
+        mid := (low + high) / 2
+
+        origState, _ := store.LoadCheckpointV2(ctx, originalRunID, fmt.Sprintf("step-%d", mid))
+        replayState, _ := store.LoadCheckpointV2(ctx, replayRunID, fmt.Sprintf("step-%d", mid))
+
+        if statesEqual(origState.State, replayState.State) {
+            // States match at mid, divergence is after
+            low = mid + 1
+        } else {
+            // States differ at mid, divergence is before or at
+            high = mid
+        }
+    }
+
+    return low, nil
+}
+```
+
+**2. Compare Node Outputs**
+
+```go
+// Compare recorded I/O with replay I/O
+func compareRecordedIO(orig, replay RecordedIO) []string {
+    var diffs []string
+
+    if orig.NodeID != replay.NodeID {
+        diffs = append(diffs, fmt.Sprintf("Node ID: %s != %s", orig.NodeID, replay.NodeID))
+    }
+
+    if orig.Hash != replay.Hash {
+        diffs = append(diffs, fmt.Sprintf("Hash: %s != %s", orig.Hash, replay.Hash))
+
+        // Deep comparison of request/response
+        if !reflect.DeepEqual(orig.Request, replay.Request) {
+            diffs = append(diffs, "Request differs")
+            diffs = append(diffs, fmt.Sprintf("  Original: %+v", orig.Request))
+            diffs = append(diffs, fmt.Sprintf("  Replay:   %+v", replay.Request))
+        }
+
+        if !reflect.DeepEqual(orig.Response, replay.Response) {
+            diffs = append(diffs, "Response differs")
+            diffs = append(diffs, fmt.Sprintf("  Original: %+v", orig.Response))
+            diffs = append(diffs, fmt.Sprintf("  Replay:   %+v", replay.Response))
+        }
+    }
+
+    return diffs
+}
+```
+
+**3. State Diff Visualization**
+
+```go
+// Visualize state differences
+func visualizeStateDiff(original, replay interface{}) {
+    origJSON, _ := json.MarshalIndent(original, "", "  ")
+    replayJSON, _ := json.MarshalIndent(replay, "", "  ")
+
+    // Use diff library
+    diffs := difflib.UnifiedDiff{
+        A:        difflib.SplitLines(string(origJSON)),
+        B:        difflib.SplitLines(string(replayJSON)),
+        FromFile: "Original",
+        ToFile:   "Replay",
+        Context:  3,
+    }
+
+    text, _ := difflib.GetUnifiedDiffString(diffs)
+    fmt.Println(text)
+}
+```
+
+### Common Divergence Causes
+
+**1. Code Changes Between Record and Replay**
+
+```go
+// Original code (recorded execution)
+func oldNode(ctx context.Context, s State) NodeResult[State] {
+    result := processData(s.Input)
+    return NodeResult[State]{
+        Delta: State{Output: result},
+        Route: Goto("next"),
+    }
+}
+
+// New code (replay)
+func newNode(ctx context.Context, s State) NodeResult[State] {
+    result := processDataV2(s.Input) // Different implementation!
+    return NodeResult[State]{
+        Delta: State{Output: result},
+        Route: Goto("next"),
+    }
+}
+
+// Solution: Use git to checkout original code version for replay
+```
+
+**2. Non-Deterministic Operations**
+
+```go
+// ❌ Diverges on replay
+func randomNode(ctx context.Context, s State) NodeResult[State] {
+    // Uses global random (non-deterministic!)
+    value := rand.Intn(100)
+
+    return NodeResult[State]{
+        Delta: State{Value: value},
+        Route: Goto("next"),
+    }
+}
+
+// ✅ Replays correctly
+func deterministicRandomNode(ctx context.Context, s State) NodeResult[State] {
+    // Uses seeded RNG from context
+    rng := ctx.Value(RNGKey).(*rand.Rand)
+    value := rng.Intn(100)
+
+    return NodeResult[State]{
+        Delta: State{Value: value},
+        Route: Goto("next"),
+    }
+}
+```
+
+**3. External State Changes**
+
+```go
+// Database row changed between record and replay
+func fetchNode(ctx context.Context, s State) NodeResult[State] {
+    // Recorded execution: user.Status = "active"
+    // Replay: user.Status = "suspended" (changed in database!)
+
+    user := db.QueryUser(s.UserID)
+
+    return NodeResult[State]{
+        Delta: State{UserStatus: user.Status},
+        Route: Goto("process"),
+    }
+}
+
+// Solution: Use recorded I/O during replay
+```
+
+**4. Time-Based Logic**
+
+```go
+// ❌ Diverges on replay
+func timeNode(ctx context.Context, s State) NodeResult[State] {
+    now := time.Now() // Different on each execution!
+
+    if now.Hour() < 12 {
+        return NodeResult[State]{Route: Goto("morning")}
+    } else {
+        return NodeResult[State]{Route: Goto("afternoon")}
+    }
+}
+
+// ✅ Replays correctly
+func deterministicTimeNode(ctx context.Context, s State) NodeResult[State] {
+    // Use execution start time from state
+    execTime := s.ExecutionStartTime
+
+    if execTime.Hour() < 12 {
+        return NodeResult[State]{Route: Goto("morning")}
+    } else {
+        return NodeResult[State]{Route: Goto("afternoon")}
+    }
+}
+```
+
+### Guardrail Configuration
+
+Fine-tune replay strictness:
+
+```go
+// Strictest (production debugging)
+opts := graph.Options{
+    ReplayMode:         true,
+    StrictReplay:       true,
+    StrictHashMatching: true, // Fail on any hash mismatch
+    StrictRouting:      true, // Fail on routing differences
+}
+
+// Lenient (development)
+opts := graph.Options{
+    ReplayMode:         true,
+    StrictReplay:       false, // Warn but continue
+    AllowMinorDivergence: true, // Tolerate small numeric differences
+}
+
+// Custom divergence handler
+opts := graph.Options{
+    ReplayMode: true,
+    OnDivergence: func(err ReplayMismatchError) error {
+        // Log divergence
+        log.Warnf("Divergence at step %d: %v", err.StepID, err)
+
+        // Decide whether to fail or continue
+        if err.NodeID == "non-critical-cache" {
+            return nil // Continue despite mismatch
+        }
+        return err // Fail for critical nodes
+    },
+}
+```
+
+### Testing Replay Guardrails
+
+Verify guardrails catch divergence:
+
+```go
+func TestReplayGuardrailsDetectDivergence(t *testing.T) {
+    // Record original execution
+    engine := setupEngineV1()
+    final1, err := engine.Run(ctx, "original", initialState)
+    require.NoError(t, err)
+
+    checkpoint, _ := store.LoadCheckpointV2(ctx, "original", "")
+
+    // Change code to introduce divergence
+    engine = setupEngineV2() // Modified node logic
+
+    // Replay with strict mode
+    opts := graph.Options{
+        ReplayMode:   true,
+        StrictReplay: true,
+    }
+
+    _, err = engine.ReplayRun(ctx, "replay", checkpoint, opts)
+
+    // Verify guardrail caught divergence
+    assert.Error(t, err)
+    assert.ErrorIs(t, err, ErrReplayMismatch)
+
+    replayErr := err.(*ReplayMismatchError)
+    assert.Equal(t, "modified-node", replayErr.NodeID)
+}
+```
+
+### Best Practices
+
+1. ✅ **Always use strict replay for production debugging**
+2. ✅ **Log divergence details for investigation**
+3. ✅ **Maintain git tags for recorded code versions**
+4. ✅ **Test replay after code changes**
+5. ✅ **Use lenient replay only for non-critical divergence**
+6. ✅ **Document acceptable divergence patterns**
+7. ✅ **Monitor divergence rates in production**
+
+**Guardrails ensure replay is a reliable debugging tool, not a source of confusion.**
+
 ## Related Documentation
 
+- [Store Guarantees](./store-guarantees.md) - Exactly-once semantics and atomic commits
 - [Concurrency Model](./concurrency.md) - Parallel execution details
 - [Checkpoints & Resume](./guides/04-checkpoints.md) - Checkpoint management
 - [State Management](./guides/03-state-management.md) - Reducer design patterns
