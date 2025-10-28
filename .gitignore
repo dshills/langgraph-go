@@ -78,3 +78,4 @@ secrets/
 credentials/
 examples/*/concurrent_workflow
 examples/*/replay_demo
+examples/*/ai_research_assistant
