@@ -15,37 +15,47 @@ import (
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
+// Simulation delay constants for realistic API/LLM latencies
+const (
+	gptAnalysisDelay    = 500 * time.Millisecond
+	claudeAnalysisDelay = 600 * time.Millisecond
+	geminiAnalysisDelay = 450 * time.Millisecond
+	arxivAPIDelay       = 400 * time.Millisecond
+	githubAPIDelay      = 350 * time.Millisecond
+	wikipediaAPIDelay   = 300 * time.Millisecond
+)
+
 // ResearchState tracks the complete state of an AI research workflow.
 // This demonstrates complex state management with multiple data types,
 // concurrent updates, and deterministic merging.
 type ResearchState struct {
 	// Input
-	Topic           string `json:"topic"`
-	ResearchDepth   string `json:"research_depth"` // "quick", "standard", "deep"
-	MaxSources      int    `json:"max_sources"`
-	
+	Topic         string `json:"topic"`
+	ResearchDepth string `json:"research_depth"` // "quick", "standard", "deep"
+	MaxSources    int    `json:"max_sources"`
+
 	// Multi-LLM Analysis (concurrent)
-	GPTAnalysis     string   `json:"gpt_analysis"`
-	ClaudeAnalysis  string   `json:"claude_analysis"`
-	GeminiAnalysis  string   `json:"gemini_analysis"`
-	
+	GPTAnalysis    string `json:"gpt_analysis"`
+	ClaudeAnalysis string `json:"claude_analysis"`
+	GeminiAnalysis string `json:"gemini_analysis"`
+
 	// External Data (concurrent API calls)
-	ArxivPapers     []Paper  `json:"arxiv_papers"`
-	WikipediaSummary string  `json:"wikipedia_summary"`
-	GitHubProjects  []string `json:"github_projects"`
-	
+	ArxivPapers      []Paper  `json:"arxiv_papers"`
+	WikipediaSummary string   `json:"wikipedia_summary"`
+	GitHubProjects   []string `json:"github_projects"`
+
 	// Synthesis
 	ConsensusFindings []string          `json:"consensus_findings"`
 	Controversies     []string          `json:"controversies"`
 	KeyInsights       map[string]string `json:"key_insights"`
 	FinalReport       string            `json:"final_report"`
-	
+
 	// Metadata
-	ExecutionTime   time.Duration `json:"execution_time"`
-	APICallsMade    int           `json:"api_calls_made"`
-	LLMCallsMade    int           `json:"llm_calls_made"`
-	RetriesPerformed int          `json:"retries_performed"`
-	CheckpointsCreated int        `json:"checkpoints_created"`
+	ExecutionTime      time.Duration `json:"execution_time"`
+	APICallsMade       int           `json:"api_calls_made"`
+	LLMCallsMade       int           `json:"llm_calls_made"`
+	RetriesPerformed   int           `json:"retries_performed"`
+	CheckpointsCreated int           `json:"checkpoints_created"`
 }
 
 // Paper represents an academic paper from arXiv.
@@ -70,7 +80,7 @@ func researchReducer(prev, delta ResearchState) ResearchState {
 	if delta.MaxSources > 0 {
 		prev.MaxSources = delta.MaxSources
 	}
-	
+
 	// LLM analyses: last write wins (each LLM writes once)
 	if delta.GPTAnalysis != "" {
 		prev.GPTAnalysis = delta.GPTAnalysis
@@ -81,18 +91,18 @@ func researchReducer(prev, delta ResearchState) ResearchState {
 	if delta.GeminiAnalysis != "" {
 		prev.GeminiAnalysis = delta.GeminiAnalysis
 	}
-	
+
 	// External data: last write wins (each source writes once)
 	if delta.WikipediaSummary != "" {
 		prev.WikipediaSummary = delta.WikipediaSummary
 	}
-	
+
 	// Arrays: append (order preserved by OrderKey)
 	prev.ArxivPapers = append(prev.ArxivPapers, delta.ArxivPapers...)
 	prev.GitHubProjects = append(prev.GitHubProjects, delta.GitHubProjects...)
 	prev.ConsensusFindings = append(prev.ConsensusFindings, delta.ConsensusFindings...)
 	prev.Controversies = append(prev.Controversies, delta.Controversies...)
-	
+
 	// Map: merge keys
 	if prev.KeyInsights == nil {
 		prev.KeyInsights = make(map[string]string)
@@ -100,12 +110,12 @@ func researchReducer(prev, delta ResearchState) ResearchState {
 	for k, v := range delta.KeyInsights {
 		prev.KeyInsights[k] = v
 	}
-	
+
 	// Final synthesis: last write wins
 	if delta.FinalReport != "" {
 		prev.FinalReport = delta.FinalReport
 	}
-	
+
 	// Metadata: accumulate
 	if delta.ExecutionTime > 0 {
 		prev.ExecutionTime = delta.ExecutionTime
@@ -114,7 +124,7 @@ func researchReducer(prev, delta ResearchState) ResearchState {
 	prev.LLMCallsMade += delta.LLMCallsMade
 	prev.RetriesPerformed += delta.RetriesPerformed
 	prev.CheckpointsCreated += delta.CheckpointsCreated
-	
+
 	return prev
 }
 
@@ -128,10 +138,10 @@ type GPTAnalysisNode struct{}
 
 func (n *GPTAnalysisNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n🤖 [GPT-4] Analyzing topic...")
-	
+
 	// Simulate API call (in real implementation, this would call OpenAI)
-	time.Sleep(500 * time.Millisecond)
-	
+	time.Sleep(gptAnalysisDelay)
+
 	analysis := fmt.Sprintf(`GPT-4 Analysis of "%s":
 
 Key Points:
@@ -149,9 +159,9 @@ Recommendations:
 • Focus on practical applications over theoretical aspects
 • Review recent papers from 2024 for latest techniques
 • Consider scalability implications for production use`, state.Topic)
-	
+
 	fmt.Println("   ✓ Analysis complete")
-	
+
 	return graph.NodeResult[ResearchState]{
 		Delta: ResearchState{
 			GPTAnalysis:  analysis,
@@ -193,10 +203,10 @@ type ClaudeAnalysisNode struct{}
 
 func (n *ClaudeAnalysisNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n🧠 [Claude] Analyzing topic...")
-	
+
 	// Simulate API call
-	time.Sleep(600 * time.Millisecond)
-	
+	time.Sleep(claudeAnalysisDelay)
+
 	analysis := fmt.Sprintf(`Claude Analysis of "%s":
 
 Systematic Review:
@@ -218,9 +228,9 @@ Critical Success Factors:
 • Clear documentation and examples
 • Active community support
 • Proven production use cases`, state.Topic)
-	
+
 	fmt.Println("   ✓ Analysis complete")
-	
+
 	return graph.NodeResult[ResearchState]{
 		Delta: ResearchState{
 			ClaudeAnalysis: analysis,
@@ -260,10 +270,10 @@ type GeminiAnalysisNode struct{}
 
 func (n *GeminiAnalysisNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n✨ [Gemini] Analyzing topic...")
-	
+
 	// Simulate API call
-	time.Sleep(450 * time.Millisecond)
-	
+	time.Sleep(geminiAnalysisDelay)
+
 	analysis := fmt.Sprintf(`Gemini Analysis of "%s":
 
 Market Analysis:
@@ -285,9 +295,9 @@ Opportunity Areas:
 • Early adopter advantage
 • Strong performance characteristics
 • Growing community momentum`, state.Topic)
-	
+
 	fmt.Println("   ✓ Analysis complete")
-	
+
 	return graph.NodeResult[ResearchState]{
 		Delta: ResearchState{
 			GeminiAnalysis: analysis,
@@ -327,16 +337,17 @@ type FetchArxivPapersNode struct{}
 
 func (n *FetchArxivPapersNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n📚 [arXiv] Fetching academic papers...")
-	
+
 	// Simulate arXiv API call
-	time.Sleep(400 * time.Millisecond)
-	
+	time.Sleep(arxivAPIDelay)
+
 	// Use deterministic RNG from context for realistic simulation
 	rng, ok := ctx.Value(graph.RNGKey).(*rand.Rand)
 	if !ok {
+		log.Println("Warning: Using non-deterministic RNG (context RNG not available)")
 		rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 	}
-	
+
 	// Generate realistic papers
 	papers := []Paper{
 		{
@@ -361,7 +372,7 @@ func (n *FetchArxivPapersNode) Run(ctx context.Context, state ResearchState) gra
 			Year:     2023,
 		},
 	}
-	
+
 	// Randomly select subset based on MaxSources
 	if len(papers) > state.MaxSources {
 		rng.Shuffle(len(papers), func(i, j int) {
@@ -369,9 +380,9 @@ func (n *FetchArxivPapersNode) Run(ctx context.Context, state ResearchState) gra
 		})
 		papers = papers[:state.MaxSources]
 	}
-	
+
 	fmt.Printf("   ✓ Found %d relevant papers\n", len(papers))
-	
+
 	return graph.NodeResult[ResearchState]{
 		Delta: ResearchState{
 			ArxivPapers:  papers,
@@ -412,18 +423,18 @@ type FetchGitHubProjectsNode struct{}
 
 func (n *FetchGitHubProjectsNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n💻 [GitHub] Finding relevant projects...")
-	
+
 	// Simulate GitHub API call
-	time.Sleep(350 * time.Millisecond)
-	
+	time.Sleep(githubAPIDelay)
+
 	projects := []string{
 		fmt.Sprintf("awesome-%s - Curated list of resources", strings.ToLower(strings.ReplaceAll(state.Topic, " ", "-"))),
 		fmt.Sprintf("%s-go - Go implementation with 15k stars", strings.ToLower(strings.ReplaceAll(state.Topic, " ", "-"))),
 		fmt.Sprintf("%s-framework - Production-ready framework (5k stars)", strings.ToLower(strings.ReplaceAll(state.Topic, " ", "-"))),
 	}
-	
+
 	fmt.Printf("   ✓ Found %d relevant projects\n", len(projects))
-	
+
 	return graph.NodeResult[ResearchState]{
 		Delta: ResearchState{
 			GitHubProjects: projects,
@@ -462,10 +473,10 @@ type FetchWikipediaNode struct{}
 
 func (n *FetchWikipediaNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n📖 [Wikipedia] Fetching background information...")
-	
+
 	// Simulate Wikipedia API call
-	time.Sleep(300 * time.Millisecond)
-	
+	time.Sleep(wikipediaAPIDelay)
+
 	summary := fmt.Sprintf(`%s is a modern approach that has gained significant traction in recent years. 
 
 The field emerged from academic research in the early 2020s and has since been adopted by major technology companies. Key developments include improved performance characteristics, better developer tooling, and growing ecosystem support.
@@ -473,9 +484,9 @@ The field emerged from academic research in the early 2020s and has since been a
 Notable implementations are used in production at companies like Google, Meta, and various startups. The technology is particularly well-suited for systems requiring high performance and type safety.
 
 Current research focuses on improving scalability, developer experience, and integration with existing systems.`, state.Topic)
-	
+
 	fmt.Println("   ✓ Retrieved background summary")
-	
+
 	return graph.NodeResult[ResearchState]{
 		Delta: ResearchState{
 			WikipediaSummary: summary,
@@ -512,7 +523,7 @@ type SynthesizeNode struct{}
 
 func (n *SynthesizeNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n🔬 [Synthesize] Combining all research findings...")
-	
+
 	// Extract consensus findings from multiple LLM analyses
 	consensus := []string{}
 	if strings.Contains(state.GPTAnalysis, "emerging") && strings.Contains(state.ClaudeAnalysis, "evolution") {
@@ -524,7 +535,7 @@ func (n *SynthesizeNode) Run(ctx context.Context, state ResearchState) graph.Nod
 	if strings.Contains(state.GPTAnalysis, "performance") && strings.Contains(state.GeminiAnalysis, "Performance") {
 		consensus = append(consensus, "Strong performance characteristics validated")
 	}
-	
+
 	// Identify controversies (points where LLMs disagree)
 	controversies := []string{}
 	if strings.Contains(state.ClaudeAnalysis, "Learning curve") {
@@ -533,7 +544,7 @@ func (n *SynthesizeNode) Run(ctx context.Context, state ResearchState) graph.Nod
 	if strings.Contains(state.GeminiAnalysis, "Risk Factors") {
 		controversies = append(controversies, "Maturity concerns: Technology still evolving")
 	}
-	
+
 	// Extract key insights
 	insights := map[string]string{
 		"Adoption":    "Growing rapidly in enterprise contexts",
@@ -543,7 +554,7 @@ func (n *SynthesizeNode) Run(ctx context.Context, state ResearchState) graph.Nod
 		"Research":    fmt.Sprintf("%d relevant papers from 2023-2024", len(state.ArxivPapers)),
 		"Code":        fmt.Sprintf("%d active open-source projects", len(state.GitHubProjects)),
 	}
-	
+
 	// Generate final report
 	report := fmt.Sprintf(`
 ╔═══════════════════════════════════════════════════════════════════╗
@@ -608,9 +619,9 @@ This report was generated using LangGraph-Go's concurrent execution engine:
 		state.ExecutionTime,
 		state.RetriesPerformed,
 	)
-	
+
 	fmt.Println("   ✓ Synthesis complete")
-	
+
 	return graph.NodeResult[ResearchState]{
 		Delta: ResearchState{
 			ConsensusFindings: consensus,
@@ -643,14 +654,14 @@ func formatMap(m map[string]string) string {
 	if len(m) == 0 {
 		return "(None)"
 	}
-	
+
 	// Sort keys for deterministic output
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	
+
 	var result strings.Builder
 	for _, k := range keys {
 		result.WriteString(fmt.Sprintf("• %s: %s\n", k, m[k]))
@@ -662,7 +673,7 @@ func formatPapers(papers []Paper) string {
 	if len(papers) == 0 {
 		return "(No papers found)"
 	}
-	
+
 	var result strings.Builder
 	for i, paper := range papers {
 		result.WriteString(fmt.Sprintf("%d. \"%s\" (%d)\n", i+1, paper.Title, paper.Year))
@@ -681,18 +692,22 @@ func formatPapers(papers []Paper) string {
 
 func main() {
 	printHeader()
-	
+
 	// Configuration
 	topic := "LangGraph-Go"
 	if len(os.Args) > 1 {
 		topic = strings.Join(os.Args[1:], " ")
 	}
-	
+
+	if topic == "" {
+		log.Fatal("Error: Topic cannot be empty")
+	}
+
 	researchDepth := "standard" // "quick", "standard", "deep"
 	maxSources := 3
 	useConcurrency := true
 	enableReplay := false // Set to true to demonstrate replay
-	
+
 	fmt.Printf("📋 Configuration:\n")
 	fmt.Printf("   Topic: %s\n", topic)
 	fmt.Printf("   Research Depth: %s\n", researchDepth)
@@ -700,7 +715,7 @@ func main() {
 	fmt.Printf("   Concurrent Execution: %v\n", useConcurrency)
 	fmt.Printf("   Replay Mode: %v\n", enableReplay)
 	fmt.Println()
-	
+
 	// Run the research workflow
 	if enableReplay {
 		runReplayDemo(topic, researchDepth, maxSources)
@@ -711,13 +726,13 @@ func main() {
 
 func runResearchWorkflow(topic, depth string, maxSources int, concurrent bool) {
 	ctx := context.Background()
-	
+
 	// Configure for concurrent execution
 	maxConcurrent := 0
 	if concurrent {
 		maxConcurrent = 6 // Allow all 6 data sources to run in parallel
 	}
-	
+
 	opts := graph.Options{
 		MaxSteps:            50,
 		MaxConcurrentNodes:  maxConcurrent,
@@ -726,22 +741,22 @@ func runResearchWorkflow(topic, depth string, maxSources int, concurrent bool) {
 		RunWallClockBudget:  5 * time.Minute,
 		BackpressureTimeout: 30 * time.Second,
 	}
-	
+
 	// Create components
 	memStore := store.NewMemStore[ResearchState]()
 	emitter := &detailedEmitter{showEvents: false}
 	engine := graph.New(researchReducer, memStore, emitter, opts)
-	
+
 	// Build the workflow graph
 	buildResearchGraph(engine)
-	
+
 	// Execute
 	initialState := ResearchState{
 		Topic:         topic,
 		ResearchDepth: depth,
 		MaxSources:    maxSources,
 	}
-	
+
 	fmt.Println("🚀 Launching AI Research Assistant...")
 	if concurrent {
 		fmt.Println("   ⚡ Concurrent mode: All 6 sources will run in parallel")
@@ -751,30 +766,30 @@ func runResearchWorkflow(topic, depth string, maxSources int, concurrent bool) {
 		fmt.Println("   ⏱️  Expected time: ~3 seconds")
 	}
 	fmt.Println()
-	
+
 	startTime := time.Now()
 	finalState, err := engine.Run(ctx, "research-"+time.Now().Format("20060102-150405"), initialState)
 	elapsed := time.Since(startTime)
-	
+
 	if err != nil {
 		log.Fatalf("❌ Research failed: %v", err)
 	}
-	
+
 	// Update execution time in state
 	finalState.ExecutionTime = elapsed
-	
+
 	// Display results
 	printResults(finalState, concurrent)
-	
+
 	// Save checkpoint for potential replay
 	checkpoint := store.CheckpointV2[ResearchState]{
-		RunID:   "research-final",
-		StepID:  10,
-		State:   finalState,
-		Label:   "final-report",
+		RunID:  "research-final",
+		StepID: 10,
+		State:  finalState,
+		Label:  "final-report",
 	}
 	if err := memStore.SaveCheckpointV2(ctx, checkpoint); err != nil {
-		fmt.Printf("⚠️  Warning: Failed to save checkpoint: %v\n", err)
+		log.Printf("Warning: Failed to save checkpoint: %v\n", err)
 	} else {
 		fmt.Println("\n💾 Checkpoint saved for replay debugging")
 	}
@@ -796,7 +811,7 @@ func buildResearchGraph(engine *graph.Engine[ResearchState]) {
 			},
 		}
 	})
-	
+
 	// Add all nodes
 	engine.Add("fanout", fanout)
 	engine.Add("gpt_analysis", &GPTAnalysisNode{})
@@ -806,10 +821,10 @@ func buildResearchGraph(engine *graph.Engine[ResearchState]) {
 	engine.Add("fetch_github", &FetchGitHubProjectsNode{})
 	engine.Add("fetch_wikipedia", &FetchWikipediaNode{})
 	engine.Add("synthesize", &SynthesizeNode{})
-	
+
 	// Set up routing: fanout → 6 parallel nodes → synthesize
 	engine.StartAt("fanout")
-	
+
 	// All parallel nodes route to synthesize
 	engine.Connect("gpt_analysis", "synthesize", nil)
 	engine.Connect("claude_analysis", "synthesize", nil)
@@ -824,7 +839,7 @@ func runReplayDemo(topic, depth string, maxSources int) {
 	fmt.Println("   This would replay a previous execution using recorded I/O")
 	fmt.Println("   See examples/replay_demo for full replay implementation")
 	fmt.Println()
-	
+
 	// In replay mode, you would:
 	// 1. Load checkpoint from store
 	// 2. Set Options.ReplayMode = true
@@ -856,13 +871,13 @@ func printResults(state ResearchState, concurrent bool) {
 	fmt.Println("║  RESEARCH COMPLETE                                                       ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════════════════════╝")
 	fmt.Println()
-	
+
 	// Print execution statistics
 	fmt.Println("⚡ Performance Metrics:")
 	fmt.Printf("   • Total Execution Time: %v\n", state.ExecutionTime)
 	if concurrent {
-		sequentialEstimate := 500*time.Millisecond + 600*time.Millisecond + 450*time.Millisecond + 
-			400*time.Millisecond + 350*time.Millisecond + 300*time.Millisecond // ~2.6s for LLMs + APIs
+		sequentialEstimate := gptAnalysisDelay + claudeAnalysisDelay + geminiAnalysisDelay +
+			arxivAPIDelay + githubAPIDelay + wikipediaAPIDelay // ~2.6s for LLMs + APIs
 		speedup := float64(sequentialEstimate) / float64(state.ExecutionTime)
 		fmt.Printf("   • Estimated Sequential Time: ~%.1fs\n", sequentialEstimate.Seconds())
 		fmt.Printf("   • Speedup: %.1fx faster with concurrency\n", speedup)
@@ -871,10 +886,10 @@ func printResults(state ResearchState, concurrent bool) {
 	fmt.Printf("   • API Calls: %d (arXiv, GitHub, Wikipedia)\n", state.APICallsMade)
 	fmt.Printf("   • Retries: %d (automatic retry on transient failures)\n", state.RetriesPerformed)
 	fmt.Println()
-	
+
 	// Print the full report
 	fmt.Println(state.FinalReport)
-	
+
 	// Print feature demonstration summary
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════════════════════╗")
