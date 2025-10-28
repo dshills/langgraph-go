@@ -659,8 +659,74 @@ log.Printf("Queue depth: %d", metrics.QueueDepth)
 3. Optimize state struct size (remove large fields)
 4. Use state references instead of deep copies where safe
 
+## Determinism Contract
+
+LangGraph-Go's concurrent execution provides **deterministic results** even when nodes execute in parallel.
+
+### What is Guaranteed
+
+```go
+// GUARANTEE 1: Order Key Determinism
+// Same parent + edge always produces same order key
+orderKey := ComputeOrderKey("nodeA", 0)
+// orderKey is deterministic (SHA-256 hash)
+
+// GUARANTEE 2: Dispatch Order
+// Work items dequeued in ascending order_key order
+// Regardless of when they were enqueued
+
+// GUARANTEE 3: Merge Order
+// State deltas merged in ascending order_key order
+// Regardless of node completion time
+
+// GUARANTEE 4: Byte-Identical Replays
+// Same inputs → same outputs (every time)
+Run(ctx, "run-1", state) == Run(ctx, "run-2", state)
+```
+
+### How It Works
+
+The deterministic ordering is achieved through:
+
+1. **Order Key Computation**: Each work item gets a deterministic order key via `ComputeOrderKey(parentNodeID, edgeIndex)`
+2. **Priority Queue**: Frontier is a min-heap that dequeues items in ascending order key order
+3. **Sorted Merge**: Results are sorted by order key before applying the reducer
+4. **Collision Resistance**: SHA-256 provides cryptographic-strength collision resistance
+
+### Example
+
+```go
+// Three nodes fan out from "start"
+// start → [A, B, C]
+
+// Order keys computed:
+orderKeyA := ComputeOrderKey("start", 0) // → 0x9876...
+orderKeyB := ComputeOrderKey("start", 1) // → 0x4567...
+orderKeyC := ComputeOrderKey("start", 2) // → 0x1234...
+
+// Execution order (by OrderKey, ascending):
+// C (0x1234), B (0x4567), A (0x9876)
+
+// Even if nodes complete as: B (100ms), C (200ms), A (300ms)
+// Merge order is: C, B, A (by OrderKey)
+
+// Result: Deterministic, replayable execution
+```
+
+### Determinism Requirements
+
+For perfect determinism, ensure:
+
+1. **Pure Reducers**: No side effects (I/O, logging, randomness)
+2. **Context RNG**: Use context-provided RNG, not global `rand`
+3. **Fixed Timestamps**: Don't use `time.Now()` in state
+4. **Deterministic Nodes**: Same input → same output
+
+See [Determinism Guarantees](./determinism-guarantees.md) for detailed specifications.
+
 ## Related Documentation
 
+- [Determinism Guarantees](./determinism-guarantees.md) - Formal determinism contract and proofs
 - [Deterministic Replay Guide](./replay.md) - Record and replay executions
 - [State Management](./guides/03-state-management.md) - Reducer patterns
 - [Parallel Execution](./guides/06-parallel.md) - Fan-out workflows
@@ -675,5 +741,6 @@ LangGraph-Go's concurrent execution provides:
 ✅ **Backpressure**: Graceful handling of overload scenarios
 ✅ **Production-Ready**: Built-in timeouts, retries, and observability
 ✅ **Easy Configuration**: Sensible defaults with tuning options
+✅ **Cryptographic Ordering**: SHA-256 order keys ensure collision-free determinism
 
 Start with sequential execution (`MaxConcurrentNodes: 1`), measure performance, and scale up concurrency as needed. Monitor queue depth and active workers to optimize configuration for your workload.

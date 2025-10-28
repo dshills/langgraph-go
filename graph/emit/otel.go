@@ -224,12 +224,17 @@ func (o *OTelEmitter) addStandardAttributes(span trace.Span, event Event) {
 	)
 }
 
-// addMetadataAttributes converts event metadata to span attributes.
+// addMetadataAttributes converts event metadata to span attributes (T047-T048).
 //
 // Handles common types:
 //   - string, int, int64, float64, bool: Direct conversion
 //   - time.Duration: Convert to milliseconds
 //   - Other types: Convert to string representation
+//
+// Cost tracking attributes (T047):
+//   - tokens_in, tokens_out: LLM token usage (integer attributes)
+//   - cost_usd: LLM cost in USD (float64 attribute)
+//   - latency_ms: Node execution latency in milliseconds
 func (o *OTelEmitter) addMetadataAttributes(span trace.Span, meta map[string]interface{}) {
 	if meta == nil {
 		return
@@ -241,24 +246,39 @@ func (o *OTelEmitter) addMetadataAttributes(span trace.Span, meta map[string]int
 			continue
 		}
 
+		// T047: Map cost tracking attributes to OpenTelemetry conventions
+		attrKey := key
+		switch key {
+		case "tokens_in":
+			attrKey = "langgraph.llm.tokens_in"
+		case "tokens_out":
+			attrKey = "langgraph.llm.tokens_out"
+		case "cost_usd":
+			attrKey = "langgraph.llm.cost_usd"
+		case "latency_ms":
+			attrKey = "langgraph.node.latency_ms"
+		case "model":
+			attrKey = "langgraph.llm.model"
+		}
+
 		// Convert value to appropriate attribute type
 		switch v := value.(type) {
 		case string:
-			span.SetAttributes(attribute.String(key, v))
+			span.SetAttributes(attribute.String(attrKey, v))
 		case int:
-			span.SetAttributes(attribute.Int(key, v))
+			span.SetAttributes(attribute.Int(attrKey, v))
 		case int64:
-			span.SetAttributes(attribute.Int64(key, v))
+			span.SetAttributes(attribute.Int64(attrKey, v))
 		case float64:
-			span.SetAttributes(attribute.Float64(key, v))
+			span.SetAttributes(attribute.Float64(attrKey, v))
 		case bool:
-			span.SetAttributes(attribute.Bool(key, v))
+			span.SetAttributes(attribute.Bool(attrKey, v))
 		case time.Duration:
 			// Convert duration to milliseconds
-			span.SetAttributes(attribute.Int64(key, int64(v/time.Millisecond)))
+			span.SetAttributes(attribute.Int64(attrKey, int64(v/time.Millisecond)))
 		default:
 			// Fallback to string representation
-			span.SetAttributes(attribute.String(key, fmt.Sprintf("%v", v)))
+			span.SetAttributes(attribute.String(attrKey, fmt.Sprintf("%v", v)))
 		}
 	}
 }

@@ -30,6 +30,7 @@ import (
     "context"
     "fmt"
     "os"
+    "time"
 
     "github.com/dshills/langgraph-go/graph"
     "github.com/dshills/langgraph-go/graph/emit"
@@ -64,12 +65,15 @@ func main() {
         }
     })
 
-    // Build the workflow
+    // Build the workflow with functional options (recommended)
     st := store.NewMemStore[Session]()
     emitter := emit.NewLogEmitter(os.Stdout, false)
-    opts := graph.Options{MaxSteps: 10}
 
-    engine := graph.New(reduce, st, emitter, opts)
+    engine := graph.New(
+        reduce, st, emitter,
+        graph.WithMaxConcurrent(8),
+        graph.WithDefaultNodeTimeout(10*time.Second),
+    )
     engine.Add("process", process)
     engine.StartAt("process")
 
@@ -91,7 +95,9 @@ func main() {
 go get github.com/dshills/langgraph-go
 
 # Recommended: Pin to a specific version
-go get github.com/dshills/langgraph-go@v0.1.0
+go get github.com/dshills/langgraph-go@v0.3.0  # Latest: Production hardening + comprehensive docs
+go get github.com/dshills/langgraph-go@v0.2.0  # Concurrent execution + deterministic replay
+go get github.com/dshills/langgraph-go@v0.1.0  # Initial release
 ```
 
 **Note:** Since this is alpha software, we recommend pinning to a specific version in your `go.mod` to avoid unexpected breaking changes.
@@ -149,12 +155,18 @@ final, err := engine.Run(ctx, runID, initialState)
 **New in v0.2.0**: Execute independent nodes in parallel with deterministic results:
 
 ```go
-// Enable concurrent execution with worker pool
-opts := graph.Options{
-    MaxConcurrentNodes: 10,  // Execute up to 10 nodes in parallel
-    QueueDepth:         1000, // Frontier queue capacity
-}
+// Enable concurrent execution with functional options (recommended in v0.3.0)
+engine := graph.New(
+    reducer, store, emitter,
+    graph.WithMaxConcurrent(10),   // Execute up to 10 nodes in parallel
+    graph.WithQueueDepth(1000),     // Frontier queue capacity
+)
 
+// Or use Options struct (backward compatible)
+opts := graph.Options{
+    MaxConcurrentNodes: 10,
+    QueueDepth:         1000,
+}
 engine := graph.New(reducer, store, emitter, opts)
 
 // Graph with parallel branches executes concurrently
@@ -206,7 +218,8 @@ See [Concurrency Guide](./docs/concurrency.md) and [Replay Guide](./docs/replay.
   ├── store/         # Persistence layer
   │   ├── store.go   # Store interface
   │   ├── memory.go  # In-memory store (for testing)
-  │   ├── mysql.go   # MySQL/Aurora store
+  │   ├── sqlite.go  # SQLite store (dev/small prod)
+  │   ├── mysql.go   # MySQL/Aurora store (production)
   │   └── mysql/     # MySQL implementation details
   ├── emit/          # Event system
   │   ├── emitter.go # Emitter interface
@@ -228,22 +241,34 @@ See [Concurrency Guide](./docs/concurrency.md) and [Replay Guide](./docs/replay.
 
 ## Features
 
+### Core Features
 - ✅ **Stateful Execution** - Checkpoint and resume workflows
 - ✅ **Conditional Routing** - Dynamic control flow based on state
 - ✅ **Parallel Execution** - Fan-out to concurrent nodes
-- ✅ **Concurrent Execution** - Worker pool with deterministic ordering (v0.2.0)
-- ✅ **Deterministic Replay** - Record and replay executions exactly (v0.2.0)
 - ✅ **LLM Integration** - OpenAI, Anthropic, Google Gemini
 - ✅ **Tool Support** - HTTP tools and custom tool integration
-- ✅ **Persistence** - MySQL/Aurora store for production use
-- ✅ **Event Tracing** - Comprehensive observability with multiple emitters
 - ✅ **Type Safety** - Go generics for compile-time safety
-- ✅ **Production Ready** - Error handling, retries, timeouts, backpressure
+
+### Performance & Reliability (v0.2.0)
+- ✅ **Concurrent Execution** - Worker pool with deterministic ordering
+- ✅ **Deterministic Replay** - Record and replay executions exactly
+- ✅ **Backpressure Control** - Automatic queue management
+- ✅ **Retry Policies** - Exponential backoff with jitter
+
+### Production Hardening (v0.3.0)
+- ✅ **SQLite Store** - Zero-config persistence for development
+- ✅ **Prometheus Metrics** - Production monitoring (6 metrics)
+- ✅ **Cost Tracking** - LLM token and cost accounting
+- ✅ **Functional Options** - Ergonomic API with backward compatibility
+- ✅ **Typed Errors** - errors.Is() compatible error handling
+- ✅ **Formal Guarantees** - Documented determinism and exactly-once semantics
+- ✅ **Contract Tests** - CI-validated correctness proofs
 
 ## Examples
 
 See the [`examples/`](./examples) directory for complete, runnable examples:
 
+- **`sqlite_quickstart/`** - **⭐ Start here!** Zero-config persistence
 - **`chatbot/`** - Customer support chatbot with intent detection
 - **`checkpoint/`** - Checkpoint and resume workflows
 - **`routing/`** - Conditional routing based on state
@@ -264,27 +289,34 @@ make examples
 
 ## Documentation
 
-### User Guides
+**📚 [Complete Documentation Index](./docs/README.md)** - Organized guide to all documentation
 
-- [Getting Started](./docs/guides/01-getting-started.md) - Build your first workflow
-- [Building Workflows](./docs/guides/02-building-workflows.md) - Patterns and best practices
-- [State Management](./docs/guides/03-state-management.md) - Advanced reducer patterns
-- [Checkpoints & Resume](./docs/guides/04-checkpoints.md) - Save and resume workflows
-- [Conditional Routing](./docs/guides/05-routing.md) - Dynamic control flow
-- [Parallel Execution](./docs/guides/06-parallel.md) - Concurrent node execution
-- [LLM Integration](./docs/guides/07-llm-integration.md) - Multi-provider LLM support
-- [Event Tracing](./docs/guides/08-event-tracing.md) - Observability and monitoring
+### Getting Started
 
-### Advanced Topics (v0.2.0)
+- [Quick Start Guide](./docs/quickstart.md) - Get up and running in 5 minutes
+- [Architecture Overview](./docs/architecture.md) - System design and components
+- [Error Handling](./docs/error-handling.md) - Typed errors and recovery patterns
 
-- [Concurrency Model](./docs/concurrency.md) - Worker pool, ordering, backpressure
-- [Deterministic Replay](./docs/replay.md) - Record and replay executions
-- [Migration Guide v0.1→v0.2](./docs/migration-v0.2.md) - Upgrade from v0.1.x
+### Core Concepts (v0.2.0)
 
-### Reference
+- [Concurrency Model](./docs/concurrency.md) - Worker pool, ordering, backpressure, determinism
+- [Deterministic Replay](./docs/replay.md) - Record and replay executions with guardrails
+- [Store Guarantees](./docs/store-guarantees.md) - Exactly-once semantics and atomic commits
+- [Determinism Guarantees](./docs/determinism-guarantees.md) - Formal contracts and mathematical proofs
 
-- [API Reference](./docs/api/) - Complete API documentation
-- [FAQ](./docs/FAQ.md) - Frequently asked questions
+### Production Features (v0.3.0)
+
+- [Observability](./docs/observability.md) - Prometheus metrics, OpenTelemetry, cost tracking
+- [Testing Contracts](./docs/testing-contracts.md) - Contract tests and CI integration
+- [Conflict Policies](./docs/conflict-policies.md) - State merge strategies
+- [Human-in-the-Loop](./docs/human-in-the-loop.md) - Approval workflows and pause/resume
+- [Streaming Support](./docs/streaming.md) - Current status and workarounds
+- [Why Go?](./docs/why-go.md) - Go vs Python LangGraph comparison
+
+### Migration Guides
+
+- [v0.1 → v0.2 Migration](./docs/migration-v0.2.md) - Upgrade from v0.1.x
+- [v0.2 → v0.3 Migration](./CHANGELOG.md#030---2025-10-28) - See CHANGELOG for v0.3.0 changes
 
 ### Project Documentation
 
@@ -352,6 +384,78 @@ golangci-lint run
 # Build
 go build ./...
 ```
+
+## Testing
+
+LangGraph-Go has comprehensive test coverage including contract tests that validate production guarantees.
+
+### Run All Tests
+
+```bash
+# Run all tests
+go test ./...
+
+# Run with race detector (recommended)
+go test -race ./...
+
+# Run with coverage
+go test -cover -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+```
+
+### Contract Tests
+
+Contract tests validate critical system guarantees:
+
+```bash
+# Determinism contracts
+go test -v -race -run TestReplayMismatchDetection ./graph/
+go test -v -race -run TestMergeOrderingWithRandomDelays ./graph/
+
+# Exactly-once semantics
+go test -v -race -run TestConcurrentStateUpdates ./graph/
+go test -v -race -run TestIdempotencyAcrossStores ./graph/store/
+
+# Backpressure
+go test -v -race -run TestBackpressureBlocking ./graph/
+
+# RNG determinism
+go test -v -race -run TestRNGDeterminism ./graph/
+```
+
+### MySQL Integration Tests
+
+Some tests require MySQL for persistence validation:
+
+```bash
+# Start MySQL (Docker)
+docker run -d -p 3306:3306 \
+  -e MYSQL_ROOT_PASSWORD=testpassword \
+  -e MYSQL_DATABASE=langgraph_test \
+  mysql:8.0
+
+# Run with MySQL
+export TEST_MYSQL_DSN="root:testpassword@tcp(127.0.0.1:3306)/langgraph_test?parseTime=true"
+go test -v -race ./graph/...
+```
+
+### What Contract Tests Prove
+
+- **Determinism**: Same inputs produce same outputs across replays
+- **Exactly-Once**: State updates happen exactly once, never duplicated or lost
+- **Backpressure**: System handles overload gracefully without crashes
+- **RNG Determinism**: Random workflows are replayable for debugging
+- **Cross-Store Consistency**: All Store implementations uphold the same contracts
+
+See [docs/testing-contracts.md](./docs/testing-contracts.md) for detailed test documentation.
+
+### CI/CD
+
+All tests run automatically on push/PR via GitHub Actions:
+- Platforms: Linux, macOS, Windows
+- Go versions: 1.21, 1.22, 1.23
+- Race detector enabled
+- Coverage uploaded to Codecov
 
 ## License
 

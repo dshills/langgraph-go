@@ -183,6 +183,16 @@ type Engine[S any] struct {
 	// emitter receives observability events
 	emitter emit.Emitter
 
+	// metrics collects Prometheus-compatible performance metrics (T044).
+	// Optional - if nil, metrics are not collected.
+	// See PrometheusMetrics for available metrics and usage.
+	metrics *PrometheusMetrics
+
+	// costTracker tracks LLM API call costs and token usage (T045).
+	// Optional - if nil, cost tracking is disabled.
+	// See CostTracker for pricing tables and cost attribution.
+	costTracker *CostTracker
+
 	// opts contains execution configuration
 	opts Options
 
@@ -286,35 +296,106 @@ type Options struct {
 	// Set to false to allow "best effort" replay that tolerates minor changes.
 	// Useful when debugging with modified node logic.
 	StrictReplay bool
+
+	// Metrics enables Prometheus metrics collection (T044).
+	// If nil, metrics are not collected.
+	//
+	// Create with NewPrometheusMetrics(registry) to enable production monitoring.
+	// All 6 metrics (inflight_nodes, queue_depth, step_latency_ms, retries_total,
+	// merge_conflicts_total, backpressure_events_total) are automatically updated.
+	//
+	// Example:
+	//   registry := prometheus.NewRegistry()
+	//   metrics := NewPrometheusMetrics(registry)
+	//   engine := New(reducer, store, emitter, Options{Metrics: metrics})
+	Metrics *PrometheusMetrics
+
+	// CostTracker enables LLM cost tracking with static pricing (T045).
+	// If nil, cost tracking is disabled.
+	//
+	// Create with NewCostTracker(runID, "USD") to track token usage and costs.
+	// Static pricing includes OpenAI, Anthropic, and Google models.
+	//
+	// Example:
+	//   tracker := NewCostTracker("run-123", "USD")
+	//   engine := New(reducer, store, emitter, Options{CostTracker: tracker})
+	CostTracker *CostTracker
 }
 
 // New creates a new Engine with the given configuration.
+//
+// Supports two configuration patterns for backward compatibility:
+//
+// 1. Options struct (legacy):
+//
+//	engine := New(reducer, store, emitter, Options{MaxSteps: 100})
+//
+// 2. Functional options (recommended):
+//
+//	engine := New(
+//	    reducer, store, emitter,
+//	    WithMaxConcurrent(16),
+//	    WithQueueDepth(2048),
+//	    WithDefaultNodeTimeout(10*time.Second),
+//	)
+//
+// 3. Mixed (Options struct + functional options):
+//
+//	baseOpts := Options{MaxSteps: 100}
+//	engine := New(
+//	    reducer, store, emitter,
+//	    baseOpts,
+//	    WithMaxConcurrent(8), // Overrides baseOpts if specified
+//	)
 //
 // Parameters:
 //   - reducer: Function to merge partial state updates (required for Run)
 //   - store: Persistence backend for state and checkpoints (required for Run)
 //   - emitter: Observability event receiver (optional, can be nil)
-//   - opts: Execution configuration (MaxSteps, Retries)
+//   - options: Configuration via Options struct or variadic Option functions
 //
 // The constructor does not validate all parameters to allow flexible initialization.
 // Validation occurs when Run() is called.
 //
-// Example:
-//
-//	engine := New(
-//	    myReducer,
-//	    store.NewMemStore[MyState](),
-//	    emit.NewLogEmitter(),
-//	    Options{MaxSteps: 100, Retries: 3},
-//	)
-func New[S any](reducer Reducer[S], st store.Store[S], emitter emit.Emitter, opts Options) *Engine[S] {
+// Functional options (recommended):
+//   - WithMaxConcurrent(n): Set max concurrent nodes
+//   - WithQueueDepth(n): Set frontier queue capacity
+//   - WithBackpressureTimeout(d): Set queue full timeout
+//   - WithDefaultNodeTimeout(d): Set default node timeout
+//   - WithRunWallClockBudget(d): Set total execution timeout
+//   - WithReplayMode(bool): Enable replay mode
+//   - WithStrictReplay(bool): Enable strict replay validation
+//   - WithConflictPolicy(policy): Set conflict resolution policy
+func New[S any](reducer Reducer[S], st store.Store[S], emitter emit.Emitter, options ...interface{}) *Engine[S] {
+	// Initialize engine config with zero values
+	cfg := &engineConfig{
+		opts: Options{}, // Zero values
+	}
+
+	// Process options in order: Options struct first, then functional options
+	for _, opt := range options {
+		switch v := opt.(type) {
+		case Options:
+			// Legacy Options struct - use as base configuration
+			cfg.opts = v
+		case Option:
+			// Functional option - apply to config
+			// Ignore error for now (validation happens at Run time)
+			_ = v(cfg)
+		default:
+			// Ignore unknown types for forward compatibility
+		}
+	}
+
 	return &Engine[S]{
-		reducer: reducer,
-		nodes:   make(map[string]Node[S]),
-		edges:   make([]Edge[S], 0),
-		store:   st,
-		emitter: emitter,
-		opts:    opts,
+		reducer:     reducer,
+		nodes:       make(map[string]Node[S]),
+		edges:       make([]Edge[S], 0),
+		store:       st,
+		emitter:     emitter,
+		metrics:     cfg.opts.Metrics,     // T044: Optional metrics
+		costTracker: cfg.opts.CostTracker, // T045: Optional cost tracking
+		opts:        cfg.opts,
 	}
 }
 
@@ -706,6 +787,7 @@ type nodeResult[S any] struct {
 	route    Next
 	orderKey uint64
 	err      error
+	terminal bool // Indicates workflow should terminate
 }
 
 // runConcurrent executes the workflow using concurrent node execution with the Frontier scheduler (T035).
@@ -760,206 +842,292 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 	workerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// T046: Track inflight nodes for metrics
+	var inflightCounter atomic.Int32
+
+	// T046: Start metrics updater goroutine if metrics enabled
+	if e.metrics != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ticker := time.NewTicker(100 * time.Millisecond) // Update metrics every 100ms
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-workerCtx.Done():
+					return
+				case <-ticker.C:
+					// Update queue depth and inflight nodes metrics
+					queueDepth := e.frontier.Len()
+					inflight := int(inflightCounter.Load())
+					e.metrics.UpdateQueueDepth(queueDepth)
+					e.metrics.UpdateInflightNodes(inflight)
+				}
+			}
+		}()
+	}
+
 	for i := 0; i < maxWorkers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
 			for {
-				// Dequeue next work item (use base context, not worker context, to allow shutdown signals)
-				item, err := e.frontier.Dequeue(ctx)
+				// Dequeue next work item with worker context for proper cancellation
+				item, err := e.frontier.Dequeue(workerCtx)
 				if err != nil {
 					// Context cancelled or frontier closed
 					return
 				}
 
-				currentStep := stepCounter.Add(1)
+				// T046: Track node execution for inflight metrics (using func to ensure decrement)
+				func() {
+					inflightCounter.Add(1)
+					defer inflightCounter.Add(-1)
 
-				// Check MaxSteps limit
-				if e.opts.MaxSteps > 0 && int(currentStep) > e.opts.MaxSteps {
-					results <- nodeResult[S]{
-						err: &EngineError{
-							Message: "workflow exceeded MaxSteps limit",
-							Code:    "MAX_STEPS_EXCEEDED",
-						},
+					currentStep := stepCounter.Add(1)
+
+					// Check MaxSteps limit
+					if e.opts.MaxSteps > 0 && int(currentStep) > e.opts.MaxSteps {
+						results <- nodeResult[S]{
+							err: &EngineError{
+								Message: "workflow exceeded MaxSteps limit",
+								Code:    "MAX_STEPS_EXCEEDED",
+							},
+						}
+						cancel()
+						return
 					}
-					cancel()
-					return
-				}
 
-				// Get node implementation
-				e.mu.RLock()
-				nodeImpl, exists := e.nodes[item.NodeID]
-				e.mu.RUnlock()
+					// Get node implementation
+					e.mu.RLock()
+					nodeImpl, exists := e.nodes[item.NodeID]
+					e.mu.RUnlock()
 
-				if !exists {
-					results <- nodeResult[S]{
-						err: &EngineError{
-							Message: "node not found during execution: " + item.NodeID,
-							Code:    "NODE_NOT_FOUND",
-						},
+					if !exists {
+						results <- nodeResult[S]{
+							err: &EngineError{
+								Message: "node not found during execution: " + item.NodeID,
+								Code:    "NODE_NOT_FOUND",
+							},
+						}
+						cancel()
+						return
 					}
-					cancel()
-					return
-				}
 
-				// Emit node_start event
-				e.emitNodeStart(runID, item.NodeID, item.StepID)
+					// Emit node_start event
+					e.emitNodeStart(runID, item.NodeID, item.StepID)
 
-				// Get node policy to check for retry configuration (T087)
-				var policy *NodePolicy
-				if policyProvider, ok := nodeImpl.(interface{ Policy() NodePolicy }); ok {
-					p := policyProvider.Policy()
-					policy = &p
-				}
+					// Get node policy to check for retry configuration (T087)
+					var policy *NodePolicy
+					if policyProvider, ok := nodeImpl.(interface{ Policy() NodePolicy }); ok {
+						p := policyProvider.Policy()
+						policy = &p
+					}
 
-				// Add attempt number to context (T088)
-				nodeCtx := context.WithValue(workerCtx, AttemptKey, item.Attempt)
+					// Add attempt number to context (T088)
+					nodeCtx := context.WithValue(workerCtx, AttemptKey, item.Attempt)
 
-				// Execute node (with replay mode support - T052)
-				// When Options.ReplayMode=true, recorded I/O should be used instead of live execution.
-				// Full replay implementation requires:
-				//   1. Loading checkpoint with RecordedIOs at Run() start
-				//   2. Looking up recorded response via lookupRecordedIO(nodeID, attempt)
-				//   3. Deserializing recorded response into NodeResult
-				//   4. Optionally verifying hash with verifyReplayHash() if StrictReplay=true
-				// For now, execute normally - replay integration will be completed in T056-T057
-				result := nodeImpl.Run(nodeCtx, item.State)
+					// T046: Track node execution start time for latency metrics
+					startTime := time.Now()
 
-				// Handle node error with retry support (T087-T090)
-				if result.Err != nil {
-					e.emitError(runID, item.NodeID, item.StepID, result.Err)
+					// Execute node (with replay mode support - T052)
+					// When Options.ReplayMode=true, recorded I/O should be used instead of live execution.
+					// Full replay implementation requires:
+					//   1. Loading checkpoint with RecordedIOs at Run() start
+					//   2. Looking up recorded response via lookupRecordedIO(nodeID, attempt)
+					//   3. Deserializing recorded response into NodeResult
+					//   4. Optionally verifying hash with verifyReplayHash() if StrictReplay=true
+					// For now, execute normally - replay integration will be completed in T056-T057
+					result := nodeImpl.Run(nodeCtx, item.State)
 
-					// Check if error is retryable and we haven't exceeded max attempts
-					shouldRetry := false
-					if policy != nil && policy.RetryPolicy != nil {
-						retryPol := policy.RetryPolicy
+					// T046: Record step latency metric
+					latency := time.Since(startTime)
+					status := "success"
+					if result.Err != nil {
+						status = "error"
+					}
+					if e.metrics != nil {
+						e.metrics.RecordStepLatency(runID, item.NodeID, latency, status)
+					}
 
-						// Check if error is retryable using predicate (T084)
-						isRetryable := retryPol.Retryable != nil && retryPol.Retryable(result.Err)
+					// Handle node error with retry support (T087-T090)
+					if result.Err != nil {
+						e.emitError(runID, item.NodeID, item.StepID, result.Err)
 
-						// Check if we haven't exceeded MaxAttempts (T089)
-						// item.Attempt is 0-based, so attempt 0 = first execution
-						// MaxAttempts includes the initial attempt, so MaxAttempts=3 means:
-						// attempt 0 (initial), attempt 1 (retry 1), attempt 2 (retry 2)
-						if isRetryable && item.Attempt < retryPol.MaxAttempts-1 {
-							shouldRetry = true
+						// Check if error is retryable and we haven't exceeded max attempts
+						shouldRetry := false
+						if policy != nil && policy.RetryPolicy != nil {
+							retryPol := policy.RetryPolicy
 
-							// Compute backoff delay (T086, T090)
-							var rng *rand.Rand
-							if rngVal := workerCtx.Value(RNGKey); rngVal != nil {
-								rng = rngVal.(*rand.Rand)
+							// Check if error is retryable using predicate (T084)
+							isRetryable := retryPol.Retryable != nil && retryPol.Retryable(result.Err)
+
+							// Check if we haven't exceeded MaxAttempts (T089)
+							// item.Attempt is 0-based, so attempt 0 = first execution
+							// MaxAttempts includes the initial attempt, so MaxAttempts=3 means:
+							// attempt 0 (initial), attempt 1 (retry 1), attempt 2 (retry 2)
+							if isRetryable && item.Attempt < retryPol.MaxAttempts-1 {
+								shouldRetry = true
+
+								// T046: Increment retry metrics
+								if e.metrics != nil {
+									e.metrics.IncrementRetries(runID, item.NodeID, "error")
+								}
+
+								// Compute backoff delay (T086, T090)
+								var rng *rand.Rand
+								if rngVal := workerCtx.Value(RNGKey); rngVal != nil {
+									rng = rngVal.(*rand.Rand)
+								}
+								delay := computeBackoff(item.Attempt, retryPol.BaseDelay, retryPol.MaxDelay, rng)
+
+								// Apply backoff delay before re-enqueueing (T090)
+								time.Sleep(delay)
+
+								// Create retry work item with incremented attempt (T088)
+								retryItem := WorkItem[S]{
+									StepID:       item.StepID,      // Same step ID (retry, not new step)
+									OrderKey:     item.OrderKey,    // Preserve order key for determinism
+									NodeID:       item.NodeID,      // Same node
+									State:        item.State,       // Same input state
+									Attempt:      item.Attempt + 1, // Increment attempt counter (T088)
+									ParentNodeID: item.ParentNodeID,
+									EdgeIndex:    item.EdgeIndex,
+								}
+
+								// Re-enqueue for retry
+								if err := e.frontier.Enqueue(workerCtx, retryItem); err != nil {
+									// If enqueue fails, treat as non-retryable
+									results <- nodeResult[S]{err: result.Err}
+									cancel()
+									return
+								}
+
+								// Retry enqueued successfully - exit anonymous function
+								// This returns from func(), not from the goroutine.
+								// The outer for loop continues and dequeues the next work item.
+								return
 							}
-							delay := computeBackoff(item.Attempt, retryPol.BaseDelay, retryPol.MaxDelay, rng)
+						}
 
-							// Apply backoff delay before re-enqueueing (T090)
-							time.Sleep(delay)
+						// Error is non-retryable or max attempts exceeded
+						if !shouldRetry && policy != nil && policy.RetryPolicy != nil && item.Attempt >= policy.RetryPolicy.MaxAttempts-1 {
+							// Max attempts exceeded (T089)
+							results <- nodeResult[S]{err: ErrMaxAttemptsExceeded}
+						} else {
+							// Non-retryable error or no retry policy
+							results <- nodeResult[S]{err: result.Err}
+						}
+						cancel()
+						return
+					}
 
-							// Create retry work item with incremented attempt (T088)
-							retryItem := WorkItem[S]{
-								StepID:       item.StepID,      // Same step ID (retry, not new step)
-								OrderKey:     item.OrderKey,    // Preserve order key for determinism
-								NodeID:       item.NodeID,      // Same node
-								State:        item.State,       // Same input state
-								Attempt:      item.Attempt + 1, // Increment attempt counter (T088)
-								ParentNodeID: item.ParentNodeID,
-								EdgeIndex:    item.EdgeIndex,
-							}
+					// Emit node_end event
+					e.emitNodeEnd(runID, item.NodeID, item.StepID, result.Delta)
 
-							// Re-enqueue for retry
-							if err := e.frontier.Enqueue(workerCtx, retryItem); err != nil {
-								// If enqueue fails, treat as non-retryable
-								results <- nodeResult[S]{err: result.Err}
+					// Send result to collection channel
+					results <- nodeResult[S]{
+						nodeID:   item.NodeID,
+						delta:    result.Delta,
+						route:    result.Route,
+						orderKey: item.OrderKey,
+						err:      nil,
+					}
+
+					// Handle routing (T036)
+					if result.Route.Terminal {
+						// Terminal node - stop workflow
+						e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
+							"terminal": true,
+						})
+						// Don't enqueue more work, but continue to allow other parallel branches to complete
+						return
+					}
+
+					// Fan-out routing (Next.Many)
+					if len(result.Route.Many) > 0 {
+						e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
+							"parallel": true,
+							"branches": result.Route.Many,
+						})
+
+						for edgeIdx, branchID := range result.Route.Many {
+							// Deep copy state for branch isolation
+							branchState, err := deepCopyState(item.State)
+							if err != nil {
+								results <- nodeResult[S]{err: err}
 								cancel()
 								return
 							}
 
-							// Retry enqueued successfully - continue to next work item
-							continue
+							// Create work item for branch
+							branchItem := WorkItem[S]{
+								StepID:       item.StepID + 1,
+								OrderKey:     computeOrderKey(item.NodeID, edgeIdx),
+								NodeID:       branchID,
+								State:        branchState,
+								Attempt:      0,
+								ParentNodeID: item.NodeID,
+								EdgeIndex:    edgeIdx,
+							}
+
+							if err := e.frontier.Enqueue(workerCtx, branchItem); err != nil {
+								results <- nodeResult[S]{err: err}
+								cancel()
+								return
+							}
 						}
+						return
 					}
 
-					// Error is non-retryable or max attempts exceeded
-					if !shouldRetry && policy != nil && policy.RetryPolicy != nil && item.Attempt >= policy.RetryPolicy.MaxAttempts-1 {
-						// Max attempts exceeded (T089)
-						results <- nodeResult[S]{err: ErrMaxAttemptsExceeded}
-					} else {
-						// Non-retryable error or no retry policy
-						results <- nodeResult[S]{err: result.Err}
-					}
-					cancel()
-					return
-				}
+					// Single next node (Goto)
+					if result.Route.To != "" {
+						e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
+							"next_node": result.Route.To,
+						})
 
-				// Emit node_end event
-				e.emitNodeEnd(runID, item.NodeID, item.StepID, result.Delta)
-
-				// Send result to collection channel
-				results <- nodeResult[S]{
-					nodeID:   item.NodeID,
-					delta:    result.Delta,
-					route:    result.Route,
-					orderKey: item.OrderKey,
-					err:      nil,
-				}
-
-				// Handle routing (T036)
-				if result.Route.Terminal {
-					// Terminal node - stop workflow
-					e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
-						"terminal": true,
-					})
-					// Don't cancel context here - let workers finish naturally
-					// cancel() would cause cascade failures for other workers
-					return
-				}
-
-				// Fan-out routing (Next.Many)
-				if len(result.Route.Many) > 0 {
-					e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
-						"parallel": true,
-						"branches": result.Route.Many,
-					})
-
-					for edgeIdx, branchID := range result.Route.Many {
-						// Deep copy state for branch isolation
-						branchState, err := deepCopyState(item.State)
-						if err != nil {
-							results <- nodeResult[S]{err: err}
-							cancel()
-							return
-						}
-
-						// Create work item for branch
-						branchItem := WorkItem[S]{
+						nextItem := WorkItem[S]{
 							StepID:       item.StepID + 1,
-							OrderKey:     computeOrderKey(item.NodeID, edgeIdx),
-							NodeID:       branchID,
-							State:        branchState,
+							OrderKey:     computeOrderKey(item.NodeID, 0),
+							NodeID:       result.Route.To,
+							State:        item.State,
 							Attempt:      0,
 							ParentNodeID: item.NodeID,
-							EdgeIndex:    edgeIdx,
+							EdgeIndex:    0,
 						}
 
-						if err := e.frontier.Enqueue(workerCtx, branchItem); err != nil {
+						if err := e.frontier.Enqueue(workerCtx, nextItem); err != nil {
 							results <- nodeResult[S]{err: err}
 							cancel()
 							return
 						}
+						return
 					}
-					continue
-				}
 
-				// Single next node (Goto)
-				if result.Route.To != "" {
+					// Edge-based routing fallback
+					nextNode := e.evaluateEdges(item.NodeID, item.State)
+					if nextNode == "" {
+						results <- nodeResult[S]{
+							err: &EngineError{
+								Message: "no valid route from node: " + item.NodeID,
+								Code:    "NO_ROUTE",
+							},
+						}
+						cancel()
+						return
+					}
+
 					e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
-						"next_node": result.Route.To,
+						"next_node": nextNode,
+						"via_edge":  true,
 					})
 
 					nextItem := WorkItem[S]{
 						StepID:       item.StepID + 1,
 						OrderKey:     computeOrderKey(item.NodeID, 0),
-						NodeID:       result.Route.To,
+						NodeID:       nextNode,
 						State:        item.State,
 						Attempt:      0,
 						ParentNodeID: item.NodeID,
@@ -971,42 +1139,7 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 						cancel()
 						return
 					}
-					continue
-				}
-
-				// Edge-based routing fallback
-				nextNode := e.evaluateEdges(item.NodeID, item.State)
-				if nextNode == "" {
-					results <- nodeResult[S]{
-						err: &EngineError{
-							Message: "no valid route from node: " + item.NodeID,
-							Code:    "NO_ROUTE",
-						},
-					}
-					cancel()
-					return
-				}
-
-				e.emitRoutingDecision(runID, item.NodeID, item.StepID, map[string]interface{}{
-					"next_node": nextNode,
-					"via_edge":  true,
-				})
-
-				nextItem := WorkItem[S]{
-					StepID:       item.StepID + 1,
-					OrderKey:     computeOrderKey(item.NodeID, 0),
-					NodeID:       nextNode,
-					State:        item.State,
-					Attempt:      0,
-					ParentNodeID: item.NodeID,
-					EdgeIndex:    0,
-				}
-
-				if err := e.frontier.Enqueue(workerCtx, nextItem); err != nil {
-					results <- nodeResult[S]{err: err}
-					cancel()
-					return
-				}
+				}() // T046: End inflight tracking func
 			}
 		}()
 	}
@@ -1018,6 +1151,24 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 	}()
 
 	// Collect results from workers
+	// Monitor for completion: frontier empty + no inflight work
+	go func() {
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-workerCtx.Done():
+				return
+			case <-ticker.C:
+				if e.frontier.Len() == 0 && inflightCounter.Load() == 0 {
+					// Workflow complete - cancel workers and close results
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+
 	for result := range results {
 		if result.err != nil {
 			return zero, result.err
@@ -1974,7 +2125,7 @@ func (e *Engine[S]) runConcurrentFromCheckpoint(ctx context.Context, runID strin
 							return
 						}
 					}
-					continue
+					return
 				}
 
 				// Single next node

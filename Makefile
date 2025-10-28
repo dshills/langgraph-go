@@ -53,7 +53,7 @@ $(BUILD_DIR):
 # Run tests
 test:
 	@echo "Running tests..."
-	@$(GO) test ./... -short
+	@$(GO) test ./... -short -timeout 2m
 
 # Run tests with verbose output
 test-verbose:
