@@ -86,3 +86,9 @@ examples/*/parallel
 examples/*/routing
 examples/*/tracing
 examples/*/llm
+examples/*/benchmarks
+examples/*/chatbot
+examples/*/data-pipeline
+examples/*/interactive-workflow
+examples/*/research-pipeline
+examples/*/tools
