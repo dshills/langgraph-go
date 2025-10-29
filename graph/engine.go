@@ -958,7 +958,6 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 						e.emitError(runID, item.NodeID, item.StepID, result.Err)
 
 						// Check if error is retryable and we haven't exceeded max attempts
-						shouldRetry := false
 						if policy != nil && policy.RetryPolicy != nil {
 							retryPol := policy.RetryPolicy
 
@@ -970,8 +969,6 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 							// MaxAttempts includes the initial attempt, so MaxAttempts=3 means:
 							// attempt 0 (initial), attempt 1 (retry 1), attempt 2 (retry 2)
 							if isRetryable && item.Attempt < retryPol.MaxAttempts-1 {
-								shouldRetry = true
-
 								// T046: Increment retry metrics
 								if e.metrics != nil {
 									e.metrics.IncrementRetries(runID, item.NodeID, "error")
@@ -1011,16 +1008,19 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 								// The outer for loop continues and dequeues the next work item.
 								return
 							}
+
+							// Error is non-retryable or max attempts exceeded
+							// (We only reach here if retry didn't happen above)
+							if item.Attempt >= retryPol.MaxAttempts-1 {
+								// Max attempts exceeded (T089)
+								results <- nodeResult[S]{err: ErrMaxAttemptsExceeded}
+								cancel()
+								return
+							}
 						}
 
-						// Error is non-retryable or max attempts exceeded
-						if !shouldRetry && policy != nil && policy.RetryPolicy != nil && item.Attempt >= policy.RetryPolicy.MaxAttempts-1 {
-							// Max attempts exceeded (T089)
-							results <- nodeResult[S]{err: ErrMaxAttemptsExceeded}
-						} else {
-							// Non-retryable error or no retry policy
-							results <- nodeResult[S]{err: result.Err}
-						}
+						// Non-retryable error or no retry policy
+						results <- nodeResult[S]{err: result.Err}
 						cancel()
 						return
 					}
