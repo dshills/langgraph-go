@@ -106,7 +106,6 @@ func initRNG(runID string) *rand.Rand {
 	// Note: Using math/rand (not crypto/rand) intentionally for deterministic replay
 	source := rand.NewSource(seed) // #nosec G404 -- deterministic RNG for replay, not security
 	return rand.New(source)        // #nosec G404 -- deterministic RNG for replay, not security
-
 }
 
 // Reducer is a function that merges a partial state update (delta) into the previous state.

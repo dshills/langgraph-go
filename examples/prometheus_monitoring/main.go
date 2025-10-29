@@ -130,7 +130,6 @@ func (f *FlakyNode) Run(_ context.Context, s State) graph.NodeResult[State] {
 	// Fail 30% of attempts.
 	//nolint:gosec // G404: demo code, simulating random failures for retry demonstration
 	if rand.Float64() < 0.3 {
-	if rand.Float64() < 0.3 {
 		return graph.NodeResult[State]{
 			Delta: State{
 				RetryCount: 1,
