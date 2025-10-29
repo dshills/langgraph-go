@@ -1,0 +1,494 @@
+package workflow
+
+import (
+	"context"
+	"testing"
+
+	"github.com/dshills/langgraph-go/examples/multi-llm-review/providers"
+)
+
+// TestReviewBatchNode_CallsProviderReviewBatch verifies that the node
+// calls provider.ReviewBatch with the correct batch files.
+func TestReviewBatchNode_CallsProviderReviewBatch(t *testing.T) {
+	// Setup mock provider with configured issues
+	mockProvider := &providers.MockProvider{
+		Issues: []providers.ReviewIssue{
+			{
+				File:         "test.go",
+				Line:         10,
+				Severity:     "high",
+				Category:     "security",
+				Description:  "SQL injection vulnerability",
+				Remediation:  "Use parameterized queries",
+				ProviderName: "mock",
+				Confidence:   0.95,
+			},
+		},
+	}
+
+	// Create node with mock provider
+	node := NewReviewBatchNode(mockProvider)
+
+	// Setup state with a batch to process
+	state := ReviewState{
+		Batches: []Batch{
+			{
+				BatchNumber: 1,
+				Files: []CodeFile{
+					{
+						FilePath:  "test.go",
+						Content:   "package main\n\nfunc main() {}",
+						Language:  "go",
+						LineCount: 3,
+						SizeBytes: 30,
+						Checksum:  "abc123",
+					},
+				},
+				TotalLines: 3,
+				Status:     "pending",
+			},
+		},
+		CurrentBatch: 1,
+		TotalBatches: 1,
+		Reviews:      make(map[string][]Review),
+	}
+
+	// Execute node
+	ctx := context.Background()
+	result := node.Run(ctx, state)
+
+	// Verify no error
+	if result.Err != nil {
+		t.Fatalf("Run() unexpected error = %v", result.Err)
+	}
+
+	// Verify provider was called and results stored
+	if len(result.Delta.Reviews) == 0 {
+		t.Fatal("Run() did not store any reviews")
+	}
+
+	reviews, ok := result.Delta.Reviews["mock"]
+	if !ok {
+		t.Fatal("Run() did not store review for mock provider")
+	}
+
+	if len(reviews) != 1 {
+		t.Fatalf("Run() stored %d reviews, want 1", len(reviews))
+	}
+
+	review := reviews[0]
+	if len(review.Issues) != 1 {
+		t.Errorf("Run() returned %d issues, want 1", len(review.Issues))
+	}
+
+	// Verify issue details
+	if len(review.Issues) > 0 {
+		issue := review.Issues[0]
+		if issue.File != "test.go" {
+			t.Errorf("Issue.File = %q, want %q", issue.File, "test.go")
+		}
+		if issue.Line != 10 {
+			t.Errorf("Issue.Line = %d, want %d", issue.Line, 10)
+		}
+		if issue.Severity != "high" {
+			t.Errorf("Issue.Severity = %q, want %q", issue.Severity, "high")
+		}
+	}
+}
+
+// TestReviewBatchNode_StoresReviewInStateReviewsMap verifies that the node
+// stores the Review in state.Reviews map keyed by provider name.
+func TestReviewBatchNode_StoresReviewInStateReviewsMap(t *testing.T) {
+	tests := []struct {
+		name         string
+		providerName string
+		issueCount   int
+	}{
+		{
+			name:         "stores review with provider name as key",
+			providerName: "mock",
+			issueCount:   2,
+		},
+		{
+			name:         "stores empty review when no issues",
+			providerName: "mock",
+			issueCount:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mock with configured issues
+			mockIssues := make([]providers.ReviewIssue, tt.issueCount)
+			for i := 0; i < tt.issueCount; i++ {
+				mockIssues[i] = providers.ReviewIssue{
+					File:         "file.go",
+					Line:         i + 1,
+					Severity:     "low",
+					Category:     "style",
+					Description:  "Test issue",
+					Remediation:  "Fix it",
+					ProviderName: tt.providerName,
+					Confidence:   0.8,
+				}
+			}
+
+			mockProvider := &providers.MockProvider{Issues: mockIssues}
+			node := NewReviewBatchNode(mockProvider)
+
+			state := ReviewState{
+				Batches: []Batch{
+					{
+						BatchNumber: 1,
+						Files:       []CodeFile{{FilePath: "file.go", Content: "code", Language: "go"}},
+					},
+				},
+				CurrentBatch: 1,
+				TotalBatches: 1,
+				Reviews:      make(map[string][]Review),
+			}
+
+			result := node.Run(context.Background(), state)
+
+			if result.Err != nil {
+				t.Fatalf("Run() error = %v", result.Err)
+			}
+
+			// Verify Reviews map has entry for provider
+			reviews, ok := result.Delta.Reviews[tt.providerName]
+			if !ok {
+				t.Fatalf("Delta.Reviews missing key %q", tt.providerName)
+			}
+
+			if len(reviews) != 1 {
+				t.Fatalf("Delta.Reviews[%q] has %d reviews, want 1", tt.providerName, len(reviews))
+			}
+
+			review := reviews[0]
+			if review.ProviderName != tt.providerName {
+				t.Errorf("Review.ProviderName = %q, want %q", review.ProviderName, tt.providerName)
+			}
+
+			if len(review.Issues) != tt.issueCount {
+				t.Errorf("Review.Issues has %d issues, want %d", len(review.Issues), tt.issueCount)
+			}
+		})
+	}
+}
+
+// TestReviewBatchNode_IncrementsCurrentBatch verifies that the node
+// increments state.CurrentBatch after processing.
+func TestReviewBatchNode_IncrementsCurrentBatch(t *testing.T) {
+	tests := []struct {
+		name             string
+		currentBatch     int
+		totalBatches     int
+		wantCurrentBatch int
+	}{
+		{
+			name:             "increments from 1 to 2",
+			currentBatch:     1,
+			totalBatches:     3,
+			wantCurrentBatch: 2,
+		},
+		{
+			name:             "increments from 2 to 3",
+			currentBatch:     2,
+			totalBatches:     3,
+			wantCurrentBatch: 3,
+		},
+		{
+			name:             "increments on last batch",
+			currentBatch:     3,
+			totalBatches:     3,
+			wantCurrentBatch: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockProvider := &providers.MockProvider{
+				Issues: []providers.ReviewIssue{},
+			}
+			node := NewReviewBatchNode(mockProvider)
+
+			// Create batches based on totalBatches
+			batches := make([]Batch, tt.totalBatches)
+			for i := 0; i < tt.totalBatches; i++ {
+				batches[i] = Batch{
+					BatchNumber: i + 1,
+					Files:       []CodeFile{{FilePath: "file.go", Content: "code", Language: "go"}},
+				}
+			}
+
+			state := ReviewState{
+				Batches:      batches,
+				CurrentBatch: tt.currentBatch,
+				TotalBatches: tt.totalBatches,
+				Reviews:      make(map[string][]Review),
+			}
+
+			result := node.Run(context.Background(), state)
+
+			if result.Err != nil {
+				t.Fatalf("Run() error = %v", result.Err)
+			}
+
+			if result.Delta.CurrentBatch != tt.wantCurrentBatch {
+				t.Errorf("Delta.CurrentBatch = %d, want %d", result.Delta.CurrentBatch, tt.wantCurrentBatch)
+			}
+		})
+	}
+}
+
+// TestReviewBatchNode_AddsToCompletedBatches verifies that the node
+// adds the processed batch number to state.CompletedBatches.
+func TestReviewBatchNode_AddsToCompletedBatches(t *testing.T) {
+	mockProvider := &providers.MockProvider{
+		Issues: []providers.ReviewIssue{},
+	}
+	node := NewReviewBatchNode(mockProvider)
+
+	tests := []struct {
+		name              string
+		batchNumber       int
+		wantCompletedBatch int
+	}{
+		{
+			name:              "adds batch 1 to completed",
+			batchNumber:       1,
+			wantCompletedBatch: 1,
+		},
+		{
+			name:              "adds batch 5 to completed",
+			batchNumber:       5,
+			wantCompletedBatch: 5,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			state := ReviewState{
+				Batches: []Batch{
+					{
+						BatchNumber: tt.batchNumber,
+						Files:       []CodeFile{{FilePath: "test.go", Content: "code", Language: "go"}},
+					},
+				},
+				CurrentBatch: 1,
+				TotalBatches: 1,
+				Reviews:      make(map[string][]Review),
+			}
+
+			result := node.Run(context.Background(), state)
+
+			if result.Err != nil {
+				t.Fatalf("Run() error = %v", result.Err)
+			}
+
+			if len(result.Delta.CompletedBatches) != 1 {
+				t.Fatalf("Delta.CompletedBatches has %d entries, want 1", len(result.Delta.CompletedBatches))
+			}
+
+			if result.Delta.CompletedBatches[0] != tt.wantCompletedBatch {
+				t.Errorf("Delta.CompletedBatches[0] = %d, want %d", result.Delta.CompletedBatches[0], tt.wantCompletedBatch)
+			}
+		})
+	}
+}
+
+// TestReviewBatchNode_HandlesProviderError verifies that the node
+// handles provider errors gracefully without panicking.
+func TestReviewBatchNode_HandlesProviderError(t *testing.T) {
+	// Create a mock that will return an error by using context cancellation
+	mockProvider := &providers.MockProvider{
+		Issues: []providers.ReviewIssue{},
+	}
+	node := NewReviewBatchNode(mockProvider)
+
+	// Create a cancelled context to trigger error
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	state := ReviewState{
+		Batches: []Batch{
+			{
+				BatchNumber: 1,
+				Files:       []CodeFile{{FilePath: "test.go", Content: "code", Language: "go"}},
+			},
+		},
+		CurrentBatch: 1,
+		TotalBatches: 1,
+		Reviews:      make(map[string][]Review),
+	}
+
+	result := node.Run(ctx, state)
+
+	// Node should not return error, but should handle it gracefully
+	if result.Err != nil {
+		t.Errorf("Run() should handle provider error gracefully, got Err = %v", result.Err)
+	}
+
+	// Verify review was stored with error message
+	reviews, ok := result.Delta.Reviews["mock"]
+	if !ok {
+		t.Fatal("Delta.Reviews should contain entry for mock provider")
+	}
+
+	if len(reviews) != 1 {
+		t.Fatalf("Delta.Reviews[mock] has %d reviews, want 1", len(reviews))
+	}
+
+	review := reviews[0]
+	if review.Error == "" {
+		t.Error("Review.Error should be set when provider fails")
+	}
+
+	// Verify failed provider was tracked
+	if len(result.Delta.FailedProviders) != 1 {
+		t.Fatalf("Delta.FailedProviders has %d entries, want 1", len(result.Delta.FailedProviders))
+	}
+
+	if result.Delta.FailedProviders[0] != "mock" {
+		t.Errorf("Delta.FailedProviders[0] = %q, want %q", result.Delta.FailedProviders[0], "mock")
+	}
+
+	// Verify LastError was set
+	if result.Delta.LastError == "" {
+		t.Error("Delta.LastError should be set when provider fails")
+	}
+
+	// Verify CurrentBatch was still incremented
+	if result.Delta.CurrentBatch != 2 {
+		t.Errorf("Delta.CurrentBatch = %d, want 2", result.Delta.CurrentBatch)
+	}
+
+	// Verify batch was marked as completed even on error
+	if len(result.Delta.CompletedBatches) != 1 {
+		t.Errorf("Delta.CompletedBatches has %d entries, want 1", len(result.Delta.CompletedBatches))
+	}
+}
+
+// TestReviewBatchNode_RoutesToNextBatch verifies routing when more batches remain.
+func TestReviewBatchNode_RoutesToNextBatch(t *testing.T) {
+	mockProvider := &providers.MockProvider{
+		Issues: []providers.ReviewIssue{},
+	}
+	node := NewReviewBatchNode(mockProvider)
+
+	tests := []struct {
+		name         string
+		currentBatch int
+		totalBatches int
+		wantRoute    string
+	}{
+		{
+			name:         "routes to review_batch when batch 1 of 3 complete",
+			currentBatch: 1,
+			totalBatches: 3,
+			wantRoute:    "review_batch",
+		},
+		{
+			name:         "routes to review_batch when batch 2 of 3 complete",
+			currentBatch: 2,
+			totalBatches: 3,
+			wantRoute:    "review_batch",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create batches
+			batches := make([]Batch, tt.totalBatches)
+			for i := 0; i < tt.totalBatches; i++ {
+				batches[i] = Batch{
+					BatchNumber: i + 1,
+					Files:       []CodeFile{{FilePath: "file.go", Content: "code", Language: "go"}},
+				}
+			}
+
+			state := ReviewState{
+				Batches:      batches,
+				CurrentBatch: tt.currentBatch,
+				TotalBatches: tt.totalBatches,
+				Reviews:      make(map[string][]Review),
+			}
+
+			result := node.Run(context.Background(), state)
+
+			if result.Err != nil {
+				t.Fatalf("Run() error = %v", result.Err)
+			}
+
+			if result.Route.To != tt.wantRoute {
+				t.Errorf("Route.To = %q, want %q", result.Route.To, tt.wantRoute)
+			}
+
+			if result.Route.Terminal {
+				t.Error("Route.Terminal = true, want false")
+			}
+		})
+	}
+}
+
+// TestReviewBatchNode_RoutesToConsolidation verifies routing when all batches complete.
+func TestReviewBatchNode_RoutesToConsolidation(t *testing.T) {
+	mockProvider := &providers.MockProvider{
+		Issues: []providers.ReviewIssue{},
+	}
+	node := NewReviewBatchNode(mockProvider)
+
+	tests := []struct {
+		name         string
+		currentBatch int
+		totalBatches int
+		wantRoute    string
+	}{
+		{
+			name:         "routes to consolidate after last batch (1 of 1)",
+			currentBatch: 1,
+			totalBatches: 1,
+			wantRoute:    "consolidate",
+		},
+		{
+			name:         "routes to consolidate after last batch (3 of 3)",
+			currentBatch: 3,
+			totalBatches: 3,
+			wantRoute:    "consolidate",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create batches
+			batches := make([]Batch, tt.totalBatches)
+			for i := 0; i < tt.totalBatches; i++ {
+				batches[i] = Batch{
+					BatchNumber: i + 1,
+					Files:       []CodeFile{{FilePath: "file.go", Content: "code", Language: "go"}},
+				}
+			}
+
+			state := ReviewState{
+				Batches:      batches,
+				CurrentBatch: tt.currentBatch,
+				TotalBatches: tt.totalBatches,
+				Reviews:      make(map[string][]Review),
+			}
+
+			result := node.Run(context.Background(), state)
+
+			if result.Err != nil {
+				t.Fatalf("Run() error = %v", result.Err)
+			}
+
+			if result.Route.To != tt.wantRoute {
+				t.Errorf("Route.To = %q, want %q", result.Route.To, tt.wantRoute)
+			}
+
+			if result.Route.Terminal {
+				t.Error("Route.Terminal = true, want false")
+			}
+		})
+	}
+}

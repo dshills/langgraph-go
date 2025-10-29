@@ -1,0 +1,799 @@
+
+// ============================================================================
+// ConsolidateNode Tests  
+// ============================================================================
+
+// TestConsolidateNode_MergesDuplicateIssues verifies that ConsolidateNode merges
+// issues with identical file, line, and description into a single ConsolidatedIssue.
+func TestConsolidateNode_MergesDuplicateIssues(t *testing.T) {
+	ctx := context.Background()
+
+	// Setup: Create state with duplicate issues from multiple providers
+	state := ReviewState{
+		Reviews: map[string][]Review{
+			"openai": {
+				{
+					ProviderName: "openai",
+					BatchNumber:  1,
+					Issues: []ReviewIssue{
+						{
+							File:         "main.go",
+							Line:         42,
+							Severity:     "high",
+							Category:     "security",
+							Description:  "SQL injection vulnerability",
+							Remediation:  "Use parameterized queries",
+							ProviderName: "openai",
+							Confidence:   0.95,
+						},
+					},
+				},
+			},
+			"anthropic": {
+				{
+					ProviderName: "anthropic",
+					BatchNumber:  1,
+					Issues: []ReviewIssue{
+						{
+							File:         "main.go",
+							Line:         42,
+							Severity:     "critical",
+							Category:     "security",
+							Description:  "SQL injection vulnerability",
+							Remediation:  "Use prepared statements",
+							ProviderName: "anthropic",
+							Confidence:   0.98,
+						},
+					},
+				},
+			},
+			"google": {
+				{
+					ProviderName: "google",
+					BatchNumber:  1,
+					Issues: []ReviewIssue{
+						{
+							File:         "main.go",
+							Line:         42,
+							Severity:     "high",
+							Category:     "security",
+							Description:  "SQL injection vulnerability",
+							Remediation:  "Sanitize user input",
+							ProviderName: "google",
+							Confidence:   0.92,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Execute: Run ConsolidateNode
+	node := ConsolidateNode{}
+	result := node.Run(ctx, state)
+
+	// Verify: No error
+	if result.Err != nil {
+		t.Fatalf("ConsolidateNode.Run() returned error: %v", result.Err)
+	}
+
+	// Verify: Exactly one consolidated issue (3 duplicates merged)
+	if len(result.Delta.ConsolidatedIssues) != 1 {
+		t.Fatalf("Expected 1 consolidated issue, got %d", len(result.Delta.ConsolidatedIssues))
+	}
+
+	issue := result.Delta.ConsolidatedIssues[0]
+
+	// Verify: Issue fields match the original
+	if issue.File != "main.go" {
+		t.Errorf("Expected File='main.go', got '%s'", issue.File)
+	}
+	if issue.Line != 42 {
+		t.Errorf("Expected Line=42, got %d", issue.Line)
+	}
+	if issue.Description != "SQL injection vulnerability" {
+		t.Errorf("Expected Description='SQL injection vulnerability', got '%s'", issue.Description)
+	}
+
+	// Verify: All three providers are listed
+	if len(issue.Providers) != 3 {
+		t.Fatalf("Expected 3 providers, got %d", len(issue.Providers))
+	}
+	providerMap := make(map[string]bool)
+	for _, p := range issue.Providers {
+		providerMap[p] = true
+	}
+	expectedProviders := []string{"openai", "anthropic", "google"}
+	for _, expected := range expectedProviders {
+		if !providerMap[expected] {
+			t.Errorf("Expected provider '%s' not found in providers list: %v", expected, issue.Providers)
+		}
+	}
+
+	// Verify: Consensus score is 1.0 (all 3 providers flagged it)
+	expectedScore := 1.0
+	if issue.ConsensusScore != expectedScore {
+		t.Errorf("Expected ConsensusScore=%.2f, got %.2f", expectedScore, issue.ConsensusScore)
+	}
+
+	// Verify: Severity is the highest (critical)
+	if issue.Severity != "critical" {
+		t.Errorf("Expected Severity='critical' (highest among duplicates), got '%s'", issue.Severity)
+	}
+
+	// Verify: IssueID is populated (8-char hex)
+	if len(issue.IssueID) != 8 {
+		t.Errorf("Expected IssueID length=8, got %d (value: '%s')", len(issue.IssueID), issue.IssueID)
+	}
+}
+
+// TestConsolidateNode_KeepsUniqueIssuesSeparate verifies that ConsolidateNode
+// does not merge issues with different file, line, or description.
+func TestConsolidateNode_KeepsUniqueIssuesSeparate(t *testing.T) {
+	ctx := context.Background()
+
+	// Setup: Create state with unique issues (different file, line, or description)
+	state := ReviewState{
+		Reviews: map[string][]Review{
+			"openai": {
+				{
+					ProviderName: "openai",
+					BatchNumber:  1,
+					Issues: []ReviewIssue{
+						{
+							File:         "main.go",
+							Line:         42,
+							Severity:     "high",
+							Category:     "security",
+							Description:  "SQL injection vulnerability",
+							Remediation:  "Use parameterized queries",
+							ProviderName: "openai",
+						},
+						{
+							File:         "handler.go",
+							Line:         10,
+							Severity:     "medium",
+							Category:     "performance",
+							Description:  "Inefficient loop",
+							Remediation:  "Use map lookup instead",
+							ProviderName: "openai",
+						},
+					},
+				},
+			},
+			"anthropic": {
+				{
+					ProviderName: "anthropic",
+					BatchNumber:  1,
+					Issues: []ReviewIssue{
+						{
+							File:         "main.go",
+							Line:         100,
+							Severity:     "low",
+							Category:     "style",
+							Description:  "Variable name not idiomatic",
+							Remediation:  "Use camelCase",
+							ProviderName: "anthropic",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Execute: Run ConsolidateNode
+	node := ConsolidateNode{}
+	result := node.Run(ctx, state)
+
+	// Verify: No error
+	if result.Err != nil {
+		t.Fatalf("ConsolidateNode.Run() returned error: %v", result.Err)
+	}
+
+	// Verify: Exactly three consolidated issues (all unique)
+	if len(result.Delta.ConsolidatedIssues) != 3 {
+		t.Fatalf("Expected 3 consolidated issues, got %d", len(result.Delta.ConsolidatedIssues))
+	}
+
+	// Verify: Each issue has exactly one provider
+	for i, issue := range result.Delta.ConsolidatedIssues {
+		if len(issue.Providers) != 1 {
+			t.Errorf("Issue %d: Expected 1 provider, got %d (providers: %v)", i, len(issue.Providers), issue.Providers)
+		}
+	}
+
+	// Verify: Each issue has IssueID populated
+	for i, issue := range result.Delta.ConsolidatedIssues {
+		if len(issue.IssueID) != 8 {
+			t.Errorf("Issue %d: Expected IssueID length=8, got %d (value: '%s')", i, len(issue.IssueID), issue.IssueID)
+		}
+	}
+}
+
+// TestConsolidateNode_CalculatesConsensusScore verifies that ConsolidateNode
+// correctly calculates the consensus score as the fraction of providers that flagged the issue.
+func TestConsolidateNode_CalculatesConsensusScore(t *testing.T) {
+	tests := []struct {
+		name          string
+		state         ReviewState
+		expectedScore float64
+		expectedFile  string
+		expectedLine  int
+	}{
+		{
+			name: "2 out of 3 providers flag issue",
+			state: ReviewState{
+				Reviews: map[string][]Review{
+					"openai": {
+						{
+							ProviderName: "openai",
+							BatchNumber:  1,
+							Issues: []ReviewIssue{
+								{
+									File:         "config.go",
+									Line:         15,
+									Severity:     "medium",
+									Category:     "best-practice",
+									Description:  "Magic number should be constant",
+									Remediation:  "Extract to named constant",
+									ProviderName: "openai",
+								},
+							},
+						},
+					},
+					"anthropic": {
+						{
+							ProviderName: "anthropic",
+							BatchNumber:  1,
+							Issues: []ReviewIssue{
+								{
+									File:         "config.go",
+									Line:         15,
+									Severity:     "low",
+									Category:     "best-practice",
+									Description:  "Magic number should be constant",
+									Remediation:  "Define as constant",
+									ProviderName: "anthropic",
+								},
+							},
+						},
+					},
+					"google": {
+						{
+							ProviderName: "google",
+							BatchNumber:  1,
+							Issues:       []ReviewIssue{}, // Google did not flag this issue
+						},
+					},
+				},
+			},
+			expectedScore: 0.67, // 2/3 = 0.666... rounded to 0.67
+			expectedFile:  "config.go",
+			expectedLine:  15,
+		},
+		{
+			name: "1 out of 2 providers flag issue",
+			state: ReviewState{
+				Reviews: map[string][]Review{
+					"openai": {
+						{
+							ProviderName: "openai",
+							BatchNumber:  1,
+							Issues: []ReviewIssue{
+								{
+									File:         "util.go",
+									Line:         50,
+									Severity:     "info",
+									Category:     "style",
+									Description:  "Comment formatting",
+									Remediation:  "Add period at end",
+									ProviderName: "openai",
+								},
+							},
+						},
+					},
+					"anthropic": {
+						{
+							ProviderName: "anthropic",
+							BatchNumber:  1,
+							Issues:       []ReviewIssue{}, // Anthropic did not flag this
+						},
+					},
+				},
+			},
+			expectedScore: 0.5, // 1/2 = 0.5
+			expectedFile:  "util.go",
+			expectedLine:  50,
+		},
+		{
+			name: "3 out of 3 providers flag issue",
+			state: ReviewState{
+				Reviews: map[string][]Review{
+					"openai": {
+						{
+							ProviderName: "openai",
+							BatchNumber:  1,
+							Issues: []ReviewIssue{
+								{
+									File:         "auth.go",
+									Line:         99,
+									Severity:     "critical",
+									Category:     "security",
+									Description:  "Hardcoded credentials",
+									Remediation:  "Use environment variables",
+									ProviderName: "openai",
+								},
+							},
+						},
+					},
+					"anthropic": {
+						{
+							ProviderName: "anthropic",
+							BatchNumber:  1,
+							Issues: []ReviewIssue{
+								{
+									File:         "auth.go",
+									Line:         99,
+									Severity:     "critical",
+									Category:     "security",
+									Description:  "Hardcoded credentials",
+									Remediation:  "Move to config file",
+									ProviderName: "anthropic",
+								},
+							},
+						},
+					},
+					"google": {
+						{
+							ProviderName: "google",
+							BatchNumber:  1,
+							Issues: []ReviewIssue{
+								{
+									File:         "auth.go",
+									Line:         99,
+									Severity:     "critical",
+									Category:     "security",
+									Description:  "Hardcoded credentials",
+									Remediation:  "Use secret manager",
+									ProviderName: "google",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedScore: 1.0, // 3/3 = 1.0
+			expectedFile:  "auth.go",
+			expectedLine:  99,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			// Execute: Run ConsolidateNode
+			node := ConsolidateNode{}
+			result := node.Run(ctx, tt.state)
+
+			// Verify: No error
+			if result.Err != nil {
+				t.Fatalf("ConsolidateNode.Run() returned error: %v", result.Err)
+			}
+
+			// Find the issue we're testing
+			var found bool
+			var issue ConsolidatedIssue
+			for _, iss := range result.Delta.ConsolidatedIssues {
+				if iss.File == tt.expectedFile && iss.Line == tt.expectedLine {
+					found = true
+					issue = iss
+					break
+				}
+			}
+
+			if !found {
+				t.Fatalf("Expected issue at %s:%d not found in consolidated issues", tt.expectedFile, tt.expectedLine)
+			}
+
+			// Verify: Consensus score matches expected (with small tolerance for floating point)
+			tolerance := 0.01
+			if issue.ConsensusScore < tt.expectedScore-tolerance || issue.ConsensusScore > tt.expectedScore+tolerance {
+				t.Errorf("Expected ConsensusScore=%.2f (±%.2f), got %.2f", tt.expectedScore, tolerance, issue.ConsensusScore)
+			}
+		})
+	}
+}
+
+// TestConsolidateNode_PopulatesConsolidatedIssuesField verifies that ConsolidateNode
+// correctly populates the ConsolidatedIssues field in the state delta.
+func TestConsolidateNode_PopulatesConsolidatedIssuesField(t *testing.T) {
+	ctx := context.Background()
+
+	// Setup: Create state with multiple issues
+	state := ReviewState{
+		Reviews: map[string][]Review{
+			"openai": {
+				{
+					ProviderName: "openai",
+					BatchNumber:  1,
+					Issues: []ReviewIssue{
+						{
+							File:         "server.go",
+							Line:         20,
+							Severity:     "high",
+							Category:     "security",
+							Description:  "Missing authentication check",
+							Remediation:  "Add auth middleware",
+							ProviderName: "openai",
+						},
+						{
+							File:         "server.go",
+							Line:         35,
+							Severity:     "medium",
+							Category:     "performance",
+							Description:  "Blocking I/O in handler",
+							Remediation:  "Use goroutine",
+							ProviderName: "openai",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Execute: Run ConsolidateNode
+	node := ConsolidateNode{}
+	result := node.Run(ctx, state)
+
+	// Verify: No error
+	if result.Err != nil {
+		t.Fatalf("ConsolidateNode.Run() returned error: %v", result.Err)
+	}
+
+	// Verify: ConsolidatedIssues field is populated in delta
+	if result.Delta.ConsolidatedIssues == nil {
+		t.Fatal("Expected ConsolidatedIssues to be populated, got nil")
+	}
+
+	// Verify: Number of consolidated issues matches input (no duplicates in this case)
+	if len(result.Delta.ConsolidatedIssues) != 2 {
+		t.Fatalf("Expected 2 consolidated issues, got %d", len(result.Delta.ConsolidatedIssues))
+	}
+
+	// Verify: Each consolidated issue has all required fields
+	for i, issue := range result.Delta.ConsolidatedIssues {
+		if issue.File == "" {
+			t.Errorf("Issue %d: File is empty", i)
+		}
+		if issue.Line == 0 {
+			t.Errorf("Issue %d: Line is zero", i)
+		}
+		if issue.Severity == "" {
+			t.Errorf("Issue %d: Severity is empty", i)
+		}
+		if issue.Category == "" {
+			t.Errorf("Issue %d: Category is empty", i)
+		}
+		if issue.Description == "" {
+			t.Errorf("Issue %d: Description is empty", i)
+		}
+		if issue.Remediation == "" {
+			t.Errorf("Issue %d: Remediation is empty", i)
+		}
+		if len(issue.Providers) == 0 {
+			t.Errorf("Issue %d: Providers list is empty", i)
+		}
+		if issue.ConsensusScore == 0.0 {
+			t.Errorf("Issue %d: ConsensusScore is zero", i)
+		}
+		if issue.IssueID == "" {
+			t.Errorf("Issue %d: IssueID is empty", i)
+		}
+	}
+}
+
+// TestConsolidateNode_RoutesToReportNode verifies that ConsolidateNode
+// returns a route directing execution to the "report" node.
+func TestConsolidateNode_RoutesToReportNode(t *testing.T) {
+	ctx := context.Background()
+
+	// Setup: Create state with one issue
+	state := ReviewState{
+		Reviews: map[string][]Review{
+			"openai": {
+				{
+					ProviderName: "openai",
+					BatchNumber:  1,
+					Issues: []ReviewIssue{
+						{
+							File:         "test.go",
+							Line:         1,
+							Severity:     "info",
+							Category:     "style",
+							Description:  "Test issue",
+							Remediation:  "Fix it",
+							ProviderName: "openai",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Execute: Run ConsolidateNode
+	node := ConsolidateNode{}
+	result := node.Run(ctx, state)
+
+	// Verify: No error
+	if result.Err != nil {
+		t.Fatalf("ConsolidateNode.Run() returned error: %v", result.Err)
+	}
+
+	// Verify: Route points to "report" node
+	expectedNodeID := "report"
+	if result.Route.To != expectedNodeID {
+		t.Errorf("Expected Route.To='%s', got '%s'", expectedNodeID, result.Route.To)
+	}
+
+	// Verify: Not a terminal node
+	if result.Route.Terminal {
+		t.Error("Expected Route.Terminal=false, got true")
+	}
+
+	// Verify: Not a fan-out route
+	if len(result.Route.Many) > 0 {
+		t.Errorf("Expected Route.Many to be empty, got %v", result.Route.Many)
+	}
+}
+
+// TestConsolidateNode_EmptyReviews verifies that ConsolidateNode handles
+// the case where there are no reviews gracefully.
+func TestConsolidateNode_EmptyReviews(t *testing.T) {
+	ctx := context.Background()
+
+	// Setup: Create state with no reviews
+	state := ReviewState{
+		Reviews: map[string][]Review{},
+	}
+
+	// Execute: Run ConsolidateNode
+	node := ConsolidateNode{}
+	result := node.Run(ctx, state)
+
+	// Verify: No error
+	if result.Err != nil {
+		t.Fatalf("ConsolidateNode.Run() returned error: %v", result.Err)
+	}
+
+	// Verify: ConsolidatedIssues is empty
+	if len(result.Delta.ConsolidatedIssues) != 0 {
+		t.Errorf("Expected 0 consolidated issues, got %d", len(result.Delta.ConsolidatedIssues))
+	}
+
+	// Verify: Still routes to report node (to generate empty report)
+	if result.Route.To != "report" {
+		t.Errorf("Expected Route.To='report', got '%s'", result.Route.To)
+	}
+}
+
+// TestConsolidateNode_NoIssuesInReviews verifies that ConsolidateNode handles
+// the case where reviews exist but contain no issues.
+func TestConsolidateNode_NoIssuesInReviews(t *testing.T) {
+	ctx := context.Background()
+
+	// Setup: Create state with reviews but no issues
+	state := ReviewState{
+		Reviews: map[string][]Review{
+			"openai": {
+				{
+					ProviderName: "openai",
+					BatchNumber:  1,
+					Issues:       []ReviewIssue{}, // Empty issues
+					TokensUsed:   1000,
+					Duration:     500,
+				},
+			},
+			"anthropic": {
+				{
+					ProviderName: "anthropic",
+					BatchNumber:  1,
+					Issues:       []ReviewIssue{}, // Empty issues
+					TokensUsed:   1200,
+					Duration:     450,
+				},
+			},
+		},
+	}
+
+	// Execute: Run ConsolidateNode
+	node := ConsolidateNode{}
+	result := node.Run(ctx, state)
+
+	// Verify: No error
+	if result.Err != nil {
+		t.Fatalf("ConsolidateNode.Run() returned error: %v", result.Err)
+	}
+
+	// Verify: ConsolidatedIssues is empty
+	if len(result.Delta.ConsolidatedIssues) != 0 {
+		t.Errorf("Expected 0 consolidated issues, got %d", len(result.Delta.ConsolidatedIssues))
+	}
+
+	// Verify: Still routes to report node
+	if result.Route.To != "report" {
+		t.Errorf("Expected Route.To='report', got '%s'", result.Route.To)
+	}
+}
+
+// TestConsolidateNode_ExactMatchRequiresSameFileLineDescription verifies that
+// exact match deduplication only merges issues when File, Line, AND Description
+// all match exactly (case-sensitive).
+func TestConsolidateNode_ExactMatchRequiresSameFileLineDescription(t *testing.T) {
+	tests := []struct {
+		name                string
+		issue1              ReviewIssue
+		issue2              ReviewIssue
+		shouldMerge         bool
+		expectedIssueCount  int
+		expectedDescription string
+	}{
+		{
+			name: "Same file, same line, different description - no merge",
+			issue1: ReviewIssue{
+				File:         "main.go",
+				Line:         42,
+				Description:  "SQL injection vulnerability",
+				Severity:     "high",
+				Category:     "security",
+				ProviderName: "openai",
+			},
+			issue2: ReviewIssue{
+				File:         "main.go",
+				Line:         42,
+				Description:  "Missing error handling",
+				Severity:     "medium",
+				Category:     "best-practice",
+				ProviderName: "anthropic",
+			},
+			shouldMerge:        false,
+			expectedIssueCount: 2,
+		},
+		{
+			name: "Same file, different line, same description - no merge",
+			issue1: ReviewIssue{
+				File:         "main.go",
+				Line:         42,
+				Description:  "SQL injection vulnerability",
+				Severity:     "high",
+				Category:     "security",
+				ProviderName: "openai",
+			},
+			issue2: ReviewIssue{
+				File:         "main.go",
+				Line:         50,
+				Description:  "SQL injection vulnerability",
+				Severity:     "high",
+				Category:     "security",
+				ProviderName: "anthropic",
+			},
+			shouldMerge:        false,
+			expectedIssueCount: 2,
+		},
+		{
+			name: "Different file, same line, same description - no merge",
+			issue1: ReviewIssue{
+				File:         "main.go",
+				Line:         42,
+				Description:  "SQL injection vulnerability",
+				Severity:     "high",
+				Category:     "security",
+				ProviderName: "openai",
+			},
+			issue2: ReviewIssue{
+				File:         "handler.go",
+				Line:         42,
+				Description:  "SQL injection vulnerability",
+				Severity:     "high",
+				Category:     "security",
+				ProviderName: "anthropic",
+			},
+			shouldMerge:        false,
+			expectedIssueCount: 2,
+		},
+		{
+			name: "Same file, same line, same description - merge",
+			issue1: ReviewIssue{
+				File:         "main.go",
+				Line:         42,
+				Description:  "SQL injection vulnerability",
+				Severity:     "high",
+				Category:     "security",
+				ProviderName: "openai",
+			},
+			issue2: ReviewIssue{
+				File:         "main.go",
+				Line:         42,
+				Description:  "SQL injection vulnerability",
+				Severity:     "critical",
+				Category:     "security",
+				ProviderName: "anthropic",
+			},
+			shouldMerge:         true,
+			expectedIssueCount:  1,
+			expectedDescription: "SQL injection vulnerability",
+		},
+		{
+			name: "Case-sensitive description - no merge",
+			issue1: ReviewIssue{
+				File:         "main.go",
+				Line:         42,
+				Description:  "SQL injection vulnerability",
+				Severity:     "high",
+				Category:     "security",
+				ProviderName: "openai",
+			},
+			issue2: ReviewIssue{
+				File:         "main.go",
+				Line:         42,
+				Description:  "SQL Injection Vulnerability",
+				Severity:     "high",
+				Category:     "security",
+				ProviderName: "anthropic",
+			},
+			shouldMerge:        false,
+			expectedIssueCount: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			// Setup: Create state with two issues
+			state := ReviewState{
+				Reviews: map[string][]Review{
+					"openai": {
+						{
+							ProviderName: "openai",
+							BatchNumber:  1,
+							Issues:       []ReviewIssue{tt.issue1},
+						},
+					},
+					"anthropic": {
+						{
+							ProviderName: "anthropic",
+							BatchNumber:  1,
+							Issues:       []ReviewIssue{tt.issue2},
+						},
+					},
+				},
+			}
+
+			// Execute: Run ConsolidateNode
+			node := ConsolidateNode{}
+			result := node.Run(ctx, state)
+
+			// Verify: No error
+			if result.Err != nil {
+				t.Fatalf("ConsolidateNode.Run() returned error: %v", result.Err)
+			}
+
+			// Verify: Issue count matches expectation
+			if len(result.Delta.ConsolidatedIssues) != tt.expectedIssueCount {
+				t.Fatalf("Expected %d consolidated issues, got %d", tt.expectedIssueCount, len(result.Delta.ConsolidatedIssues))
+			}
+
+			// If should merge, verify merged issue has both providers
+			if tt.shouldMerge {
+				issue := result.Delta.ConsolidatedIssues[0]
+				if len(issue.Providers) != 2 {
+					t.Errorf("Expected 2 providers in merged issue, got %d", len(issue.Providers))
+				}
+				if issue.Description != tt.expectedDescription {
+					t.Errorf("Expected Description='%s', got '%s'", tt.expectedDescription, issue.Description)
+				}
+			}
+		})
+	}
+}

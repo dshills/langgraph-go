@@ -1,0 +1,109 @@
+# Configuration Schema for Multi-LLM Code Review Workflow
+# This file documents the expected structure of config.yaml
+
+# AI Provider Configuration
+# At least one provider must have enabled: true
+providers:
+  - name: openai           # Required: openai | anthropic | google
+    api_key: ${OPENAI_API_KEY}  # Required: API key or env var reference
+    model: gpt-4           # Required: Model name (gpt-4, gpt-3.5-turbo)
+    enabled: true          # Required: Whether to use this provider
+
+  - name: anthropic
+    api_key: ${ANTHROPIC_API_KEY}
+    model: claude-3-opus-20240229  # claude-3-opus, claude-3-sonnet, claude-2
+    enabled: true
+
+  - name: google
+    api_key: ${GOOGLE_API_KEY}
+    model: gemini-pro      # gemini-pro, gemini-pro-vision
+    enabled: false         # Disabled by default
+
+# Review Configuration
+review:
+  # Number of files to process in each batch
+  # Higher values = fewer API calls but risk exceeding token limits
+  # Lower values = more API calls but safer for large files
+  # Recommended: 10-50 depending on average file size
+  batch_size: 20  # Default: 20
+
+  # Focus areas for code review
+  # Valid values: security, performance, style, best-practices
+  # Omit to review all areas
+  focus_areas:
+    - security
+    - performance
+    - best-practices
+
+  # File patterns to include (glob syntax)
+  # Examples: "*.go", "*.{py,js}", "src/**/*.java"
+  include_patterns:
+    - "*.go"
+    - "*.py"
+    - "*.js"
+    - "*.ts"
+    - "*.java"
+    - "*.rs"
+
+  # File patterns to exclude (glob syntax)
+  # Common exclusions: tests, vendor dirs, generated code
+  exclude_patterns:
+    - "*_test.go"
+    - "**/*_test.go"
+    - "vendor/**"
+    - "node_modules/**"
+    - "*.pb.go"           # Protocol buffer generated code
+    - "*.gen.go"          # Any generated Go code
+    - "dist/**"
+    - "build/**"
+
+# Output Configuration
+output:
+  # Directory for output files (reports, checkpoints)
+  # Relative paths are resolved from codebase root
+  directory: "./review-results"  # Default: ./review-results
+
+  # Output format for consolidated report
+  # Valid values: markdown, json
+  format: markdown  # Default: markdown
+
+# Advanced Options (optional)
+advanced:
+  # Retry configuration for transient API failures
+  max_retries: 5           # Default: 5
+  initial_retry_delay: 1   # Seconds, default: 1
+  max_retry_delay: 32      # Seconds, default: 32
+
+  # Timeout for API requests (seconds)
+  request_timeout: 120     # Default: 120 (2 minutes)
+
+  # Progress update interval (seconds)
+  progress_interval: 30    # Default: 30
+
+  # Enable verbose logging
+  verbose: false           # Default: false
+
+# Example: Minimal Configuration
+# providers:
+#   - name: openai
+#     api_key: ${OPENAI_API_KEY}
+#     model: gpt-4
+#     enabled: true
+# review:
+#   batch_size: 20
+#   focus_areas: [security, performance]
+# output:
+#   directory: ./review-results
+
+# Example: Security-Focused Review
+# providers:
+#   - name: anthropic
+#     api_key: ${ANTHROPIC_API_KEY}
+#     model: claude-3-opus-20240229
+#     enabled: true
+# review:
+#   batch_size: 10
+#   focus_areas: [security]  # Only security issues
+#   include_patterns: ["*.go", "*.py"]
+# output:
+#   directory: ./security-audit

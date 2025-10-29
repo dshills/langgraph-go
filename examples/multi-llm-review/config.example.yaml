@@ -1,0 +1,49 @@
+# Multi-LLM Code Review Configuration
+# Copy this file to config.yaml and configure with your API keys
+
+# AI Provider Configuration
+providers:
+  - name: openai
+    api_key: ${OPENAI_API_KEY}  # Set via environment variable
+    model: gpt-4
+    enabled: true
+
+  - name: anthropic
+    api_key: ${ANTHROPIC_API_KEY}  # Set via environment variable
+    model: claude-3-opus-20240229
+    enabled: true
+
+  - name: google
+    api_key: ${GOOGLE_API_KEY}  # Set via environment variable
+    model: gemini-pro
+    enabled: false  # Disabled by default
+
+# Review Configuration
+review:
+  # Number of files per batch (adjust based on file size)
+  batch_size: 20
+
+  # Focus areas for code review
+  focus_areas:
+    - security
+    - performance
+    - best-practices
+
+  # File patterns to include (glob syntax)
+  include_patterns:
+    - "*.go"
+    - "*.py"
+    - "*.js"
+    - "*.ts"
+
+  # File patterns to exclude
+  exclude_patterns:
+    - "*_test.go"
+    - "vendor/**"
+    - "node_modules/**"
+    - "*.pb.go"
+
+# Output Configuration
+output:
+  directory: "./review-results"
+  format: markdown  # markdown or json
