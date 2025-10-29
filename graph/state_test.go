@@ -397,8 +397,8 @@ func TestDeterministicMerge(t *testing.T) {
 		delta1 := MergeTestState{Counter: 5}
 		delta2 := MergeTestState{Counter: 10}
 
-		state = impureReducer(state, delta1)
-		state = impureReducer(state, delta2)
+		_ = impureReducer(state, delta1)
+		_ = impureReducer(state, delta2)
 
 		// This test documents the purity requirement.
 		// In production, we would validate reducer purity during testing.

@@ -382,7 +382,7 @@ func TestMySQLStore_TransactionRollback(t *testing.T) {
 		cancel() // Cancel immediately
 
 		// Attempt to save with cancelled context
-		err = store.SaveStep(cancelledCtx, runID, 2, "node-2", TestState{Counter: 2})
+		_ = store.SaveStep(cancelledCtx, runID, 2, "node-2", TestState{Counter: 2})
 		// Error is expected but state should be consistent
 
 		// Verify original state is intact
@@ -725,7 +725,7 @@ func TestMySQLStore_LoadCheckpoint(t *testing.T) {
 		cancel() // Cancel immediately
 
 		// Attempt to load with cancelled context
-		_, _, err = store.LoadCheckpoint(cancelledCtx, cpID)
+		_, _, _ = store.LoadCheckpoint(cancelledCtx, cpID)
 		// Error expected (context cancelled or success depending on timing)
 		// Just verify it doesn't panic
 	})

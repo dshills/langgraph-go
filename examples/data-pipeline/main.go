@@ -62,7 +62,8 @@ func main() {
 	fmt.Println("• State checkpointing for resumable processing")
 	fmt.Println()
 
-	rand.Seed(time.Now().UnixNano())
+	// Note: Using global rand for demo simplicity (deprecated rand.Seed removed)
+	// In production, use context-based seeded RNG as shown in replay_demo example
 
 	st := store.NewMemStore[PipelineState]()
 	emitter := emit.NewLogEmitter(os.Stdout, false)
