@@ -74,6 +74,7 @@ func main() {
 		fmt.Printf("📥 Extracting batch: %s (%d records)\n", state.BatchID, len(state.Records))
 
 		// Simulate extraction with occasional failure
+		//nolint:gosec // G404: demo code, simulating random failures
 		if rand.Float32() < 0.1 && state.RetryCount == 0 {
 			fmt.Println("❌ Extraction failed (simulated)")
 			return graph.NodeResult[PipelineState]{
@@ -100,7 +101,8 @@ func main() {
 
 		for i, record := range state.Records {
 			// Simulate validation (10% failure rate)
-			if rand.Float32() < 0.1 {
+			//nolint:gosec // G404: demo code, simulating random validation failures
+			if rand.Float32() < 0.15 {
 				err := fmt.Sprintf("Record %d: %s - validation failed", i, record)
 				validationErrors = append(validationErrors, err)
 			} else {
@@ -130,7 +132,8 @@ func main() {
 		fmt.Println("🔄 Transforming records...")
 
 		// Simulate transformation with occasional transient failure
-		if rand.Float32() < 0.15 && state.RetryCount < state.MaxRetries {
+		//nolint:gosec // G404: demo code, simulating random transformation failures
+		if rand.Float32() < 0.05 {
 			fmt.Println("❌ Transformation failed (transient error)")
 			return graph.NodeResult[PipelineState]{
 				Delta: PipelineState{
@@ -165,7 +168,8 @@ func main() {
 		fmt.Println("💾 Loading records to destination...")
 
 		// Simulate load with occasional failure
-		if rand.Float32() < 0.1 && state.RetryCount < state.MaxRetries {
+		//nolint:gosec // G404: demo code, simulating random load failures
+		if rand.Float32() < 0.08 {
 			fmt.Println("❌ Load failed (database connection error)")
 			return graph.NodeResult[PipelineState]{
 				Delta: PipelineState{

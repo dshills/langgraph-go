@@ -46,7 +46,7 @@ func reducer(prev, delta State) State {
 // FastNode executes quickly (1-10ms).
 func FastNode(_ context.Context, s State) graph.NodeResult[State] {
 	start := time.Now()
-	time.Sleep(time.Duration(1+rand.Intn(10)) * time.Millisecond)
+	time.Sleep(time.Duration(1+rand.Intn(10)) * time.Millisecond) // #nosec G404 -- demo code, simulating variable processing time
 
 	return graph.NodeResult[State]{
 		Delta: State{
@@ -61,7 +61,7 @@ func FastNode(_ context.Context, s State) graph.NodeResult[State] {
 // MediumNode executes with medium latency (50-100ms).
 func MediumNode(_ context.Context, s State) graph.NodeResult[State] {
 	start := time.Now()
-	time.Sleep(time.Duration(50+rand.Intn(50)) * time.Millisecond)
+	time.Sleep(time.Duration(50+rand.Intn(50)) * time.Millisecond) // #nosec G404 -- demo code, simulating variable processing time
 
 	return graph.NodeResult[State]{
 		Delta: State{
@@ -76,7 +76,7 @@ func MediumNode(_ context.Context, s State) graph.NodeResult[State] {
 // SlowNode executes slowly (500-1000ms).
 func SlowNode(_ context.Context, s State) graph.NodeResult[State] {
 	start := time.Now()
-	time.Sleep(time.Duration(500+rand.Intn(500)) * time.Millisecond)
+	time.Sleep(time.Duration(500+rand.Intn(500)) * time.Millisecond) // #nosec G404 -- demo code, simulating variable processing time
 
 	return graph.NodeResult[State]{
 		Delta: State{
@@ -107,7 +107,7 @@ func ParallelNode(_ context.Context, s State) graph.NodeResult[State] {
 func BranchNode(name string) graph.NodeFunc[State] {
 	return func(ctx context.Context, s State) graph.NodeResult[State] {
 		start := time.Now()
-		time.Sleep(time.Duration(100+rand.Intn(400)) * time.Millisecond)
+		time.Sleep(time.Duration(100+rand.Intn(400)) * time.Millisecond) // #nosec G404 -- demo code, simulating variable processing time
 
 		return graph.NodeResult[State]{
 			Delta: State{
@@ -128,6 +128,7 @@ func (f *FlakyNode) Run(_ context.Context, s State) graph.NodeResult[State] {
 	time.Sleep(50 * time.Millisecond)
 
 	// Fail 30% of attempts.
+	//nolint:gosec // G404: demo code, simulating random failures for retry demonstration
 	if rand.Float64() < 0.3 {
 		return graph.NodeResult[State]{
 			Delta: State{
@@ -172,7 +173,16 @@ func main() {
 	go func() {
 		log.Println("Metrics server listening on :9090")
 		log.Println("Prometheus metrics: http://localhost:9090/metrics")
-		if err := http.ListenAndServe(":9090", nil); err != nil {
+
+		// Create server with timeouts for security
+		server := &http.Server{
+			Addr:         ":9090",
+			ReadTimeout:  15 * time.Second,
+			WriteTimeout: 15 * time.Second,
+			IdleTimeout:  60 * time.Second,
+		}
+
+		if err := server.ListenAndServe(); err != nil {
 			log.Printf("Metrics server error: %v\n", err)
 		}
 	}()

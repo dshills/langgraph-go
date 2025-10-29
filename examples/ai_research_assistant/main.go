@@ -430,7 +430,7 @@ func (n *FetchArxivPapersNode) Run(ctx context.Context, state ResearchState) gra
 	rng, ok := ctx.Value(graph.RNGKey).(*rand.Rand)
 	if !ok {
 		log.Println("Warning: Using non-deterministic RNG (context RNG not available)")
-		rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+		rng = rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- demo code, using RNG for test data generation
 	}
 
 	// Generate realistic papers

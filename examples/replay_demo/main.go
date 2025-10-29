@@ -116,7 +116,7 @@ func (n *RollDiceNode) Run(ctx context.Context, state GameState) graph.NodeResul
 	if !ok || rng == nil {
 		// Fallback for tests without engine context
 		fmt.Println("   ⚠️  Warning: No seeded RNG in context, using time-based seed")
-		rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+		rng = rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- demo code, generating random test values
 	}
 
 	// Roll 2 six-sided dice using seeded RNG
@@ -160,7 +160,7 @@ func (n *CheckContinueNode) Run(ctx context.Context, state GameState) graph.Node
 	// Use seeded RNG for deterministic decision
 	rng, ok := ctx.Value(graph.RNGKey).(*rand.Rand)
 	if !ok || rng == nil {
-		rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+		rng = rand.New(rand.NewSource(time.Now().UnixNano())) // #nosec G404 -- demo code, generating random test values
 	}
 
 	// Simple rule: 70% chance to continue if under 5 rounds
