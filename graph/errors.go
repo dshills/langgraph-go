@@ -14,6 +14,12 @@ var ErrMaxStepsExceeded = errors.New("execution exceeded maximum steps limit")
 // which is specifically for frontier queue overflow.
 var ErrBackpressure = errors.New("downstream backpressure exceeded threshold")
 
+// ErrInvalidRetryPolicy indicates that a RetryPolicy configuration is invalid.
+// This occurs when:
+// - MaxAttempts < 1 (at least one attempt is required)
+// - MaxDelay > 0 and MaxDelay < BaseDelay (cap cannot be less than base)
+var ErrInvalidRetryPolicy = errors.New("invalid retry policy configuration")
+
 // Note: The following errors are already defined in checkpoint.go:
 // - ErrReplayMismatch: replay mismatch detection.
 // - ErrNoProgress: deadlock/no runnable nodes detection.

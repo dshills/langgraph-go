@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
 	"sort"
 	"sync"
@@ -957,18 +958,44 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 					if result.Err != nil {
 						e.emitError(runID, item.NodeID, item.StepID, result.Err)
 
+						// Helper to send error result and cancel without blocking
+						// Uses non-blocking send to prevent deadlock if results channel is full
+						sendErrorAndCancel := func(err error) {
+							select {
+							case results <- nodeResult[S]{err: err}:
+								// Sent successfully
+							case <-ctx.Done():
+								// Parent context canceled before send completed
+							default:
+								// Results channel full, cannot send error
+								// Cancel anyway to stop workflow execution
+								// Note: This error will not be visible to caller, but prevents deadlock
+							}
+							cancel()
+						}
+
 						// Check if error is retryable and we haven't exceeded max attempts
 						if policy != nil && policy.RetryPolicy != nil {
 							retryPol := policy.RetryPolicy
 
+							// Validate retry policy configuration (defensive check)
+							// In production, policies should be validated at configuration time
+							if err := retryPol.Validate(); err != nil {
+								// Wrap validation error with context
+								sendErrorAndCancel(fmt.Errorf("retry policy validation failed for node %s: %w", item.NodeID, err))
+								return
+							}
+
 							// Check if error is retryable using predicate (T084)
 							isRetryable := retryPol.Retryable != nil && retryPol.Retryable(result.Err)
 
-							// Check if we haven't exceeded MaxAttempts (T089)
+							// Calculate remaining retry attempts (T089)
 							// item.Attempt is 0-based, so attempt 0 = first execution
 							// MaxAttempts includes the initial attempt, so MaxAttempts=3 means:
 							// attempt 0 (initial), attempt 1 (retry 1), attempt 2 (retry 2)
-							if isRetryable && item.Attempt < retryPol.MaxAttempts-1 {
+							remainingRetries := retryPol.MaxAttempts - item.Attempt - 1
+
+							if isRetryable && remainingRetries > 0 {
 								// T046: Increment retry metrics
 								if e.metrics != nil {
 									e.metrics.IncrementRetries(runID, item.NodeID, "error")
@@ -998,8 +1025,7 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 								// Re-enqueue for retry
 								if err := e.frontier.Enqueue(workerCtx, retryItem); err != nil {
 									// If enqueue fails, treat as non-retryable
-									results <- nodeResult[S]{err: result.Err}
-									cancel()
+									sendErrorAndCancel(result.Err)
 									return
 								}
 
@@ -1010,18 +1036,15 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 							}
 
 							// Error is non-retryable or max attempts exceeded
-							// (We only reach here if retry didn't happen above)
-							if item.Attempt >= retryPol.MaxAttempts-1 {
+							if remainingRetries <= 0 {
 								// Max attempts exceeded (T089)
-								results <- nodeResult[S]{err: ErrMaxAttemptsExceeded}
-								cancel()
+								sendErrorAndCancel(ErrMaxAttemptsExceeded)
 								return
 							}
 						}
 
 						// Non-retryable error or no retry policy
-						results <- nodeResult[S]{err: result.Err}
-						cancel()
+						sendErrorAndCancel(result.Err)
 						return
 					}
 

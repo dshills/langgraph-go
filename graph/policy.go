@@ -134,3 +134,18 @@ func computeBackoff(attempt int, base, maxDelay time.Duration, rng *rand.Rand) t
 
 	return exponentialDelay + jitter
 }
+
+// Validate checks if the RetryPolicy configuration is valid.
+// Returns an error if any constraints are violated:
+//   - MaxAttempts must be >= 1 (1 means no retries, just initial attempt)
+//   - If both MaxDelay and BaseDelay are > 0, then MaxDelay must be >= BaseDelay
+//     (MaxDelay == 0 is treated as "no maximum delay cap")
+func (rp *RetryPolicy) Validate() error {
+	if rp.MaxAttempts < 1 {
+		return ErrInvalidRetryPolicy
+	}
+	if rp.MaxDelay > 0 && rp.BaseDelay > 0 && rp.MaxDelay < rp.BaseDelay {
+		return ErrInvalidRetryPolicy
+	}
+	return nil
+}
