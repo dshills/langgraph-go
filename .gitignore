@@ -92,5 +92,12 @@ examples/*/data-pipeline
 examples/*/interactive-workflow
 examples/*/research-pipeline
 examples/*/tools
+examples/*/multi-llm-review
+examples/multi-llm-review/multi-llm-review
 
 tools/
+
+# Multi-LLM Review artifacts
+examples/multi-llm-review/review-results/
+examples/multi-llm-review/.langgraph-checkpoint-*
+examples/multi-llm-review/config.yaml
