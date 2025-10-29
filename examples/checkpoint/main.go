@@ -49,7 +49,7 @@ func main() {
 	emitter := &simpleEmitter{}
 
 	// Create engine.
-	engine := graph.New(reducer, st, emitter, graph.Options{MaxSteps: 10})
+	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(10))
 
 	// Define the 3-node workflow.
 	// Node 1: Parse Query.

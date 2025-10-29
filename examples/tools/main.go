@@ -212,9 +212,8 @@ func main() {
 	// Build workflow.
 	st := store.NewMemStore[State]()
 	emitter := emit.NewLogEmitter(os.Stdout, false)
-	opts := graph.Options{MaxSteps: 20}
 
-	engine := graph.New(reducer, st, emitter, opts)
+	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(20))
 	if err := engine.Add("parse", parseNode); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to add parse node: %v\n", err)
 		os.Exit(1)

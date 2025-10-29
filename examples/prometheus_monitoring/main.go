@@ -190,19 +190,17 @@ func main() {
 	// 2. Setup cost tracker.
 	tracker := graph.NewCostTracker("run-001", "USD")
 
-	// 3. Create engine with full observability.
+	// 3. Create engine with full observability using functional options.
 	log.Println("Creating workflow engine with observability...")
 	engine := graph.New(
 		reducer,
 		store.NewMemStore[State](),
 		emit.NewLogEmitter(os.Stdout, false), // Verbose logging disabled
-		graph.Options{
-			Metrics:            metrics,
-			CostTracker:        tracker,
-			MaxSteps:           100,
-			MaxConcurrentNodes: 8,
-			QueueDepth:         64,
-		},
+		graph.WithMetrics(metrics),
+		graph.WithCostTracker(tracker),
+		graph.WithMaxSteps(100),
+		graph.WithMaxConcurrent(8),
+		graph.WithQueueDepth(64),
 	)
 
 	// 4. Build workflow graph.

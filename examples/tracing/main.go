@@ -47,8 +47,7 @@ func main() {
 
 	// Create engine
 	st := store.NewMemStore[WorkflowState]()
-	opts := graph.Options{MaxSteps: 100}
-	engine := graph.New(reducer, st, multiEmitter, opts)
+	engine := graph.New(reducer, st, multiEmitter, graph.WithMaxSteps(100))
 
 	// Define nodes
 	startNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {

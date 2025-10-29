@@ -54,8 +54,7 @@ func main() {
 	// Create engine components.
 	st := store.NewMemStore[ProcessingState]()
 	emitter := &simpleEmitter{}
-	opts := graph.Options{MaxSteps: 100}
-	engine := graph.New(reducer, st, emitter, opts)
+	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(100))
 
 	// Entry node: Fan out to 4 parallel processing branches.
 	fanout := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {

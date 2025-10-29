@@ -855,19 +855,21 @@ func runResearchWorkflow(topic, depth string, maxSources int, concurrent bool, g
 		maxConcurrent = 6 // Allow all 6 data sources to run in parallel
 	}
 
-	opts := graph.Options{
-		MaxSteps:            50,
-		MaxConcurrentNodes:  maxConcurrent,
-		QueueDepth:          1024,
-		DefaultNodeTimeout:  30 * time.Second,
-		RunWallClockBudget:  5 * time.Minute,
-		BackpressureTimeout: 30 * time.Second,
-	}
-
 	// Create components
 	memStore := store.NewMemStore[ResearchState]()
 	emitter := &detailedEmitter{showEvents: false}
-	engine := graph.New(researchReducer, memStore, emitter, opts)
+
+	// Use functional options for clean, self-documenting configuration
+	engine := graph.New(
+		researchReducer,
+		memStore,
+		emitter,
+		graph.WithMaxConcurrent(maxConcurrent),
+		graph.WithQueueDepth(1024),
+		graph.WithDefaultNodeTimeout(30*time.Second),
+		graph.WithRunWallClockBudget(5*time.Minute),
+		graph.WithBackpressureTimeout(30*time.Second),
+	)
 
 	// Build the workflow graph with LLM models
 	buildResearchGraph(engine, gptModel, claudeModel, geminiModel)

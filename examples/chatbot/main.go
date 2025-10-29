@@ -68,8 +68,7 @@ func main() {
 
 	st := store.NewMemStore[ChatState]()
 	emitter := emit.NewLogEmitter(os.Stdout, false)
-	opts := graph.Options{MaxSteps: 15}
-	engine := graph.New(reducer, st, emitter, opts)
+	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(15))
 
 	// Node 1: Classify user intent
 	if err := engine.Add("classify", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {

@@ -56,9 +56,8 @@ func main() {
 
 	st := store.NewMemStore[State]()
 	emitter := emit.NewNullEmitter() // Zero overhead emitter
-	opts := graph.Options{MaxSteps: 10}
 
-	engine := graph.New(reducer, st, emitter, opts)
+	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(10))
 
 	// 3-node workflow: start → process → finish.
 	if err := engine.Add("start", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
@@ -125,9 +124,8 @@ func main() {
 	nodeCount := 50
 	st2 := store.NewMemStore[State]()
 	emitter2 := emit.NewNullEmitter()
-	opts2 := graph.Options{MaxSteps: nodeCount + 10}
 
-	engine2 := graph.New(reducer, st2, emitter2, opts2)
+	engine2 := graph.New(reducer, st2, emitter2, graph.WithMaxSteps(nodeCount+10))
 
 	// Build 50-node sequential workflow.
 	for i := 0; i < nodeCount; i++ {
@@ -194,9 +192,8 @@ func main() {
 
 	st3 := store.NewMemStore[State]()
 	emitter3 := emit.NewNullEmitter()
-	opts3 := graph.Options{MaxSteps: 20}
 
-	engine3 := graph.New(reducer, st3, emitter3, opts3)
+	engine3 := graph.New(reducer, st3, emitter3, graph.WithMaxSteps(20))
 
 	// Fan-out node.
 	if err := engine3.Add("start", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
