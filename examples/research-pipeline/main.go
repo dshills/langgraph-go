@@ -125,7 +125,7 @@ func main() {
 	engine := graph.New(reducer, st, emitter, opts)
 
 	// Node 1: Initialize research.
-	engine.Add("initialize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	if err := engine.Add("initialize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Printf("🔍 Initializing research on: %s\n", state.Topic)
 		fmt.Printf("📋 Research question: %s\n", state.ResearchQuestion)
 		fmt.Println()
@@ -136,10 +136,13 @@ func main() {
 			},
 			Route: graph.Goto("historical_agent"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add initialize node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Agent 1: Historical Context Researcher.
-	engine.Add("historical_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	if err := engine.Add("historical_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println("📚 Historical Agent: Researching historical context...")
 
 		// Use research tool.
@@ -170,10 +173,13 @@ func main() {
 			},
 			Route: graph.Goto("technical_agent"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add historical_agent node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Agent 2: Technical Analysis Researcher.
-	engine.Add("technical_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	if err := engine.Add("technical_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println("🔧 Technical Agent: Analyzing technical aspects...")
 
 		result, err := technicalAPI.Call(ctx, map[string]interface{}{
@@ -202,10 +208,13 @@ func main() {
 			},
 			Route: graph.Goto("market_agent"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add technical_agent node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Agent 3: Market Trends Researcher.
-	engine.Add("market_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	if err := engine.Add("market_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println("📈 Market Agent: Analyzing market trends...")
 
 		result, err := marketData.Call(ctx, map[string]interface{}{
@@ -235,10 +244,13 @@ func main() {
 			},
 			Route: graph.Goto("expert_agent"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add market_agent node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Agent 4: Expert Opinions Researcher.
-	engine.Add("expert_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	if err := engine.Add("expert_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println("👥 Expert Agent: Gathering expert opinions...")
 
 		result, err := expertNetwork.Call(ctx, map[string]interface{}{
@@ -267,10 +279,13 @@ func main() {
 			},
 			Route: graph.Goto("synthesize"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add expert_agent node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 5: Synthesize all research (Join point for parallel execution).
-	engine.Add("synthesize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	if err := engine.Add("synthesize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		// Count available research.
 		count := 0
 		if state.HistoricalContext != "" {
@@ -346,10 +361,13 @@ func main() {
 			},
 			Route: graph.Goto("report"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add synthesize node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 6: Generate final report.
-	engine.Add("report", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	if err := engine.Add("report", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println()
 		fmt.Println("📊 Generating final research report...")
 		fmt.Println()
@@ -357,7 +375,10 @@ func main() {
 		return graph.NodeResult[ResearchState]{
 			Route: graph.Stop(),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add report node: %v\n", err)
+		os.Exit(1)
+	}
 
 	if err := engine.StartAt("initialize"); err != nil {
 		log.Fatalf("failed to set start node: %v", err)

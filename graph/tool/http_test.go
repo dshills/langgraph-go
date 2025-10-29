@@ -140,7 +140,7 @@ func TestHTTPTool_WithHeaders(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("authenticated"))
+		_, _ = w.Write([]byte("authenticated"))
 	}))
 	defer server.Close()
 
@@ -240,7 +240,7 @@ func TestHTTPTool_Error_ServerError(t *testing.T) {
 	// Create server that returns 500
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		_, _ = w.Write([]byte("Internal Server Error"))
 	}))
 	defer server.Close()
 

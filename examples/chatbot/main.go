@@ -72,7 +72,7 @@ func main() {
 	engine := graph.New(reducer, st, emitter, opts)
 
 	// Node 1: Classify user intent
-	engine.Add("classify", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("classify", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Printf("🤖 Classifying intent for: '%s'\n", state.UserMessage)
 
 		// Simple intent classification based on keywords
@@ -107,10 +107,13 @@ func main() {
 			},
 			Route: graph.Goto("route_intent"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add classify node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 2: Route based on intent
-	engine.Add("route_intent", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("route_intent", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Printf("🔀 Routing to handler for: %s\n", state.Intent)
 
 		switch state.Intent {
@@ -125,10 +128,13 @@ func main() {
 		default:
 			return graph.NodeResult[ChatState]{Route: graph.Goto("handle_general")}
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add route_intent node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Handler: Refund requests
-	engine.Add("handle_refund", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("handle_refund", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("💰 Processing refund request...")
 
 		response := "I understand you'd like a refund. I can help with that. " +
@@ -145,10 +151,13 @@ func main() {
 			},
 			Route: graph.Goto("finalize"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add handle_refund node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Handler: Shipping inquiries
-	engine.Add("handle_shipping", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("handle_shipping", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("📦 Processing shipping inquiry...")
 
 		response := "I can help you track your order! " +
@@ -164,10 +173,13 @@ func main() {
 			},
 			Route: graph.Goto("finalize"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add handle_shipping node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Handler: Technical support
-	engine.Add("handle_technical", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("handle_technical", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("🔧 Processing technical support request...")
 
 		// Check if issue is complex enough to escalate
@@ -197,10 +209,13 @@ func main() {
 			},
 			Route: graph.Goto("finalize"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add handle_technical node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Handler: Cancellation
-	engine.Add("handle_cancellation", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("handle_cancellation", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("❌ Processing cancellation request...")
 
 		response := "I can help you cancel your order. " +
@@ -217,10 +232,13 @@ func main() {
 			},
 			Route: graph.Goto("finalize"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add handle_cancellation node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Handler: General inquiries
-	engine.Add("handle_general", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("handle_general", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("❓ Processing general inquiry...")
 
 		response := "Thank you for contacting support! " +
@@ -233,10 +251,13 @@ func main() {
 			},
 			Route: graph.Goto("finalize"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add handle_general node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node: Escalate to human agent
-	engine.Add("escalate", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("escalate", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("🚨 Escalating to human agent...")
 
 		// Save escalation checkpoint
@@ -249,10 +270,13 @@ func main() {
 			},
 			Route: graph.Goto("finalize"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add escalate node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node: Finalize conversation
-	engine.Add("finalize", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("finalize", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("✅ Finalizing conversation...")
 
 		// Save final checkpoint
@@ -270,9 +294,15 @@ func main() {
 		return graph.NodeResult[ChatState]{
 			Route: graph.Stop(),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add finalize node: %v\n", err)
+		os.Exit(1)
+	}
 
-	engine.StartAt("classify")
+	if err := engine.StartAt("classify"); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to set start node to classify: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Simulate multiple conversations with checkpointing
 	conversations := []struct {

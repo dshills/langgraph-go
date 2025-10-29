@@ -150,7 +150,9 @@ func setupEngine() (*graph.Engine[ApprovalState], store.Store[ApprovalState]) {
 	if err := engine.Add("generate", graph.NodeFunc[ApprovalState](GenerateOutputNode)); err != nil {
 		log.Fatalf("failed to add node: %v", err)
 	}
-	engine.Add("approval-gate", graph.NodeFunc[ApprovalState](ApprovalGateNode))
+	if err := engine.Add("approval-gate", graph.NodeFunc[ApprovalState](ApprovalGateNode)); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 	if err := engine.Add("finalize", graph.NodeFunc[ApprovalState](FinalizeNode)); err != nil {
 		log.Fatalf("failed to add node: %v", err)
 	}

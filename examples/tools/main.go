@@ -215,10 +215,22 @@ func main() {
 	opts := graph.Options{MaxSteps: 20}
 
 	engine := graph.New(reducer, st, emitter, opts)
-	engine.Add("parse", parseNode)
-	engine.Add("fetch_weather", fetchWeatherNode)
-	engine.Add("fetch_news", fetchNewsNode)
-	engine.Add("summarize", summarizeNode)
+	if err := engine.Add("parse", parseNode); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add parse node: %v\n", err)
+		os.Exit(1)
+	}
+	if err := engine.Add("fetch_weather", fetchWeatherNode); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add fetch_weather node: %v\n", err)
+		os.Exit(1)
+	}
+	if err := engine.Add("fetch_news", fetchNewsNode); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add fetch_news node: %v\n", err)
+		os.Exit(1)
+	}
+	if err := engine.Add("summarize", summarizeNode); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add summarize node: %v\n", err)
+		os.Exit(1)
+	}
 	if err := engine.StartAt("parse"); err != nil {
 		log.Fatalf("failed to set start node: %v", err)
 	}

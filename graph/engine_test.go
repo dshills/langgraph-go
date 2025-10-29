@@ -3606,8 +3606,12 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 		opts := Options{MaxSteps: 10}
 
 		engine := New(reducer, st, emitter, opts)
-		engine.Add("tool_node", toolNode)
-		engine.StartAt("tool_node")
+		if err := engine.Add("tool_node", toolNode); err != nil {
+			t.Fatalf("Failed to add tool_node node: %v", err)
+		}
+		if err := engine.StartAt("tool_node"); err != nil {
+			t.Fatalf("Failed to set start node to tool_node: %v", err)
+		}
 
 		// Run workflow
 		ctx := context.Background()
@@ -3676,8 +3680,12 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 		opts := Options{MaxSteps: 10}
 
 		engine := New(reducer, st, emitter, opts)
-		engine.Add("multi_tool", multiToolNode)
-		engine.StartAt("multi_tool")
+		if err := engine.Add("multi_tool", multiToolNode); err != nil {
+			t.Fatalf("Failed to add multi_tool node: %v", err)
+		}
+		if err := engine.StartAt("multi_tool"); err != nil {
+			t.Fatalf("Failed to set start node to multi_tool: %v", err)
+		}
 
 		ctx := context.Background()
 		final, err := engine.Run(ctx, "multi-tool-test", TestState{})
@@ -3729,8 +3737,12 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 		opts := Options{MaxSteps: 10, Retries: 0} // No retries
 
 		engine := New(reducer, st, emitter, opts)
-		engine.Add("error_node", errorHandlingNode)
-		engine.StartAt("error_node")
+		if err := engine.Add("error_node", errorHandlingNode); err != nil {
+			t.Fatalf("Failed to add error_node node: %v", err)
+		}
+		if err := engine.StartAt("error_node"); err != nil {
+			t.Fatalf("Failed to set start node to error_node: %v", err)
+		}
 
 		ctx := context.Background()
 		_, err := engine.Run(ctx, "error-test", TestState{})
@@ -3799,9 +3811,15 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 		opts := Options{MaxSteps: 10}
 
 		engine := New(reducer, st, emitter, opts)
-		engine.Add("fetch", fetchNode)
-		engine.Add("process", processNode)
-		engine.StartAt("fetch")
+		if err := engine.Add("fetch", fetchNode); err != nil {
+			t.Fatalf("Failed to add fetch node: %v", err)
+		}
+		if err := engine.Add("process", processNode); err != nil {
+			t.Fatalf("Failed to add process node: %v", err)
+		}
+		if err := engine.StartAt("fetch"); err != nil {
+			t.Fatalf("Failed to set start node to fetch: %v", err)
+		}
 
 		ctx := context.Background()
 		final, err := engine.Run(ctx, "weather-test", TestState{})
@@ -3851,8 +3869,12 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 		opts := Options{MaxSteps: 10}
 
 		engine := New(reducer, st, emitter, opts)
-		engine.Add("slow", slowNode)
-		engine.StartAt("slow")
+		if err := engine.Add("slow", slowNode); err != nil {
+			t.Fatalf("Failed to add slow node: %v", err)
+		}
+		if err := engine.StartAt("slow"); err != nil {
+			t.Fatalf("Failed to set start node to slow: %v", err)
+		}
 
 		// Create context with short timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -3941,7 +3963,7 @@ func TestConcurrentExecution(t *testing.T) {
 			nodeID := "node" + string(rune('0'+i))
 			counter := i
 
-			engine.Add(nodeID, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			if err := engine.Add(nodeID, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
 				execMu.Lock()
 				execTimes[nodeID] = time.Now()
 				execMu.Unlock()
@@ -3953,16 +3975,22 @@ func TestConcurrentExecution(t *testing.T) {
 					Delta: TestState{Counter: counter},
 					Route: Stop(), // All nodes are independent terminals
 				}
-			}))
+			})); err != nil {
+				t.Fatalf("Failed to add node node: %v", err)
+			}
 		}
 
 		// Start from all 3 nodes simultaneously (fan-out from start)
-		engine.Add("start", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		if err := engine.Add("start", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Route: Next{Many: []string{"node1", "node2", "node3"}},
 			}
-		}))
-		engine.StartAt("start")
+		})); err != nil {
+			t.Fatalf("Failed to add start node: %v", err)
+		}
+		if err := engine.StartAt("start"); err != nil {
+			t.Fatalf("Failed to set start node to start: %v", err)
+		}
 
 		// Execute and measure total time
 		startTime := time.Now()
@@ -4042,7 +4070,7 @@ func TestConcurrentExecution(t *testing.T) {
 			nodeID := "node" + string(rune('0'+i))
 			counter := i
 
-			engine.Add(nodeID, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			if err := engine.Add(nodeID, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
 				execMu.Lock()
 				currentConcurrent++
 				if currentConcurrent > maxConcurrent {
@@ -4061,16 +4089,22 @@ func TestConcurrentExecution(t *testing.T) {
 					Delta: TestState{Counter: counter},
 					Route: Stop(),
 				}
-			}))
+			})); err != nil {
+				t.Fatalf("Failed to add node node: %v", err)
+			}
 		}
 
 		// Start all 5 nodes simultaneously
-		engine.Add("start", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		if err := engine.Add("start", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Route: Next{Many: []string{"node1", "node2", "node3", "node4", "node5"}},
 			}
-		}))
-		engine.StartAt("start")
+		})); err != nil {
+			t.Fatalf("Failed to add start node: %v", err)
+		}
+		if err := engine.StartAt("start"); err != nil {
+			t.Fatalf("Failed to set start node to start: %v", err)
+		}
 
 		_, err := engine.Run(context.Background(), "limit-test", TestState{})
 		if err != nil {
@@ -4137,7 +4171,7 @@ func TestFanOutRouting(t *testing.T) {
 
 			// Create a closure with captured variables
 			func(bid string, cnt int) {
-				engine.Add(bid, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+				if err := engine.Add(bid, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
 					execMu.Lock()
 					execOrder = append(execOrder, bid)
 					execTimes[bid] = time.Now()
@@ -4153,26 +4187,34 @@ func TestFanOutRouting(t *testing.T) {
 						},
 						Route: Goto("join"),
 					}
-				}))
+				})); err != nil {
+					t.Fatalf("Failed to add node node: %v", err)
+				}
 			}(branchID, counter)
 		}
 
 		// Join node that merges results
-		engine.Add("join", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		if err := engine.Add("join", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{}, // No delta, just observe merged state
 				Route: Stop(),
 			}
-		}))
+		})); err != nil {
+			t.Fatalf("Failed to add join node: %v", err)
+		}
 
 		// Fan-out node
-		engine.Add("fanout", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		if err := engine.Add("fanout", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Route: Next{Many: []string{"branch1", "branch2", "branch3", "branch4", "branch5"}},
 			}
-		}))
+		})); err != nil {
+			t.Fatalf("Failed to add fanout node: %v", err)
+		}
 
-		engine.StartAt("fanout")
+		if err := engine.StartAt("fanout"); err != nil {
+			t.Fatalf("Failed to set start node to fanout: %v", err)
+		}
 
 		// Execute
 		startTime := time.Now()

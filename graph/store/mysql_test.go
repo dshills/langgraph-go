@@ -197,7 +197,7 @@ func TestMySQLStore_TableCreation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create first MySQL store: %v", err)
 		}
-		store1.Close()
+		_ = store1.Close()
 
 		// Create store second time (tables already exist)
 		store2, err := NewMySQLStore[TestState](dsn)

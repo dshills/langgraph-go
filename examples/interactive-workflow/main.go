@@ -75,7 +75,7 @@ func main() {
 	engine := graph.New(reducer, st, emitter, opts)
 
 	// Node 1: Initialize request
-	engine.Add("initialize", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	if err := engine.Add("initialize", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
 		fmt.Printf("📝 Initializing approval request: %s\n", state.RequestID)
 		fmt.Printf("   Type: %s | Amount: $%.2f\n", state.RequestType, state.Amount)
 		fmt.Printf("   Requester: %s\n", state.Requester)
@@ -99,10 +99,13 @@ func main() {
 			},
 			Route: graph.Goto("request_approval"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add initialize node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 2: Request approval (pause point)
-	engine.Add("request_approval", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	if err := engine.Add("request_approval", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
 		var approverTitle string
 		switch state.ApprovalLevel {
 		case 1:
@@ -132,10 +135,13 @@ func main() {
 			},
 			Route: graph.Goto("await_decision"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add request_approval node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 3: Await human decision (simulated)
-	engine.Add("await_decision", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	if err := engine.Add("await_decision", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
 		fmt.Println("⏳ Waiting for human decision...")
 
 		// Simulate human review time
@@ -166,10 +172,13 @@ func main() {
 			},
 			Route: graph.Goto("process_rejection"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add await_decision node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 4: Process approval
-	engine.Add("process_approval", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	if err := engine.Add("process_approval", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
 		fmt.Println("🎉 Processing approved request...")
 		fmt.Printf("   Approved by: %v\n", state.Approvers)
 
@@ -180,10 +189,13 @@ func main() {
 		return graph.NodeResult[ApprovalState]{
 			Route: graph.Goto("complete"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add process_approval node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 5: Process rejection
-	engine.Add("process_rejection", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	if err := engine.Add("process_rejection", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
 		fmt.Println("🚫 Processing rejected request...")
 		fmt.Printf("   Reason: %v\n", state.Comments)
 
@@ -194,10 +206,13 @@ func main() {
 		return graph.NodeResult[ApprovalState]{
 			Route: graph.Goto("complete"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add process_rejection node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 6: Complete
-	engine.Add("complete", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	if err := engine.Add("complete", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
 		fmt.Println()
 		fmt.Println("📊 Workflow Summary:")
 		fmt.Printf("   Request ID: %s\n", state.RequestID)
@@ -208,9 +223,15 @@ func main() {
 		return graph.NodeResult[ApprovalState]{
 			Route: graph.Stop(),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add complete node: %v\n", err)
+		os.Exit(1)
+	}
 
-	engine.StartAt("initialize")
+	if err := engine.StartAt("initialize"); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to set start node to initialize: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Simulate multiple approval requests
 	requests := []struct {

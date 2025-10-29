@@ -432,7 +432,7 @@ func (m *MySQLStore[S]) SaveStepBatch(ctx context.Context, runID string, steps i
 	// Ensure rollback on error
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}()
 
@@ -583,7 +583,7 @@ func (m *MySQLStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint Checkpo
 	// Ensure rollback on error
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}()
 

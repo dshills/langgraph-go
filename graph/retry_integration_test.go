@@ -76,7 +76,9 @@ func TestRetryIntegration(t *testing.T) {
 		})
 
 		_ = engine.Add("retry_node", node)
-		engine.StartAt("retry_node")
+		if err := engine.StartAt("retry_node"); err != nil {
+			t.Fatalf("Failed to set start node to retry_node: %v", err)
+		}
 
 		finalState, err := engine.Run(context.Background(), "test-retry", TestState{Value: 0})
 		if err != nil {
@@ -130,7 +132,9 @@ func TestRetryIntegration(t *testing.T) {
 		})
 
 		_ = engine.Add("failing_node", node)
-		engine.StartAt("failing_node")
+		if err := engine.StartAt("failing_node"); err != nil {
+			t.Fatalf("Failed to set start node to failing_node: %v", err)
+		}
 
 		_, err := engine.Run(context.Background(), "test-fail", struct{}{})
 		if err == nil {
@@ -185,7 +189,9 @@ func TestRetryIntegration(t *testing.T) {
 		})
 
 		_ = engine.Add("node", node)
-		engine.StartAt("node")
+		if err := engine.StartAt("node"); err != nil {
+			t.Fatalf("Failed to set start node to node: %v", err)
+		}
 
 		_, err := engine.Run(context.Background(), "test-non-retryable", struct{}{})
 		if err == nil {

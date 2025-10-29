@@ -70,7 +70,7 @@ func main() {
 	engine := graph.New(reducer, st, emitter, opts)
 
 	// Node 1: Extract data
-	engine.Add("extract", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	if err := engine.Add("extract", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
 		fmt.Printf("📥 Extracting batch: %s (%d records)\n", state.BatchID, len(state.Records))
 
 		// Simulate extraction with occasional failure
@@ -86,10 +86,13 @@ func main() {
 		return graph.NodeResult[PipelineState]{
 			Route: graph.Goto("validate"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add extract node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 2: Validate data
-	engine.Add("validate", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	if err := engine.Add("validate", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
 		fmt.Println("🔍 Validating records...")
 
 		var validationErrors []string
@@ -117,10 +120,13 @@ func main() {
 			},
 			Route: graph.Goto("transform"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add validate node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 3: Transform data
-	engine.Add("transform", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	if err := engine.Add("transform", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
 		fmt.Println("🔄 Transforming records...")
 
 		// Simulate transformation with occasional transient failure
@@ -149,10 +155,13 @@ func main() {
 			},
 			Route: graph.Goto("load"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add transform node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 4: Load data
-	engine.Add("load", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	if err := engine.Add("load", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
 		fmt.Println("💾 Loading records to destination...")
 
 		// Simulate load with occasional failure
@@ -173,10 +182,13 @@ func main() {
 			Delta: PipelineState{Success: true},
 			Route: graph.Goto("complete"),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add load node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 5: Error handling with retry logic
-	engine.Add("handle_error", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	if err := engine.Add("handle_error", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
 		fmt.Printf("⚠️  Error occurred. Retry attempt %d/%d\n", state.RetryCount, state.MaxRetries)
 
 		if state.RetryCount >= state.MaxRetries {
@@ -206,10 +218,13 @@ func main() {
 		return graph.NodeResult[PipelineState]{
 			Route: graph.Goto(retryNode),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add handle_error node: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Node 6: Complete pipeline
-	engine.Add("complete", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	if err := engine.Add("complete", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
 		fmt.Println()
 		fmt.Println("📊 Pipeline Execution Summary:")
 		fmt.Printf("   Total Records: %d\n", len(state.Records))
@@ -222,9 +237,15 @@ func main() {
 		return graph.NodeResult[PipelineState]{
 			Route: graph.Stop(),
 		}
-	}))
+	})); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to add complete node: %v\n", err)
+		os.Exit(1)
+	}
 
-	engine.StartAt("extract")
+	if err := engine.StartAt("extract"); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to set start node to extract: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Process multiple batches
 	batches := []struct {

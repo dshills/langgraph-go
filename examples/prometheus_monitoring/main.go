@@ -200,19 +200,27 @@ func main() {
 	if err := engine.Add("fast", graph.NodeFunc[State](FastNode)); err != nil {
 		log.Fatalf("failed to add node: %v", err)
 	}
-	engine.Add("medium", graph.NodeFunc[State](MediumNode))
+	if err := engine.Add("medium", graph.NodeFunc[State](MediumNode)); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 	if err := engine.Add("slow", graph.NodeFunc[State](SlowNode)); err != nil {
 		log.Fatalf("failed to add node: %v", err)
 	}
-	engine.Add("parallel", graph.NodeFunc[State](ParallelNode))
+	if err := engine.Add("parallel", graph.NodeFunc[State](ParallelNode)); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 	if err := engine.Add("branchA", BranchNode("branchA")); err != nil {
 		log.Fatalf("failed to add node: %v", err)
 	}
-	engine.Add("branchB", BranchNode("branchB"))
+	if err := engine.Add("branchB", BranchNode("branchB")); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 	if err := engine.Add("branchC", BranchNode("branchC")); err != nil {
 		log.Fatalf("failed to add node: %v", err)
 	}
-	engine.Add("flaky", &FlakyNode{})
+	if err := engine.Add("flaky", &FlakyNode{}); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 	if err := engine.StartAt("fast"); err != nil {
 		log.Fatalf("failed to set start node: %v", err)
 	}
