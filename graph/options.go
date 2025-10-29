@@ -44,6 +44,37 @@ type engineConfig struct {
 	opts Options
 }
 
+// WithMaxSteps limits workflow execution to prevent infinite loops.
+//
+// Default: 0 (no limit, use with caution).
+//
+// Workflow loops (A → B → A) are fully supported. Use MaxSteps to prevent
+// infinite loops when a conditional exit is missing or misconfigured.
+//
+// Loop patterns:
+//  1. Node-based conditional loop: nodeA returns Goto("B") if shouldContinue(state), else Stop()
+//  2. Edge predicate loop: Connect("A", "B", loopPredicate) and Connect("A", "exit", exitPredicate)
+//
+// Recommended values:
+//   - Simple workflows (3-5 nodes): MaxSteps = 20
+//   - Workflows with loops: MaxSteps = depth × max_iterations (e.g., 5 nodes × 10 iterations = 50)
+//   - Complex multi-loop workflows: MaxSteps = 100-200
+//
+// When MaxSteps is exceeded, Run() returns EngineError with code "MAX_STEPS_EXCEEDED".
+//
+// Example:
+//
+//	engine := graph.New(
+//	    reducer, store, emitter,
+//	    graph.WithMaxSteps(100), // Limit to 100 execution steps
+//	)
+func WithMaxSteps(n int) Option {
+	return func(cfg *engineConfig) error {
+		cfg.opts.MaxSteps = n
+		return nil
+	}
+}
+
 // WithMaxConcurrent sets the maximum number of nodes executing concurrently.
 //
 // Default: 8 when concurrent mode is enabled (determined by presence of other concurrent options).
@@ -274,6 +305,64 @@ func WithConflictPolicy(policy ConflictPolicy) Option {
 		}
 		// Note: Options struct doesn't have ConflictPolicy field yet.
 		// This is reserved for future use when field is added.
+		return nil
+	}
+}
+
+// WithMetrics enables Prometheus metrics collection.
+//
+// Metrics enable production monitoring with 6 key metrics:
+//   - inflight_nodes: Current concurrent node count
+//   - queue_depth: Pending nodes in scheduler queue
+//   - step_latency_ms: Node execution duration histogram
+//   - retries_total: Cumulative retry attempts
+//   - merge_conflicts_total: Concurrent state merge conflicts
+//   - backpressure_events_total: Queue saturation events
+//
+// All metrics are automatically updated during workflow execution.
+//
+// Example:
+//
+//	registry := prometheus.NewRegistry()
+//	metrics := graph.NewPrometheusMetrics(registry)
+//	engine := graph.New(
+//	    reducer, store, emitter,
+//	    graph.WithMetrics(metrics),
+//	)
+//
+//	// Expose metrics endpoint
+//	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+func WithMetrics(metrics *PrometheusMetrics) Option {
+	return func(cfg *engineConfig) error {
+		cfg.opts.Metrics = metrics
+		return nil
+	}
+}
+
+// WithCostTracker enables LLM cost tracking with static pricing.
+//
+// Cost tracker monitors:
+//   - Per-model token usage (input/output)
+//   - Cost calculation using static pricing tables
+//   - Cumulative cost tracking across calls
+//   - Per-model cost attribution
+//
+// Static pricing includes OpenAI, Anthropic, and Google models.
+//
+// Example:
+//
+//	tracker := graph.NewCostTracker("run-123", "USD")
+//	engine := graph.New(
+//	    reducer, store, emitter,
+//	    graph.WithCostTracker(tracker),
+//	)
+//
+//	// After execution, get cost summary
+//	totalCost := tracker.GetTotalCost()
+//	modelCosts := tracker.GetCostByModel()
+func WithCostTracker(tracker *CostTracker) Option {
+	return func(cfg *engineConfig) error {
+		cfg.opts.CostTracker = tracker
 		return nil
 	}
 }

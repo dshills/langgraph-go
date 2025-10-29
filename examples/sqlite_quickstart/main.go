@@ -52,9 +52,7 @@ func main() {
 	emitter := emit.NewLogEmitter(os.Stdout, false)
 
 	// 4. Create engine with SQLite store.
-	engine := graph.New(reducer, sqliteStore, emitter, graph.Options{
-		MaxSteps: 10,
-	})
+	engine := graph.New(reducer, sqliteStore, emitter, graph.WithMaxSteps(10))
 
 	// 5. Define workflow nodes.
 	startNode := graph.NodeFunc[State](func(ctx context.Context, s State) graph.NodeResult[State] {

@@ -49,7 +49,7 @@ func main() {
 	emitter := &simpleEmitter{}
 
 	// Create engine with loop protection
-	engine := graph.New(reducer, st, emitter, graph.Options{MaxSteps: 10})
+	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(10))
 
 	// Node 1: Analyze query and generate initial response
 	analyzeNode := graph.NodeFunc[AgentState](func(ctx context.Context, s AgentState) graph.NodeResult[AgentState] {

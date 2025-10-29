@@ -245,14 +245,13 @@ func main() {
 	memStore := store.NewMemStore[GameState]()
 	emitter := &simpleEmitter{}
 
-	opts := graph.Options{
-		MaxSteps:           50,
-		MaxConcurrentNodes: 1,     // Sequential for clarity
-		ReplayMode:         false, // Record mode
-		StrictReplay:       true,
-	}
-
-	engine := buildGameEngine(opts, memStore, emitter, false)
+	// Use functional options for clean configuration
+	engine := buildGameEngine(memStore, emitter, false,
+		graph.WithMaxSteps(50),
+		graph.WithMaxConcurrent(1),  // Sequential for clarity
+		graph.WithReplayMode(false), // Record mode
+		graph.WithStrictReplay(true),
+	)
 
 	initialState := GameState{
 		PlayerName: "Alice",
@@ -296,14 +295,13 @@ func main() {
 	fmt.Println(strings.Repeat("═", 66))
 
 	// Create new engine in replay mode
-	replayOpts := graph.Options{
-		MaxSteps:           50,
-		MaxConcurrentNodes: 1,
-		ReplayMode:         true, // Replay mode - use recorded I/O
-		StrictReplay:       true, // Fail on mismatch
-	}
-
-	replayEngine := buildGameEngine(replayOpts, memStore, emitter, true)
+	// Use functional options for replay configuration
+	replayEngine := buildGameEngine(memStore, emitter, true,
+		graph.WithMaxSteps(50),
+		graph.WithMaxConcurrent(1),
+		graph.WithReplayMode(true),   // Replay mode - use recorded I/O
+		graph.WithStrictReplay(true), // Fail on mismatch
+	)
 
 	fmt.Println("\n🔄 Replaying execution with SAME runID...")
 	fmt.Println("   - Dice rolls will use SAME seeded RNG (deterministic)")
@@ -384,8 +382,8 @@ func main() {
 }
 
 // buildGameEngine constructs the game workflow graph.
-func buildGameEngine(opts graph.Options, st store.Store[GameState], emitter emit.Emitter, replayMode bool) *graph.Engine[GameState] {
-	engine := graph.New(gameReducer, st, emitter, opts)
+func buildGameEngine(st store.Store[GameState], emitter emit.Emitter, replayMode bool, options ...interface{}) *graph.Engine[GameState] {
+	engine := graph.New(gameReducer, st, emitter, options...)
 
 	// Add nodes
 	if err := engine.Add("init", &InitGameNode{replayMode: replayMode}); err != nil {

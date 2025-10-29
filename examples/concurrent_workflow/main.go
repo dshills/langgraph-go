@@ -240,26 +240,30 @@ func main() {
 
 	ctx := context.Background()
 
-	// Configure concurrent execution with tuned parameters.
-	opts := graph.Options{
-		MaxSteps:            100,
-		MaxConcurrentNodes:  runtime.NumCPU(), // Use all CPU cores for I/O-bound work
-		QueueDepth:          1024,
-		DefaultNodeTimeout:  30 * time.Second,
-		RunWallClockBudget:  5 * time.Minute,
-		BackpressureTimeout: 30 * time.Second,
-	}
+	// Configure concurrent execution with functional options (modern approach).
+	maxConcurrent := runtime.NumCPU() // Use all CPU cores for I/O-bound work
 
 	fmt.Printf("⚙️  Configuration:\n")
-	fmt.Printf("   - Max concurrent nodes: %d (CPU cores: %d)\n", opts.MaxConcurrentNodes, runtime.NumCPU())
-	fmt.Printf("   - Queue depth: %d\n", opts.QueueDepth)
-	fmt.Printf("   - Node timeout: %v\n", opts.DefaultNodeTimeout)
+	fmt.Printf("   - Max concurrent nodes: %d (CPU cores: %d)\n", maxConcurrent, runtime.NumCPU())
+	fmt.Printf("   - Queue depth: %d\n", 1024)
+	fmt.Printf("   - Node timeout: %v\n", 30*time.Second)
 	fmt.Println()
 
 	// Create engine components.
 	memStore := store.NewMemStore[ResearchState]()
 	logEmitter := &simpleEmitter{verbose: false} // Quiet mode for cleaner output
-	engine := graph.New(researchReducer, memStore, logEmitter, opts)
+
+	// Use functional options for clean, self-documenting configuration
+	engine := graph.New(
+		researchReducer,
+		memStore,
+		logEmitter,
+		graph.WithMaxConcurrent(maxConcurrent),
+		graph.WithQueueDepth(1024),
+		graph.WithDefaultNodeTimeout(30*time.Second),
+		graph.WithRunWallClockBudget(5*time.Minute),
+		graph.WithBackpressureTimeout(30*time.Second),
+	)
 
 	// Add fan-out entry node that triggers 5 parallel fetches.
 	fanout := graph.NodeFunc[ResearchState](func(ctx context.Context, s ResearchState) graph.NodeResult[ResearchState] {

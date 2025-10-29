@@ -121,8 +121,7 @@ func main() {
 	// Setup workflow.
 	st := store.NewMemStore[ResearchState]()
 	emitter := emit.NewLogEmitter(os.Stdout, false)
-	opts := graph.Options{MaxSteps: 20}
-	engine := graph.New(reducer, st, emitter, opts)
+	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(20))
 
 	// Node 1: Initialize research.
 	if err := engine.Add("initialize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {

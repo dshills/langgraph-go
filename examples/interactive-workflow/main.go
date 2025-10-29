@@ -71,8 +71,7 @@ func main() {
 
 	st := store.NewMemStore[ApprovalState]()
 	emitter := emit.NewLogEmitter(os.Stdout, false)
-	opts := graph.Options{MaxSteps: 20}
-	engine := graph.New(reducer, st, emitter, opts)
+	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(20))
 
 	// Node 1: Initialize request
 	if err := engine.Add("initialize", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {

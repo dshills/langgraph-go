@@ -67,8 +67,7 @@ func main() {
 
 	st := store.NewMemStore[PipelineState]()
 	emitter := emit.NewLogEmitter(os.Stdout, false)
-	opts := graph.Options{MaxSteps: 25}
-	engine := graph.New(reducer, st, emitter, opts)
+	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(25))
 
 	// Node 1: Extract data
 	if err := engine.Add("extract", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {

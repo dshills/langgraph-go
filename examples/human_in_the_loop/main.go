@@ -134,16 +134,11 @@ func setupEngine() (*graph.Engine[ApprovalState], store.Store[ApprovalState]) {
 	st := store.NewMemStore[ApprovalState]()
 	emitter := emit.NewLogEmitter(os.Stdout, false)
 
-	// Configure engine with Options struct for MaxSteps.
-	opts := graph.Options{
-		MaxSteps: 20, // Prevent infinite loops
-	}
-
 	engine := graph.New(
 		reducer,
 		st,
 		emitter,
-		opts,
+		graph.WithMaxSteps(20), // Prevent infinite loops
 	)
 
 	// Add nodes.

@@ -66,13 +66,9 @@ func NewReviewWorkflowWithProviders(providers []CodeReviewer, scanner FileScanne
 	// Emits node_start, node_end, routing_decision, and error events
 	emitter := emit.NewLogEmitter(os.Stdout, false) // false = text mode (not JSON)
 
-	// Configure engine options
-	opts := graph.Options{
-		MaxSteps: 100, // Prevent infinite loops (reasonable for batched processing)
-	}
-
 	// Create the engine with reducer, store, emitter, and options
-	engine := graph.New(ReduceReviewState, st, emitter, opts)
+	// MaxSteps: 100 - Prevent infinite loops (reasonable for batched processing)
+	engine := graph.New(ReduceReviewState, st, emitter, graph.WithMaxSteps(100))
 
 	// Create and add nodes to the graph
 
