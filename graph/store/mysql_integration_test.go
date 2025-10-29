@@ -109,7 +109,7 @@ func TestMySQLIntegration(t *testing.T) {
 		}
 
 		// Simulate crash - close store.
-		store.Close()
+		_ = store.Close()
 
 		// Phase 2: Resume from checkpoint.
 		t.Log("Simulating process restart...")

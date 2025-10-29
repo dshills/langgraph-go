@@ -131,7 +131,12 @@ func (c *defaultClient) generateContent(ctx context.Context, messages []model.Me
 	if err != nil {
 		return model.ChatOut{}, fmt.Errorf("failed to create Google client: %w", err)
 	}
-	defer client.Close()
+	defer func() {
+		if closeErr := client.Close(); closeErr != nil {
+			// Log error but don't override return error
+			_ = closeErr
+		}
+	}()
 
 	// Create generative model
 	genModel := client.GenerativeModel(c.modelName)

@@ -92,19 +92,19 @@ func NewSQLiteStore[S any](path string) (*SQLiteStore[S], error) {
 	// Enable WAL mode for better concurrency
 	ctx := context.Background()
 	if _, err := db.ExecContext(ctx, "PRAGMA journal_mode=WAL"); err != nil {
-		db.Close()
+		_ = db.Close() // Ignore close error when returning pragma error
 		return nil, fmt.Errorf("failed to enable WAL mode: %w", err)
 	}
 
 	// Enable foreign keys
 	if _, err := db.ExecContext(ctx, "PRAGMA foreign_keys=ON"); err != nil {
-		db.Close()
+		_ = db.Close() // Ignore close error when returning pragma error
 		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
 
 	// Set busy timeout (wait up to 5 seconds for locks)
 	if _, err := db.ExecContext(ctx, "PRAGMA busy_timeout=5000"); err != nil {
-		db.Close()
+		_ = db.Close() // Ignore close error when returning pragma error
 		return nil, fmt.Errorf("failed to set busy timeout: %w", err)
 	}
 
@@ -116,7 +116,7 @@ func NewSQLiteStore[S any](path string) (*SQLiteStore[S], error) {
 
 	// Create tables if they don't exist
 	if err := store.createTables(ctx); err != nil {
-		db.Close()
+		_ = db.Close() // Ignore close error when returning table creation error
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
 
@@ -437,7 +437,7 @@ func (s *SQLiteStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint Checkp
 	// Ensure rollback on error
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback() // Ignore rollback error when already returning error
 		}
 	}()
 
@@ -618,7 +618,7 @@ func (s *SQLiteStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.E
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pending events: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var events []emit.Event
 	for rows.Next() {

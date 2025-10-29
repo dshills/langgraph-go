@@ -25,7 +25,7 @@ func TestHTTPTool_GET_Success(t *testing.T) {
 			t.Errorf("Expected GET request, got %s", r.Method)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
+		_ = json.NewEncoder(w).Encode(map[string]string{
 			"message": "success",
 			"status":  "ok",
 		})
@@ -89,7 +89,7 @@ func TestHTTPTool_POST_Success(t *testing.T) {
 
 		// Send response
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"id":      123,
 			"created": true,
 		})

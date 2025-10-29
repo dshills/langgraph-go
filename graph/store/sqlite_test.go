@@ -14,7 +14,7 @@ import (
 func TestSQLiteStore_SaveLoadStep(t *testing.T) {
 	ctx := context.Background()
 	store := newTestSQLiteStore(t)
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Test 1: Save a single step
 	state1 := TestState{Value: "first", Counter: 1}
@@ -109,7 +109,7 @@ func TestSQLiteStore_SaveLoadStep(t *testing.T) {
 func TestSQLiteStore_CheckpointV2(t *testing.T) {
 	ctx := context.Background()
 	store := newTestSQLiteStore(t)
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Test 1: Save a checkpoint with full context
 	checkpoint1 := CheckpointV2[TestState]{
@@ -205,7 +205,7 @@ func TestSQLiteStore_CheckpointV2(t *testing.T) {
 func TestSQLiteStore_Idempotency(t *testing.T) {
 	ctx := context.Background()
 	store := newTestSQLiteStore(t)
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Test 1: CheckIdempotency on unused key returns false
 	exists, err := store.CheckIdempotency(ctx, "unused-key")
@@ -301,7 +301,7 @@ func TestSQLiteStore_Idempotency(t *testing.T) {
 func TestSQLiteStore_Outbox(t *testing.T) {
 	ctx := context.Background()
 	store := newTestSQLiteStore(t)
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Note: MemStore and SQLiteStore don't have a public AddEvent method yet.
 	// This test validates PendingEvents and MarkEventsEmitted work correctly
@@ -406,7 +406,7 @@ func TestSQLiteStore_Outbox(t *testing.T) {
 func TestSQLiteStore_ConcurrentReads(t *testing.T) {
 	ctx := context.Background()
 	store := newTestSQLiteStore(t)
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Setup: Create multiple runs with steps
 	for runNum := 1; runNum <= 10; runNum++ {
@@ -511,7 +511,7 @@ func TestSQLiteStore_CloseAndReopen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSQLiteStore (reopen) failed: %v", err)
 	}
-	defer store2.Close()
+	defer func() { _ = store2.Close() }()
 
 	// Load step
 	loadedState, step, err := store2.LoadLatest(ctx, "run-001")
@@ -548,7 +548,7 @@ func TestSQLiteStore_CloseAndReopen(t *testing.T) {
 func TestSQLiteStore_LegacyCheckpoint(t *testing.T) {
 	ctx := context.Background()
 	store := newTestSQLiteStore(t)
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Test 1: Save legacy checkpoint
 	state := TestState{Value: "legacy", Counter: 100}

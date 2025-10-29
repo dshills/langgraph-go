@@ -101,7 +101,7 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 				}
 
 				return st, func() {
-					st.Close()
+					_ = st.Close()
 				}
 			},
 		},
@@ -119,7 +119,7 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 				}
 
 				return st, func() {
-					st.Close()
+					_ = st.Close()
 				}
 			},
 		},
@@ -246,7 +246,7 @@ func TestStoreContractConsistency(t *testing.T) {
 					t.Fatalf("Failed to create SQLiteStore: %v", err)
 				}
 				return st, func() {
-					st.Close()
+					_ = st.Close()
 				}
 			},
 		},
@@ -262,7 +262,7 @@ func TestStoreContractConsistency(t *testing.T) {
 					t.Fatalf("Failed to create MySQLStore: %v", err)
 				}
 				return st, func() {
-					st.Close()
+					_ = st.Close()
 				}
 			},
 		},

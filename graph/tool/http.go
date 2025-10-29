@@ -103,7 +103,7 @@ func (h *HTTPTool) Call(ctx context.Context, input map[string]interface{}) (map[
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Read response body
 	respBody, err := io.ReadAll(resp.Body)

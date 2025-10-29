@@ -83,7 +83,7 @@ func NewMySQLStore[S any](dsn string) (*MySQLStore[S], error) {
 	// Verify connection
 	ctx := context.Background()
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close() // Ignore close error when returning ping error
 		return nil, fmt.Errorf("failed to ping MySQL: %w", err)
 	}
 
@@ -94,7 +94,7 @@ func NewMySQLStore[S any](dsn string) (*MySQLStore[S], error) {
 
 	// Create tables if they don't exist
 	if err := store.createTables(ctx); err != nil {
-		db.Close()
+		_ = db.Close() // Ignore close error when returning table creation error
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
 
@@ -462,7 +462,7 @@ func (m *MySQLStore[S]) SaveStepBatch(ctx context.Context, runID string, steps i
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	// Note: This function currently returns without executing the batch.
 	// It's designed as infrastructure for future batch operations.
@@ -756,7 +756,7 @@ func (m *MySQLStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Ev
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pending events: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var events []emit.Event
 	for rows.Next() {

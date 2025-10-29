@@ -32,7 +32,7 @@ func TestMySQLStore_NewConnection(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		// Verify connection is alive
 		ctx := context.Background()
@@ -69,7 +69,7 @@ func TestMySQLStore_ConnectionPooling(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		// Verify pool settings
 		stats := store.Stats()
@@ -83,7 +83,7 @@ func TestMySQLStore_ConnectionPooling(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		// Concurrent pings
 		const numGoroutines = 10
@@ -109,7 +109,7 @@ func TestMySQLStore_ConnectionPooling(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		// Short timeout context
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
@@ -179,7 +179,7 @@ func TestMySQLStore_TableCreation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		// Verify tables exist
 		ctx := context.Background()
@@ -204,7 +204,7 @@ func TestMySQLStore_TableCreation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create second MySQL store: %v", err)
 		}
-		defer store2.Close()
+		defer func() { _ = store2.Close() }()
 
 		// Should succeed without errors
 		ctx := context.Background()
@@ -227,7 +227,7 @@ func TestMySQLStore_SaveStepBatch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		runID := "batch-test-001"
@@ -269,7 +269,7 @@ func TestMySQLStore_SaveStepBatch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		runID := "batch-test-002"
@@ -314,7 +314,7 @@ func TestMySQLStore_SaveStepBatch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		runID := "isolation-test-001"
@@ -366,7 +366,7 @@ func TestMySQLStore_TransactionRollback(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		runID := "rollback-test-001"
 
@@ -412,7 +412,7 @@ func TestMySQLStore_ConcurrentCheckpoints(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 
@@ -469,7 +469,7 @@ func TestMySQLStore_SaveCheckpoint(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		cpID := "checkpoint-001"
@@ -506,7 +506,7 @@ func TestMySQLStore_SaveCheckpoint(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		cpID := "checkpoint-empty"
@@ -536,7 +536,7 @@ func TestMySQLStore_SaveCheckpoint(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		cpID := "checkpoint-complex"
@@ -572,7 +572,7 @@ func TestMySQLStore_SaveCheckpoint(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		cpID := "checkpoint-update"
@@ -615,7 +615,7 @@ func TestMySQLStore_SaveCheckpoint(t *testing.T) {
 		}
 
 		// Close store
-		store.Close()
+		_ = store.Close()
 
 		ctx := context.Background()
 		err = store.SaveCheckpoint(ctx, "checkpoint-closed", TestState{}, 0)
@@ -636,7 +636,7 @@ func TestMySQLStore_LoadCheckpoint(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		cpID := "checkpoint-load-test"
@@ -673,7 +673,7 @@ func TestMySQLStore_LoadCheckpoint(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		cpID := "checkpoint-does-not-exist"
@@ -696,10 +696,10 @@ func TestMySQLStore_LoadCheckpoint(t *testing.T) {
 
 		ctx := context.Background()
 		cpID := "checkpoint-test"
-		store.SaveCheckpoint(ctx, cpID, TestState{Counter: 1}, 1)
+		_ = store.SaveCheckpoint(ctx, cpID, TestState{Counter: 1}, 1)
 
 		// Close store
-		store.Close()
+		_ = store.Close()
 
 		// Attempt to load after close
 		_, _, err = store.LoadCheckpoint(ctx, cpID)
@@ -713,12 +713,12 @@ func TestMySQLStore_LoadCheckpoint(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		// Save a checkpoint first
 		ctx := context.Background()
 		cpID := "checkpoint-cancel-test"
-		store.SaveCheckpoint(ctx, cpID, TestState{Counter: 1}, 1)
+		_ = store.SaveCheckpoint(ctx, cpID, TestState{Counter: 1}, 1)
 
 		// Create cancelled context
 		cancelledCtx, cancel := context.WithCancel(context.Background())
@@ -742,7 +742,7 @@ func TestMySQLStore_CheckpointIsolation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 
@@ -800,7 +800,7 @@ func cleanupTestTables(t *testing.T, dsn string) {
 	if err != nil {
 		t.Fatalf("Failed to open database for cleanup: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	ctx := context.Background()
 	_, _ = db.ExecContext(ctx, "DROP TABLE IF EXISTS workflow_steps")
@@ -826,7 +826,7 @@ func TestMySQLStore_SaveCheckpointV2(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		checkpoint := CheckpointV2[TestState]{
@@ -882,7 +882,7 @@ func TestMySQLStore_SaveCheckpointV2(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		checkpoint1 := CheckpointV2[TestState]{
@@ -916,7 +916,7 @@ func TestMySQLStore_SaveCheckpointV2(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 
@@ -969,7 +969,7 @@ func TestMySQLStore_LoadCheckpointV2(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		_, err = store.LoadCheckpointV2(ctx, "non-existent-run", 999)
@@ -984,7 +984,7 @@ func TestMySQLStore_LoadCheckpointV2(t *testing.T) {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
 
-		store.Close()
+		_ = store.Close()
 
 		ctx := context.Background()
 		_, err = store.LoadCheckpointV2(ctx, "run-001", 1)
@@ -1005,7 +1005,7 @@ func TestMySQLStore_CheckIdempotency(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		exists, err := store.CheckIdempotency(ctx, "non-existent-key-"+time.Now().Format("20060102150405.000000"))
@@ -1022,7 +1022,7 @@ func TestMySQLStore_CheckIdempotency(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		idempotencyKey := "idem-check-test-" + time.Now().Format("20060102150405.000000")
@@ -1059,7 +1059,7 @@ func TestMySQLStore_CheckIdempotency(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		baseKey := "idem-concurrent-" + time.Now().Format("20060102150405.000000")
@@ -1120,7 +1120,7 @@ func TestMySQLStore_PendingEvents(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		events, err := store.PendingEvents(ctx, 10)
@@ -1137,7 +1137,7 @@ func TestMySQLStore_PendingEvents(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 
@@ -1180,7 +1180,7 @@ func TestMySQLStore_MarkEventsEmitted(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		runID := "run-mark-test-" + time.Now().Format("20060102150405.000000")
@@ -1228,7 +1228,7 @@ func TestMySQLStore_MarkEventsEmitted(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		err = store.MarkEventsEmitted(ctx, []string{})
@@ -1249,7 +1249,7 @@ func TestMySQLStore_TransactionalBehavior(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		idempKey := "idem-atomic-" + time.Now().Format("20060102150405.000000")
@@ -1294,7 +1294,7 @@ func TestMySQLStore_TransactionalBehavior(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		ctx := context.Background()
 		runID := "run-concurrent-save-" + time.Now().Format("20060102150405.000000")
