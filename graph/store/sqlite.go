@@ -674,6 +674,7 @@ func (s *SQLiteStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []strin
 		args[i] = id
 	}
 
+	// #nosec G201 -- placeholders are not user input, just "?" marks for parameterized query
 	query := fmt.Sprintf(`
 		UPDATE events_outbox
 		SET emitted_at = CURRENT_TIMESTAMP

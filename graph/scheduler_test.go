@@ -214,7 +214,7 @@ func TestBackpressureBlock(t *testing.T) {
 		for i := 0; i < capacity; i++ {
 			item := graph.WorkItem[SchedulerTestState]{
 				StepID:       i,
-				OrderKey:     uint64(i * 100),
+				OrderKey:     uint64(i * 100), // #nosec G115 -- test loop counter, bounded by loop limit
 				NodeID:       "node" + string(rune('0'+i)),
 				State:        SchedulerTestState{Counter: i},
 				Attempt:      0,
@@ -300,7 +300,7 @@ func TestBackpressureBlock(t *testing.T) {
 		for i := 0; i < capacity; i++ {
 			item := graph.WorkItem[SchedulerTestState]{
 				StepID:       i,
-				OrderKey:     uint64(i * 100),
+				OrderKey:     uint64(i * 100), // #nosec G115 -- test loop counter, bounded by loop limit
 				NodeID:       "node" + string(rune('0'+i)),
 				State:        SchedulerTestState{Counter: i},
 				Attempt:      0,
@@ -360,7 +360,7 @@ func TestBackpressureBlock(t *testing.T) {
 		for i := 0; i < capacity; i++ {
 			item := graph.WorkItem[SchedulerTestState]{
 				StepID:       i,
-				OrderKey:     uint64(i * 100),
+				OrderKey:     uint64(i * 100), // #nosec G115 -- test loop counter, bounded by loop limit
 				NodeID:       "node" + string(rune('0'+i)),
 				State:        SchedulerTestState{Counter: i},
 				Attempt:      0,
@@ -380,7 +380,7 @@ func TestBackpressureBlock(t *testing.T) {
 			go func(id int) {
 				extraItem := graph.WorkItem[SchedulerTestState]{
 					StepID:       100 + id,
-					OrderKey:     uint64(1000 + id*100),
+					OrderKey:     uint64(1000 + id*100), // #nosec G115 -- test loop counter, bounded by loop limit
 					NodeID:       "blocked_node_" + string(rune('0'+id)),
 					State:        SchedulerTestState{Counter: 100 + id},
 					Attempt:      0,

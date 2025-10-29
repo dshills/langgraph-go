@@ -127,8 +127,9 @@ func computeIdempotencyKey[S any](runID string, stepID int, items []WorkItem[S],
 	h.Write([]byte(runID))
 
 	// Write step ID as 8-byte big-endian int64.
+	// Note: stepID is always non-negative in normal operation
 	stepBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(stepBytes, uint64(stepID))
+	binary.BigEndian.PutUint64(stepBytes, uint64(stepID)) // #nosec G115 -- stepID is non-negative step counter
 	h.Write(stepBytes)
 
 	// Sort work items by OrderKey for deterministic ordering.

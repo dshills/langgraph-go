@@ -812,6 +812,7 @@ func (m *MySQLStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string
 		args[i] = id
 	}
 
+	// #nosec G201 -- placeholders are not user input, just "?" marks for parameterized query
 	query := fmt.Sprintf(`
 		UPDATE events_outbox
 		SET emitted_at = NOW()

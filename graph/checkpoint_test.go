@@ -371,7 +371,7 @@ func TestIdempotencyKey(t *testing.T) {
 			for j := 0; j < 10; j++ {
 				state := KeyTestState{Value: "test", Counter: i*10 + j}
 				frontier := []graph.WorkItem[KeyTestState]{
-					{NodeID: "node1", OrderKey: uint64(i*10 + j)},
+					{NodeID: "node1", OrderKey: uint64(i*10 + j)}, // #nosec G115 -- test loop counter, bounded by loop limit
 				}
 
 				key := computeIdempotencyKey("run-test", i, state, frontier)

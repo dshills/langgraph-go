@@ -128,7 +128,8 @@ func computeBackoff(attempt int, base, maxDelay time.Duration, rng *rand.Rand) t
 	} else {
 		// Fallback to time-based random if no RNG provided.
 		// Not deterministic, but safe for non-replay scenarios.
-		jitter = time.Duration(rand.Int63n(int64(base)))
+		// Note: Using math/rand for jitter timing, not security-sensitive
+		jitter = time.Duration(rand.Int63n(int64(base))) // #nosec G404 -- jitter for retry timing, not security
 	}
 
 	return exponentialDelay + jitter

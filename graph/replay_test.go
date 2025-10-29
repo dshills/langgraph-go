@@ -315,14 +315,15 @@ func TestSeededRNG(t *testing.T) {
 		seed := int64(12345)
 
 		// Generate sequence 1.
-		rng1 := rand.New(rand.NewSource(seed))
+		rng1 := rand.New(rand.NewSource(seed)) // #nosec G404 -- test RNG for determinism verification
 		values1 := make([]int, 10)
 		for i := range values1 {
 			values1[i] = rng1.Intn(1000)
 		}
 
 		// Generate sequence 2 with same seed.
-		rng2 := rand.New(rand.NewSource(seed))
+		rng2 := rand.New(rand.NewSource(seed)) // #nosec G404 -- test RNG for determinism verification
+
 		values2 := make([]int, 10)
 		for i := range values2 {
 			values2[i] = rng2.Intn(1000)
@@ -341,14 +342,15 @@ func TestSeededRNG(t *testing.T) {
 		seed2 := int64(67890)
 
 		// Generate sequence 1.
-		rng1 := rand.New(rand.NewSource(seed1))
+		rng1 := rand.New(rand.NewSource(seed1)) // #nosec G404 -- test RNG for determinism verification
 		values1 := make([]int, 10)
 		for i := range values1 {
 			values1[i] = rng1.Intn(1000)
 		}
 
 		// Generate sequence 2 with different seed.
-		rng2 := rand.New(rand.NewSource(seed2))
+		rng2 := rand.New(rand.NewSource(seed2)) // #nosec G404 -- test RNG for determinism verification
+
 		values2 := make([]int, 10)
 		for i := range values2 {
 			values2[i] = rng2.Intn(1000)
@@ -393,7 +395,7 @@ func TestSeededRNG(t *testing.T) {
 
 		// Create seeded RNG.
 		seed := int64(42)
-		rng := rand.New(rand.NewSource(seed))
+		rng := rand.New(rand.NewSource(seed)) // #nosec G404 -- test RNG for determinism verification
 
 		// Store in context (using the RNGKey from engine.go).
 		ctx = context.WithValue(ctx, graph.RNGKey, rng)
@@ -462,6 +464,7 @@ func detectReplayMismatch(recordedHash, currentHash string) error {
 func computeRNGSeed(runID string) int64 {
 	h := sha256.Sum256([]byte(runID))
 	// Use first 8 bytes as int64 seed.
+	// #nosec G115 -- test helper for seed computation, bounded by hash output
 	return int64(uint64(h[0]) | uint64(h[1])<<8 | uint64(h[2])<<16 | uint64(h[3])<<24 |
 		uint64(h[4])<<32 | uint64(h[5])<<40 | uint64(h[6])<<48 | uint64(h[7])<<56)
 }

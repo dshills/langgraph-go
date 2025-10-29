@@ -72,8 +72,9 @@ func computeOrderKey(parentNodeID string, edgeIndex int) uint64 {
 	h.Write([]byte(parentNodeID))
 
 	// Write edge index as 4-byte big-endian integer
+	// Note: edgeIndex is always non-negative (array index)
 	edgeBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(edgeBytes, uint32(edgeIndex))
+	binary.BigEndian.PutUint32(edgeBytes, uint32(edgeIndex)) // #nosec G115 -- edgeIndex is non-negative array index
 	h.Write(edgeBytes)
 
 	// Get hash and extract first 8 bytes as uint64
@@ -180,7 +181,7 @@ func (f *Frontier[S]) Enqueue(ctx context.Context, item WorkItem[S]) error {
 	// Add to heap under lock
 	f.mu.Lock()
 	heap.Push(&f.heap, item)
-	currentDepth := int32(f.heap.Len())
+	currentDepth := int32(f.heap.Len()) // #nosec G115 -- queue depth bounded by capacity config
 	f.mu.Unlock()
 
 	// Update metrics: track peak queue depth (T068)
@@ -192,6 +193,7 @@ func (f *Frontier[S]) Enqueue(ctx context.Context, item WorkItem[S]) error {
 	}
 
 	// Check if we're at capacity (backpressure condition)
+	// #nosec G115 -- capacity is bounded config value (max queue depth)
 	if currentDepth >= int32(f.capacity) {
 		// Increment backpressure event counter (T068, T069)
 		f.backpressureEvents.Add(1)
@@ -320,13 +322,14 @@ type SchedulerMetrics struct {
 // This method is thread-safe and uses atomic operations to read metric values.
 func (f *Frontier[S]) Metrics() SchedulerMetrics {
 	f.mu.Lock()
-	currentQueueDepth := int32(f.heap.Len())
+	currentQueueDepth := int32(f.heap.Len()) // #nosec G115 -- queue depth bounded by capacity config
 	f.mu.Unlock()
 
 	return SchedulerMetrics{
-		ActiveNodes:        0, // Will be populated by Engine (T065)
-		QueueDepth:         currentQueueDepth,
-		QueueCapacity:      int32(f.capacity),
+		ActiveNodes:   0, // Will be populated by Engine (T065)
+		QueueDepth:    currentQueueDepth,
+		QueueCapacity: int32(f.capacity), // #nosec G115 -- capacity is bounded config value
+
 		TotalSteps:         0,                           // Will be tracked by Engine
 		TotalEnqueued:      f.totalEnqueued.Load(),      // T068
 		TotalDequeued:      f.totalDequeued.Load(),      // T068

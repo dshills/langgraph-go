@@ -91,7 +91,8 @@ func TestFrontierStandalone(t *testing.T) {
 
 		// Fill the queue.
 		for i := 0; i < 2; i++ {
-			item := WorkItem[testState]{OrderKey: uint64(i), NodeID: "node", StepID: i}
+			item := WorkItem[testState]{OrderKey: uint64(i), NodeID: "node", StepID: i} // #nosec G115 -- test loop counter, bounded by loop limit
+
 			if err := f.Enqueue(ctx, item); err != nil {
 				t.Fatalf("Enqueue %d failed: %v", i, err)
 			}
@@ -149,7 +150,7 @@ func TestFrontierStandalone(t *testing.T) {
 		// Enqueue items.
 		for i := 0; i < numItems; i++ {
 			item := WorkItem[testState]{
-				OrderKey: uint64(i * 10),
+				OrderKey: uint64(i * 10), // #nosec G115 -- test loop counter, bounded by loop limit
 				NodeID:   "node",
 				StepID:   i,
 			}

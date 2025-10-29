@@ -100,11 +100,13 @@ func initRNG(runID string) *rand.Rand {
 	hashBytes := hasher.Sum(nil)
 
 	// Extract first 8 bytes as int64 seed
-	seed := int64(binary.BigEndian.Uint64(hashBytes[:8]))
+	seed := int64(binary.BigEndian.Uint64(hashBytes[:8])) // #nosec G115 -- conversion for deterministic seeding
 
 	// Create a new rand.Rand with the deterministic seed
-	source := rand.NewSource(seed)
-	return rand.New(source)
+	// Note: Using math/rand (not crypto/rand) intentionally for deterministic replay
+	source := rand.NewSource(seed) // #nosec G404 -- deterministic RNG for replay, not security
+	return rand.New(source)        // #nosec G404 -- deterministic RNG for replay, not security
+
 }
 
 // Reducer is a function that merges a partial state update (delta) into the previous state.
@@ -1831,11 +1833,12 @@ func (e *Engine[S]) RunWithCheckpoint(ctx context.Context, checkpoint store.Chec
 		hasher := sha256.New()
 		hasher.Write([]byte(checkpoint.RunID))
 		hashBytes := hasher.Sum(nil)
-		seed = int64(binary.BigEndian.Uint64(hashBytes[:8]))
-		_ = seedRNG // Suppress unused warning
+		seed = int64(binary.BigEndian.Uint64(hashBytes[:8])) // #nosec G115 -- conversion for deterministic seeding
+		_ = seedRNG                                          // Suppress unused warning
 	}
-	source := rand.NewSource(seed)
-	rng := rand.New(source)
+	source := rand.NewSource(seed) // #nosec G404 -- deterministic RNG for replay, not security
+	rng := rand.New(source)        // #nosec G404 -- deterministic RNG for replay, not security
+
 	ctx = context.WithValue(ctx, RNGKey, rng)
 
 	// Restore frontier from checkpoint
@@ -2006,7 +2009,7 @@ func (e *Engine[S]) runConcurrentFromCheckpoint(ctx context.Context, runID strin
 
 	// Track step counter starting from checkpoint
 	var stepCounter atomic.Int32
-	stepCounter.Store(int32(startStepID))
+	stepCounter.Store(int32(startStepID)) // #nosec G115 -- startStepID is bounded by MaxSteps (default 100)
 	var collectedResults []nodeResult[S]
 
 	// Spawn worker goroutines
