@@ -78,6 +78,8 @@ type RecordedIO struct {
 // return NodeResult[S]{Err: fmt.Errorf("failed to record I/O: %w", err)}.
 // }.
 // // Store recording in checkpoint via engine.
+//
+//nolint:unused // Reserved for future replay functionality
 func recordIO(nodeID string, attempt int, request, response interface{}) (RecordedIO, error) {
 	start := time.Now()
 
@@ -136,6 +138,8 @@ func recordIO(nodeID string, attempt int, request, response interface{}) (Record
 // var response MyResponse.
 // json.Unmarshal(recording.Response, &response).
 // }.
+//
+//nolint:unused // Reserved for future replay functionality
 func lookupRecordedIO(recordings []RecordedIO, nodeID string, attempt int) (RecordedIO, bool) {
 	// Linear search through recordings to find matching (nodeID, attempt).
 	for _, rec := range recordings {
@@ -170,6 +174,8 @@ func lookupRecordedIO(recordings []RecordedIO, nodeID string, attempt int) (Reco
 // if err := verifyReplayHash(recorded, actualResponse); err != nil {.
 // return NodeResult[S]{Err: fmt.Errorf("replay verification failed: %w", err)}.
 // }.
+//
+//nolint:unused // Reserved for future replay functionality
 func verifyReplayHash(recorded RecordedIO, actualResponse interface{}) error {
 	// Serialize actual response to JSON.
 	actualJSON, err := json.Marshal(actualResponse)

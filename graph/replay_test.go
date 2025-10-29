@@ -230,12 +230,6 @@ func TestDeterministicReplay(t *testing.T) {
 		// Track whether external service was called.
 		externalCalled := false
 
-		// Create a node that calls an "external service".
-		// During replay, this should not be invoked.
-		type ReplayTestState struct {
-			Value string
-		}
-
 		_ = externalCalled // Will be used once implementation exists
 
 		t.Skip("Requires replay engine implementation")

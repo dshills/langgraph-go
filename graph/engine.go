@@ -789,7 +789,6 @@ type nodeResult[S any] struct {
 	route    Next
 	orderKey uint64
 	err      error
-	terminal bool // Indicates workflow should terminate
 }
 
 // runConcurrent executes the workflow using concurrent node execution with the Frontier scheduler (T035).

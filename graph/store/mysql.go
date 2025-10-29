@@ -436,15 +436,6 @@ func (m *MySQLStore[S]) SaveStepBatch(ctx context.Context, runID string, steps i
 		}
 	}()
 
-	// Type assert steps to expected format
-	// This is a simplified version - in practice you'd use reflection or a specific type
-	type stepData struct {
-		step   int
-		nodeID string
-		state  S
-	}
-
-	// Convert interface{} to slice of stepData
 	// For now, we'll use SaveStep in a transaction
 	// The actual batch insert would be more efficient
 

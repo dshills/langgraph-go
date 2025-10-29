@@ -93,11 +93,15 @@ func TestCostTrackingAccuracy(t *testing.T) {
 }
 
 // mockTracer implements a simple trace.Tracer for testing OTel spans.
+//
+//nolint:unused // Reserved for future OTel tracing tests
 type mockTracer struct {
 	spans []mockSpan
 }
 
 // mockSpan captures span data for test verification.
+//
+//nolint:unused // Reserved for future OTel tracing tests
 type mockSpan struct {
 	name       string
 	attributes map[string]interface{}
@@ -107,6 +111,8 @@ type mockSpan struct {
 }
 
 // Helper function to create test graph with metrics enabled (for T049).
+//
+//nolint:unused // Reserved for future metrics tests
 func createTestGraphWithMetrics(t *testing.T) (*Engine[testState], *PrometheusMetrics) {
 	t.Helper()
 	// Will be implemented when PrometheusMetrics is complete.
@@ -114,6 +120,8 @@ func createTestGraphWithMetrics(t *testing.T) (*Engine[testState], *PrometheusMe
 }
 
 // Helper function to create test graph with OTel tracing enabled (for T050).
+//
+//nolint:unused // Reserved for future OTel tracing tests
 func createTestGraphWithOTel(t *testing.T) (*Engine[testState], *mockTracer) {
 	t.Helper()
 	// Will be implemented when OTelEmitter enhancements are complete.
@@ -121,6 +129,8 @@ func createTestGraphWithOTel(t *testing.T) (*Engine[testState], *mockTracer) {
 }
 
 // testState is a simple state type for observability tests.
+//
+//nolint:unused // Reserved for future observability tests
 type testState struct {
 	Counter       int
 	LastNodeID    string
