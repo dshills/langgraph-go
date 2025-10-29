@@ -92,3 +92,5 @@ examples/*/data-pipeline
 examples/*/interactive-workflow
 examples/*/research-pipeline
 examples/*/tools
+
+tools/
