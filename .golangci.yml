@@ -50,7 +50,6 @@ linters:
     - copyloopvar     # Checks loop variable copying (replaces exportloopref)
     - gochecknoinits  # Checks that no init functions are present
     - goconst         # Finds repeated strings for constants
-    - godot           # Check if comments end in a period
     - revive          # Fast, configurable linter
     - whitespace      # Detection of leading and trailing whitespace
 
@@ -62,6 +61,7 @@ linters:
     - funlen          # Function length - use gocyclo instead
     - gochecknoglobals # Globals sometimes needed
     - gocognit        # Covered by gocyclo
+    - godot           # Comment punctuation - too noisy
     - mnd             # Magic number detector - too noisy
     - lll             # Line length - formatters handle this
     - nlreturn        # Too opinionated
