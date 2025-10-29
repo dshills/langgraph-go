@@ -1,3 +1,4 @@
+// Package graph provides the core graph execution engine for LangGraph-Go.
 package graph
 
 import "time"
@@ -5,32 +6,36 @@ import "time"
 // Option is a functional option for configuring an Engine.
 //
 // Functional options provide a clean, extensible API for engine configuration:
-//   - Chainable: engine := New(reducer, store, emitter, WithMaxConcurrent(8), WithQueueDepth(1024))
-//   - Self-documenting: Option names clearly describe their purpose
-//   - Optional: Only specify the configuration you need
-//   - Backward compatible: Existing Options struct still works
+// - Chainable: engine := New(reducer, store, emitter, WithMaxConcurrent(8), WithQueueDepth(1024)).
+// - Self-documenting: Option names clearly describe their purpose.
+// - Optional: Only specify the configuration you need.
+// - Backward compatible: Existing Options struct still works.
 //
 // Example:
 //
-//	engine := graph.New(
-//	    reducer,
-//	    store,
-//	    emitter,
-//	    graph.WithMaxConcurrent(16),
-//	    graph.WithQueueDepth(2048),
-//	    graph.WithDefaultNodeTimeout(10*time.Second),
-//	)
+// engine := graph.New(.
+//
+//	reducer,
+//	store,
+//	emitter,
+//	graph.WithMaxConcurrent(16),
+//	graph.WithQueueDepth(2048),
+//	graph.WithDefaultNodeTimeout(10*time.Second),
+//
+// ).
 //
 // Options can be mixed with the Options struct:
 //
-//	opts := graph.Options{MaxSteps: 100}
-//	engine := graph.New(
-//	    reducer,
-//	    store,
-//	    emitter,
-//	    opts,
-//	    graph.WithMaxConcurrent(8), // Overrides opts if specified
-//	)
+// opts := graph.Options{MaxSteps: 100}.
+// engine := graph.New(.
+//
+//	reducer,
+//	store,
+//	emitter,
+//	opts,
+//
+// graph.WithMaxConcurrent(8), // Overrides opts if specified.
+// ).
 type Option func(*engineConfig) error
 
 // engineConfig is an internal struct used to collect options before applying them to an Engine.
@@ -45,19 +50,21 @@ type engineConfig struct {
 // Set to 0 for sequential execution (backward compatible default).
 //
 // Tuning guidance:
-//   - CPU-bound workflows: Set to runtime.NumCPU()
-//   - I/O-bound workflows: Set to 10-50 depending on external service limits
-//   - Memory-constrained: Reduce to prevent excessive state copies
+// - CPU-bound workflows: Set to runtime.NumCPU().
+// - I/O-bound workflows: Set to 10-50 depending on external service limits.
+// - Memory-constrained: Reduce to prevent excessive state copies.
 //
-// Each concurrent node holds a deep copy of state, so memory usage scales
+// Each concurrent node holds a deep copy of state, so memory usage scales.
 // linearly with MaxConcurrentNodes.
 //
 // Example:
 //
-//	engine := graph.New(
-//	    reducer, store, emitter,
-//	    graph.WithMaxConcurrent(16), // Up to 16 nodes execute in parallel
-//	)
+// engine := graph.New(.
+//
+//	reducer, store, emitter,
+//
+// graph.WithMaxConcurrent(16), // Up to 16 nodes execute in parallel.
+// ).
 func WithMaxConcurrent(n int) Option {
 	return func(cfg *engineConfig) error {
 		cfg.opts.MaxConcurrentNodes = n
@@ -76,11 +83,13 @@ func WithMaxConcurrent(n int) Option {
 //
 // Example:
 //
-//	engine := graph.New(
-//	    reducer, store, emitter,
-//	    graph.WithMaxConcurrent(8),
-//	    graph.WithQueueDepth(2048), // Queue can hold 2048 work items
-//	)
+// engine := graph.New(.
+//
+//	reducer, store, emitter,
+//	graph.WithMaxConcurrent(8),
+//
+// graph.WithQueueDepth(2048), // Queue can hold 2048 work items.
+// ).
 func WithQueueDepth(n int) Option {
 	return func(cfg *engineConfig) error {
 		cfg.opts.QueueDepth = n
@@ -95,17 +104,19 @@ func WithQueueDepth(n int) Option {
 // Set lower for fast-failing systems, higher for workflows with bursty fan-outs.
 //
 // When backpressure timeout is exceeded:
-//  1. Execution pauses with checkpoint saved
-//  2. ErrBackpressureTimeout is returned
-//  3. Resume from checkpoint after reducing load or increasing MaxConcurrentNodes
+// 1. Execution pauses with checkpoint saved.
+// 2. ErrBackpressureTimeout is returned.
+// 3. Resume from checkpoint after reducing load or increasing MaxConcurrentNodes.
 //
 // Example:
 //
-//	engine := graph.New(
-//	    reducer, store, emitter,
-//	    graph.WithMaxConcurrent(8),
-//	    graph.WithBackpressureTimeout(60*time.Second), // Wait up to 60s for queue space
-//	)
+// engine := graph.New(.
+//
+//	reducer, store, emitter,
+//	graph.WithMaxConcurrent(8),
+//
+// graph.WithBackpressureTimeout(60*time.Second), // Wait up to 60s for queue space.
+// ).
 func WithBackpressureTimeout(d time.Duration) Option {
 	return func(cfg *engineConfig) error {
 		cfg.opts.BackpressureTimeout = d
@@ -122,10 +133,12 @@ func WithBackpressureTimeout(d time.Duration) Option {
 //
 // Example:
 //
-//	engine := graph.New(
-//	    reducer, store, emitter,
-//	    graph.WithDefaultNodeTimeout(10*time.Second), // All nodes timeout after 10s by default
-//	)
+// engine := graph.New(.
+//
+//	reducer, store, emitter,
+//
+// graph.WithDefaultNodeTimeout(10*time.Second), // All nodes timeout after 10s by default.
+// ).
 func WithDefaultNodeTimeout(d time.Duration) Option {
 	return func(cfg *engineConfig) error {
 		cfg.opts.DefaultNodeTimeout = d
@@ -142,10 +155,12 @@ func WithDefaultNodeTimeout(d time.Duration) Option {
 //
 // Example:
 //
-//	engine := graph.New(
-//	    reducer, store, emitter,
-//	    graph.WithRunWallClockBudget(5*time.Minute), // Entire workflow must complete in 5 minutes
-//	)
+// engine := graph.New(.
+//
+//	reducer, store, emitter,
+//
+// graph.WithRunWallClockBudget(5*time.Minute), // Entire workflow must complete in 5 minutes.
+// ).
 func WithRunWallClockBudget(d time.Duration) Option {
 	return func(cfg *engineConfig) error {
 		cfg.opts.RunWallClockBudget = d
@@ -157,23 +172,23 @@ func WithRunWallClockBudget(d time.Duration) Option {
 //
 // Default: false (record mode - captures I/O for later replay).
 //
-// When true, nodes with SideEffectPolicy.Recordable=true will use recorded
+// When true, nodes with SideEffectPolicy.Recordable=true will use recorded.
 // responses instead of executing live I/O. This enables:
-//   - Debugging: Replay production executions locally
-//   - Testing: Verify workflow logic without external dependencies
-//   - Auditing: Reconstruct exact execution flow from checkpoints
+// - Debugging: Replay production executions locally.
+// - Testing: Verify workflow logic without external dependencies.
+// - Auditing: Reconstruct exact execution flow from checkpoints.
 //
 // Requires prior execution with ReplayMode=false to record I/O.
 //
 // Example:
 //
-//	// Original execution (record mode)
-//	recordEngine := graph.New(reducer, store, emitter, graph.WithReplayMode(false))
-//	_, _ = recordEngine.Run(ctx, "run-001", initialState)
+// // Original execution (record mode).
+// recordEngine := graph.New(reducer, store, emitter, graph.WithReplayMode(false)).
+// _, _ = recordEngine.Run(ctx, "run-001", initialState).
 //
-//	// Later: replay execution
-//	replayEngine := graph.New(reducer, store, emitter, graph.WithReplayMode(true))
-//	replayedState, _ := replayEngine.ReplayRun(ctx, "run-001")
+// // Later: replay execution.
+// replayEngine := graph.New(reducer, store, emitter, graph.WithReplayMode(true)).
+// replayedState, _ := replayEngine.ReplayRun(ctx, "run-001").
 func WithReplayMode(enabled bool) Option {
 	return func(cfg *engineConfig) error {
 		cfg.opts.ReplayMode = enabled
@@ -193,11 +208,13 @@ func WithReplayMode(enabled bool) Option {
 //
 // Example:
 //
-//	engine := graph.New(
-//	    reducer, store, emitter,
-//	    graph.WithReplayMode(true),
-//	    graph.WithStrictReplay(false), // Allow replay even if logic changed
-//	)
+// engine := graph.New(.
+//
+//	reducer, store, emitter,
+//	graph.WithReplayMode(true),
+//
+// graph.WithStrictReplay(false), // Allow replay even if logic changed.
+// ).
 func WithStrictReplay(enabled bool) Option {
 	return func(cfg *engineConfig) error {
 		cfg.opts.StrictReplay = enabled
@@ -205,16 +222,16 @@ func WithStrictReplay(enabled bool) Option {
 	}
 }
 
-// ConflictPolicy defines how concurrent state updates are handled when multiple branches
+// ConflictPolicy defines how concurrent state updates are handled when multiple branches.
 // modify the same state fields.
 //
 // This is a placeholder for future CRDT (Conflict-free Replicated Data Type) support.
 // Currently only ConflictFail is supported, which returns an error on detected conflicts.
 //
 // Planned policies:
-//   - ConflictFail: Return error on conflict (default, implemented)
-//   - LastWriterWins: Last merge wins based on OrderKey
-//   - CRDT: Use conflict-free replicated data types for automatic resolution
+// - ConflictFail: Return error on conflict (default, implemented).
+// - LastWriterWins: Last merge wins based on OrderKey.
+// - CRDT: Use conflict-free replicated data types for automatic resolution.
 type ConflictPolicy int
 
 const (
@@ -239,22 +256,24 @@ const (
 //
 // Example:
 //
-//	engine := graph.New(
-//	    reducer, store, emitter,
-//	    graph.WithConflictPolicy(graph.ConflictFail), // Explicit error on conflicts
-//	)
+// engine := graph.New(.
+//
+//	reducer, store, emitter,
+//
+// graph.WithConflictPolicy(graph.ConflictFail), // Explicit error on conflicts.
+// ).
 func WithConflictPolicy(policy ConflictPolicy) Option {
 	return func(cfg *engineConfig) error {
-		// Currently only ConflictFail is supported
-		// Future: Implement LastWriterWins and ConflictCRDT
+		// Currently only ConflictFail is supported.
+		// Future: Implement LastWriterWins and ConflictCRDT.
 		if policy != ConflictFail {
 			return &EngineError{
 				Message: "only ConflictFail policy is currently supported",
 				Code:    "UNSUPPORTED_CONFLICT_POLICY",
 			}
 		}
-		// Note: Options struct doesn't have ConflictPolicy field yet
-		// This is reserved for future use when field is added
+		// Note: Options struct doesn't have ConflictPolicy field yet.
+		// This is reserved for future use when field is added.
 		return nil
 	}
 }

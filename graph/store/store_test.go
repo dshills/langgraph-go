@@ -1,3 +1,4 @@
+// Package store provides persistence implementations for graph state.
 package store
 
 import (
@@ -16,7 +17,7 @@ type TestState struct {
 
 // TestStore_InterfaceContract verifies Store[S] interface can be implemented (T027).
 func TestStore_InterfaceContract(t *testing.T) {
-	// Verify interface can be declared
+	// Verify interface can be declared.
 	var _ Store[TestState] = (*mockStore)(nil)
 }
 
@@ -26,7 +27,7 @@ type mockStore struct {
 	checkpoints map[string]Checkpoint[TestState]
 }
 
-func (m *mockStore) SaveStep(ctx context.Context, runID string, step int, nodeID string, state TestState) error {
+func (m *mockStore) SaveStep(_ context.Context, runID string, step int, nodeID string, state TestState) error {
 	if m.steps == nil {
 		m.steps = make(map[string][]StepRecord[TestState])
 	}
@@ -38,7 +39,7 @@ func (m *mockStore) SaveStep(ctx context.Context, runID string, step int, nodeID
 	return nil
 }
 
-func (m *mockStore) LoadLatest(ctx context.Context, runID string) (TestState, int, error) {
+func (m *mockStore) LoadLatest(_ context.Context, runID string) (TestState, int, error) {
 	steps, exists := m.steps[runID]
 	if !exists || len(steps) == 0 {
 		return TestState{}, 0, ErrNotFound
@@ -47,7 +48,7 @@ func (m *mockStore) LoadLatest(ctx context.Context, runID string) (TestState, in
 	return latest.State, latest.Step, nil
 }
 
-func (m *mockStore) SaveCheckpoint(ctx context.Context, cpID string, state TestState, step int) error {
+func (m *mockStore) SaveCheckpoint(_ context.Context, cpID string, state TestState, step int) error {
 	if m.checkpoints == nil {
 		m.checkpoints = make(map[string]Checkpoint[TestState])
 	}
@@ -59,7 +60,7 @@ func (m *mockStore) SaveCheckpoint(ctx context.Context, cpID string, state TestS
 	return nil
 }
 
-func (m *mockStore) LoadCheckpoint(ctx context.Context, cpID string) (TestState, int, error) {
+func (m *mockStore) LoadCheckpoint(_ context.Context, cpID string) (TestState, int, error) {
 	cp, exists := m.checkpoints[cpID]
 	if !exists {
 		return TestState{}, 0, ErrNotFound
@@ -68,28 +69,28 @@ func (m *mockStore) LoadCheckpoint(ctx context.Context, cpID string) (TestState,
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) SaveCheckpointV2(ctx context.Context, checkpoint CheckpointV2[TestState]) error {
+func (m *mockStore) SaveCheckpointV2(_ context.Context, checkpoint CheckpointV2[TestState]) error {
 	return nil
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (CheckpointV2[TestState], error) {
+func (m *mockStore) LoadCheckpointV2(_ context.Context, runID string, stepID int) (CheckpointV2[TestState], error) {
 	var zero CheckpointV2[TestState]
 	return zero, ErrNotFound
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) CheckIdempotency(ctx context.Context, key string) (bool, error) {
+func (m *mockStore) CheckIdempotency(_ context.Context, key string) (bool, error) {
 	return false, nil
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error) {
+func (m *mockStore) PendingEvents(_ context.Context, limit int) ([]emit.Event, error) {
 	return nil, nil
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) MarkEventsEmitted(ctx context.Context, eventIDs []string) error {
+func (m *mockStore) MarkEventsEmitted(_ context.Context, eventIDs []string) error {
 	return nil
 }
 
@@ -103,7 +104,7 @@ func TestStore_SaveStep(t *testing.T) {
 		t.Fatalf("SaveStep failed: %v", err)
 	}
 
-	// Verify step was saved
+	// Verify step was saved.
 	steps, exists := store.steps["run-001"]
 	if !exists {
 		t.Fatal("expected steps to be saved for run-001")
@@ -124,12 +125,12 @@ func TestStore_LoadLatest(t *testing.T) {
 	ctx := context.Background()
 	store := &mockStore{}
 
-	// Save multiple steps
+	// Save multiple steps.
 	_ = store.SaveStep(ctx, "run-001", 1, "node1", TestState{Value: "step1"})
 	_ = store.SaveStep(ctx, "run-001", 2, "node2", TestState{Value: "step2"})
 	_ = store.SaveStep(ctx, "run-001", 3, "node3", TestState{Value: "step3"})
 
-	// Load latest
+	// Load latest.
 	state, step, err := store.LoadLatest(ctx, "run-001")
 	if err != nil {
 		t.Fatalf("LoadLatest failed: %v", err)
@@ -164,7 +165,7 @@ func TestStore_SaveCheckpoint(t *testing.T) {
 		t.Fatalf("SaveCheckpoint failed: %v", err)
 	}
 
-	// Verify checkpoint was saved
+	// Verify checkpoint was saved.
 	cp, exists := store.checkpoints["cp-001"]
 	if !exists {
 		t.Fatal("expected checkpoint cp-001 to exist")
@@ -182,10 +183,10 @@ func TestStore_LoadCheckpoint(t *testing.T) {
 	ctx := context.Background()
 	store := &mockStore{}
 
-	// Save checkpoint
+	// Save checkpoint.
 	_ = store.SaveCheckpoint(ctx, "cp-001", TestState{Value: "restored"}, 10)
 
-	// Load checkpoint
+	// Load checkpoint.
 	state, step, err := store.LoadCheckpoint(ctx, "cp-001")
 	if err != nil {
 		t.Fatalf("LoadCheckpoint failed: %v", err)

@@ -123,7 +123,7 @@ type defaultClient struct {
 func (c *defaultClient) generateContent(ctx context.Context, messages []model.Message, tools []model.ToolSpec) (model.ChatOut, error) {
 	// Validate API key
 	if c.apiKey == "" {
-		return model.ChatOut{}, errors.New("Google API key is required")
+		return model.ChatOut{}, errors.New("google API key is required")
 	}
 
 	// Create Google Gemini client
@@ -147,7 +147,7 @@ func (c *defaultClient) generateContent(ctx context.Context, messages []model.Me
 	// Generate content
 	resp, err := genModel.GenerateContent(ctx, parts...)
 	if err != nil {
-		return model.ChatOut{}, fmt.Errorf("Google API error: %w", err)
+		return model.ChatOut{}, fmt.Errorf("google API error: %w", err)
 	}
 
 	// Convert response to our format

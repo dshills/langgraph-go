@@ -1,3 +1,4 @@
+// Package graph_test provides functionality for the LangGraph-Go framework.
 package graph_test
 
 import (
@@ -19,33 +20,33 @@ type PolicyTestState struct {
 
 // TestNodeTimeout (T072) verifies per-node timeout enforcement via NodePolicy.
 //
-// According to spec.md FR-014: System MUST enforce per-node timeouts via
+// According to spec.md FR-014: System MUST enforce per-node timeouts via.
 // NodePolicy.Timeout configuration.
 //
 // Requirements:
-// - When NodePolicy.Timeout is set, node execution must not exceed timeout
-// - Returns context.DeadlineExceeded when node timeout is exceeded
-// - Only the timed-out node is cancelled, not the entire workflow
-// - Other nodes continue execution normally
-// - DefaultNodeTimeout is used when NodePolicy.Timeout is zero
+// - When NodePolicy.Timeout is set, node execution must not exceed timeout.
+// - Returns context.DeadlineExceeded when node timeout is exceeded.
+// - Only the timed-out node is cancelled, not the entire workflow.
+// - Other nodes continue execution normally.
+// - DefaultNodeTimeout is used when NodePolicy.Timeout is zero.
 //
-// This test creates nodes with explicit timeouts and verifies that timeout
+// This test creates nodes with explicit timeouts and verifies that timeout.
 // enforcement works correctly at the per-node level.
 func TestNodeTimeout(t *testing.T) {
 	t.Run("enforces per-node timeout", func(t *testing.T) {
-		// Note: This test is currently pending implementation of per-node timeout
-		// enforcement (T076). The NodePolicy struct exists, but the Engine doesn't
+		// Note: This test is currently pending implementation of per-node timeout.
+		// enforcement (T076). The NodePolicy struct exists, but the Engine doesn't.
 		// yet apply per-node timeouts during execution.
 		//
 		// When T076 is implemented, this test should:
-		// 1. Create a node with NodePolicy that has Timeout=100ms
-		// 2. Node execution attempts to run for 500ms
-		// 3. Verify node is cancelled after ~100ms with context.DeadlineExceeded
-		// 4. Verify workflow continues with error handling
+		// 1. Create a node with NodePolicy that has Timeout=100ms.
+		// 2. Node execution attempts to run for 500ms.
+		// 3. Verify node is cancelled after ~100ms with context.DeadlineExceeded.
+		// 4. Verify workflow continues with error handling.
 
 		t.Skip("Pending implementation of per-node timeout enforcement (T076)")
 
-		// Create reducer
+		// Create reducer.
 		reducer := func(prev, delta PolicyTestState) PolicyTestState {
 			prev.Counter += delta.Counter
 			if delta.Value != "" {
@@ -54,7 +55,7 @@ func TestNodeTimeout(t *testing.T) {
 			return prev
 		}
 
-		// Create engine
+		// Create engine.
 		st := store.NewMemStore[PolicyTestState]()
 		emitter := emit.NewNullEmitter()
 		opts := graph.Options{
@@ -65,31 +66,31 @@ func TestNodeTimeout(t *testing.T) {
 
 		// TODO: Create node with explicit timeout policy
 		// The node should implement:
-		// - A Policy() method that returns NodePolicy with Timeout=100ms
-		// - A Run() method that attempts to run for 500ms
-		// - The engine should cancel it after 100ms (per NodePolicy.Timeout)
+		// - A Policy() method that returns NodePolicy with Timeout=100ms.
+		// - A Run() method that attempts to run for 500ms.
+		// - The engine should cancel it after 100ms (per NodePolicy.Timeout).
 		//
 		// Example (when implemented):
-		// type TimedNode struct {
-		//     timeout time.Duration
-		// }
-		// func (n *TimedNode) Policy() NodePolicy {
-		//     return NodePolicy{Timeout: n.timeout}
-		// }
-		// func (n *TimedNode) Run(ctx context.Context, s PolicyTestState) NodeResult[PolicyTestState] {
-		//     select {
+		// type TimedNode struct {.
+		// timeout time.Duration.
+		// }.
+		// func (n *TimedNode) Policy() NodePolicy {.
+		// return NodePolicy{Timeout: n.timeout}.
+		// }.
+		// func (n *TimedNode) Run(ctx context.Context, s PolicyTestState) NodeResult[PolicyTestState] {.
+		// select {.
 		//     case <-time.After(500 * time.Millisecond):
-		//         return NodeResult[PolicyTestState]{Delta: PolicyTestState{Counter: 1}, Route: Stop()}
+		// return NodeResult[PolicyTestState]{Delta: PolicyTestState{Counter: 1}, Route: Stop()}.
 		//     case <-ctx.Done():
-		//         return NodeResult[PolicyTestState]{Err: ctx.Err()}
-		//     }
-		// }
+		// return NodeResult[PolicyTestState]{Err: ctx.Err()}.
+		// }.
+		// }.
 
-		// Execute and verify timeout
+		// Execute and verify timeout.
 		ctx := context.Background()
 		_, err := engine.Run(ctx, "node-timeout-test", PolicyTestState{})
 
-		// Should get timeout error
+		// Should get timeout error.
 		if err == nil {
 			t.Fatal("expected timeout error, got nil")
 		}
@@ -101,45 +102,45 @@ func TestNodeTimeout(t *testing.T) {
 	t.Run("uses DefaultNodeTimeout when Policy().Timeout is zero", func(t *testing.T) {
 		t.Skip("Pending implementation of per-node timeout enforcement (T076)")
 
-		// This test verifies that when a node doesn't specify a timeout
-		// (NodePolicy.Timeout == 0), the engine uses Options.DefaultNodeTimeout
+		// This test verifies that when a node doesn't specify a timeout.
+		// (NodePolicy.Timeout == 0), the engine uses Options.DefaultNodeTimeout.
 
 		// TODO: Implement when T076 is complete
-		// 1. Create engine with DefaultNodeTimeout=100ms
-		// 2. Create node with no explicit timeout (Policy().Timeout == 0)
-		// 3. Node attempts to run for 500ms
-		// 4. Verify node is cancelled after ~100ms (using default)
+		// 1. Create engine with DefaultNodeTimeout=100ms.
+		// 2. Create node with no explicit timeout (Policy().Timeout == 0).
+		// 3. Node attempts to run for 500ms.
+		// 4. Verify node is cancelled after ~100ms (using default).
 	})
 
 	t.Run("different nodes have independent timeouts", func(t *testing.T) {
 		t.Skip("Pending implementation of per-node timeout enforcement (T076)")
 
 		// This test verifies that node timeouts are independent:
-		// - Node A has 50ms timeout
-		// - Node B has 200ms timeout
-		// - Node A times out but Node B completes successfully
+		// - Node A has 50ms timeout.
+		// - Node B has 200ms timeout.
+		// - Node A times out but Node B completes successfully.
 
 		// TODO: Implement when T076 is complete
-		// 1. Create two nodes with different timeouts
-		// 2. Execute workflow A -> B
-		// 3. Verify A times out but B completes
+		// 1. Create two nodes with different timeouts.
+		// 2. Execute workflow A -> B.
+		// 3. Verify A times out but B completes.
 	})
 
 	t.Run("no timeout when Policy().Timeout and DefaultNodeTimeout are zero", func(t *testing.T) {
 		t.Skip("Pending implementation of per-node timeout enforcement (T076)")
 
-		// This test verifies that nodes can run indefinitely when no timeout
-		// is configured (both Policy().Timeout and DefaultNodeTimeout are zero)
+		// This test verifies that nodes can run indefinitely when no timeout.
+		// is configured (both Policy().Timeout and DefaultNodeTimeout are zero).
 
 		// TODO: Implement when T076 is complete
-		// 1. Create engine with DefaultNodeTimeout=0
-		// 2. Create node with Policy().Timeout=0
-		// 3. Node runs for reasonable time (100ms)
-		// 4. Verify node completes without timeout
+		// 1. Create engine with DefaultNodeTimeout=0.
+		// 2. Create node with Policy().Timeout=0.
+		// 3. Node runs for reasonable time (100ms).
+		// 4. Verify node completes without timeout.
 	})
 }
 
-// TestRetryAttempts verifies that nodes are retried up to MaxAttempts times
+// TestRetryAttempts verifies that nodes are retried up to MaxAttempts times.
 // when encountering retryable errors (T082).
 func TestRetryAttempts(t *testing.T) {
 	tests := []struct {
@@ -197,28 +198,28 @@ func TestRetryAttempts(t *testing.T) {
 				BaseDelay:   1 * time.Millisecond, // Small delay for testing
 				MaxDelay:    10 * time.Millisecond,
 				Retryable: func(err error) bool {
-					// Treat all errors as retryable for this test
+					// Treat all errors as retryable for this test.
 					return true
 				},
 			}
 
-			// Simulate retry logic that would happen in the engine
+			// Simulate retry logic that would happen in the engine.
 			var finalErr error
 			for attempt := 0; attempt < tt.maxAttempts; attempt++ {
 				attemptCount++
 
-				// Simulate node execution
+				// Simulate node execution.
 				if attemptCount <= tt.failureCount {
 					finalErr = errors.New("transient failure")
 					continue
 				}
 
-				// Node succeeded
+				// Node succeeded.
 				finalErr = nil
 				break
 			}
 
-			// Check if we exceeded MaxAttempts
+			// Check if we exceeded MaxAttempts.
 			if finalErr != nil && attemptCount >= tt.maxAttempts {
 				finalErr = errors.New("MAX_ATTEMPTS_EXCEEDED")
 			}
@@ -239,7 +240,7 @@ func TestRetryAttempts(t *testing.T) {
 				}
 			}
 
-			// Verify policy configuration is valid
+			// Verify policy configuration is valid.
 			if policy.MaxAttempts < 1 {
 				t.Errorf("RetryPolicy.MaxAttempts must be >= 1, got %d", policy.MaxAttempts)
 			}
@@ -250,7 +251,7 @@ func TestRetryAttempts(t *testing.T) {
 	}
 }
 
-// TestExponentialBackoff verifies that the backoff formula follows exponential growth
+// TestExponentialBackoff verifies that the backoff formula follows exponential growth.
 // with jitter: delay = base * 2^attempt + jitter(0, base) (T083).
 func TestExponentialBackoff(t *testing.T) {
 	tests := []struct {
@@ -314,29 +315,29 @@ func TestExponentialBackoff(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// We can't test the actual computeBackoff function until it's implemented,
-			// but we can test the expected behavior based on the formula from research.md
+			// but we can test the expected behavior based on the formula from research.md.
 
-			// Expected exponential delay: base * 2^attempt
+			// Expected exponential delay: base * 2^attempt.
 			exponentialDelay := tt.baseDelay * (1 << tt.attempt)
 
-			// Cap at maxDelay
+			// Cap at maxDelay.
 			if exponentialDelay > tt.maxDelay {
 				exponentialDelay = tt.maxDelay
 			}
 
-			// Verify expected delay matches test case expectations
+			// Verify expected delay matches test case expectations.
 			if exponentialDelay < tt.wantMin {
 				t.Errorf("exponential delay = %v, want >= %v", exponentialDelay, tt.wantMin)
 			}
 
-			// The actual delay would be exponentialDelay + jitter(0, baseDelay)
-			// So maximum possible delay is exponentialDelay + baseDelay
+			// The actual delay would be exponentialDelay + jitter(0, baseDelay).
+			// So maximum possible delay is exponentialDelay + baseDelay.
 			maxPossibleDelay := exponentialDelay + tt.baseDelay
 			if maxPossibleDelay != tt.wantMax {
 				t.Errorf("max possible delay = %v, want %v", maxPossibleDelay, tt.wantMax)
 			}
 
-			// For capped delays, verify that exponential growth was actually exceeded
+			// For capped delays, verify that exponential growth was actually exceeded.
 			if tt.attempt >= 10 {
 				uncappedDelay := tt.baseDelay * (1 << tt.attempt)
 				if uncappedDelay <= tt.maxDelay {
@@ -348,10 +349,10 @@ func TestExponentialBackoff(t *testing.T) {
 	}
 }
 
-// TestRetryableError verifies that the Retryable predicate correctly classifies
+// TestRetryableError verifies that the Retryable predicate correctly classifies.
 // errors as retryable or non-retryable (T084).
 func TestRetryableError(t *testing.T) {
-	// Define common error types
+	// Define common error types.
 	var (
 		networkErr    = errors.New("network: connection refused")
 		timeoutErr    = errors.New("context deadline exceeded")
@@ -478,7 +479,7 @@ func TestRetryableError(t *testing.T) {
 	}
 }
 
-// TestMaxAttemptsExceeded verifies that retry attempts stop when MaxAttempts
+// TestMaxAttemptsExceeded verifies that retry attempts stop when MaxAttempts.
 // is reached and ErrMaxAttemptsExceeded is raised (T085).
 func TestMaxAttemptsExceeded(t *testing.T) {
 	tests := []struct {

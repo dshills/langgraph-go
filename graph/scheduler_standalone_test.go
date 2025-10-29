@@ -1,3 +1,4 @@
+// Package graph provides the core graph execution engine for LangGraph-Go.
 package graph
 
 import (
@@ -7,8 +8,8 @@ import (
 	"time"
 )
 
-// Standalone tests for scheduler implementation (T028-T032)
-// These tests don't depend on engine.go to avoid compilation issues
+// Standalone tests for scheduler implementation (T028-T032).
+// These tests don't depend on engine.go to avoid compilation issues.
 
 func TestComputeOrderKeyStandalone(t *testing.T) {
 	t.Run("deterministic", func(t *testing.T) {
@@ -49,7 +50,7 @@ func TestFrontierStandalone(t *testing.T) {
 		ctx := context.Background()
 		f := NewFrontier[testState](ctx, 10)
 
-		// Enqueue items with different order keys
+		// Enqueue items with different order keys.
 		items := []WorkItem[testState]{
 			{OrderKey: 300, NodeID: "node3", StepID: 1},
 			{OrderKey: 100, NodeID: "node1", StepID: 1},
@@ -62,12 +63,12 @@ func TestFrontierStandalone(t *testing.T) {
 			}
 		}
 
-		// Verify length
+		// Verify length.
 		if f.Len() != 3 {
 			t.Errorf("Expected length 3, got %d", f.Len())
 		}
 
-		// Dequeue and verify order
+		// Dequeue and verify order.
 		for i, expectedKey := range []uint64{100, 200, 300} {
 			item, err := f.Dequeue(ctx)
 			if err != nil {
@@ -78,7 +79,7 @@ func TestFrontierStandalone(t *testing.T) {
 			}
 		}
 
-		// Verify empty
+		// Verify empty.
 		if f.Len() != 0 {
 			t.Errorf("Expected empty frontier, got length %d", f.Len())
 		}
@@ -88,7 +89,7 @@ func TestFrontierStandalone(t *testing.T) {
 		ctx := context.Background()
 		f := NewFrontier[testState](ctx, 2)
 
-		// Fill the queue
+		// Fill the queue.
 		for i := 0; i < 2; i++ {
 			item := WorkItem[testState]{OrderKey: uint64(i), NodeID: "node", StepID: i}
 			if err := f.Enqueue(ctx, item); err != nil {
@@ -96,7 +97,7 @@ func TestFrontierStandalone(t *testing.T) {
 			}
 		}
 
-		// Try to enqueue one more with timeout
+		// Try to enqueue one more with timeout.
 		timeoutCtx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
 		defer cancel()
 
@@ -113,14 +114,14 @@ func TestFrontierStandalone(t *testing.T) {
 
 		cancel() // Cancel immediately
 
-		// Enqueue should fail
+		// Enqueue should fail.
 		item := WorkItem[testState]{OrderKey: 100, NodeID: "node", StepID: 1}
 		err := f.Enqueue(ctx, item)
 		if !errors.Is(err, context.Canceled) {
 			t.Errorf("Expected Canceled, got %v", err)
 		}
 
-		// Dequeue should fail
+		// Dequeue should fail.
 		_, err = f.Dequeue(ctx)
 		if !errors.Is(err, context.Canceled) {
 			t.Errorf("Expected Canceled, got %v", err)
@@ -134,7 +135,7 @@ func TestFrontierStandalone(t *testing.T) {
 		const numItems = 20
 		done := make(chan bool)
 
-		// Start dequeuing
+		// Start dequeuing.
 		go func() {
 			for i := 0; i < numItems; i++ {
 				_, err := f.Dequeue(ctx)
@@ -145,7 +146,7 @@ func TestFrontierStandalone(t *testing.T) {
 			done <- true
 		}()
 
-		// Enqueue items
+		// Enqueue items.
 		for i := 0; i < numItems; i++ {
 			item := WorkItem[testState]{
 				OrderKey: uint64(i * 10),
@@ -157,15 +158,15 @@ func TestFrontierStandalone(t *testing.T) {
 			}
 		}
 
-		// Wait for completion
+		// Wait for completion.
 		select {
 		case <-done:
-			// Success
+			// Success.
 		case <-time.After(2 * time.Second):
 			t.Fatal("Test timed out")
 		}
 
-		// Verify empty
+		// Verify empty.
 		if f.Len() != 0 {
 			t.Errorf("Expected empty frontier, got length %d", f.Len())
 		}

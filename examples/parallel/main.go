@@ -1,3 +1,4 @@
+// Package main demonstrates usage of the LangGraph-Go framework.
 package main
 
 import (
@@ -15,18 +16,18 @@ import (
 type simpleEmitter struct{}
 
 func (e *simpleEmitter) Emit(event emit.Event) {
-	// Silent emitter for cleaner demo output
-	// In production, you might log to stdout, file, or observability platform
+	// Silent emitter for cleaner demo output.
+	// In production, you might log to stdout, file, or observability platform.
 }
 
-func (e *simpleEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+func (e *simpleEmitter) EmitBatch(_ context.Context, events []emit.Event) error {
 	for _, event := range events {
 		e.Emit(event)
 	}
 	return nil
 }
 
-func (e *simpleEmitter) Flush(ctx context.Context) error {
+func (e *simpleEmitter) Flush(_ context.Context) error {
 	return nil
 }
 
@@ -40,9 +41,9 @@ type ProcessingState struct {
 func main() {
 	fmt.Println("=== LangGraph-Go Parallel Execution Example ===")
 
-	// Define reducer that combines results from parallel branches
+	// Define reducer that combines results from parallel branches.
 	reducer := func(prev, delta ProcessingState) ProcessingState {
-		// Merge results from parallel branches
+		// Merge results from parallel branches.
 		if len(delta.Results) > 0 {
 			prev.Results = append(prev.Results, delta.Results...)
 		}
@@ -50,13 +51,13 @@ func main() {
 		return prev
 	}
 
-	// Create engine components
+	// Create engine components.
 	st := store.NewMemStore[ProcessingState]()
 	emitter := &simpleEmitter{}
 	opts := graph.Options{MaxSteps: 100}
 	engine := graph.New(reducer, st, emitter, opts)
 
-	// Entry node: Fan out to 4 parallel processing branches
+	// Entry node: Fan out to 4 parallel processing branches.
 	fanout := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
 		fmt.Printf("📤 Fanout: Splitting '%s' into 4 parallel branches\n", s.Input)
 		return graph.NodeResult[ProcessingState]{
@@ -66,7 +67,7 @@ func main() {
 		}
 	})
 
-	// Branch 1: Convert to uppercase
+	// Branch 1: Convert to uppercase.
 	uppercase := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
 		time.Sleep(100 * time.Millisecond) // Simulate processing
 		result := fmt.Sprintf("UPPERCASE: %s", s.Input)
@@ -77,7 +78,7 @@ func main() {
 		}
 	})
 
-	// Branch 2: Convert to lowercase
+	// Branch 2: Convert to lowercase.
 	lowercase := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
 		time.Sleep(150 * time.Millisecond) // Simulate processing
 		result := fmt.Sprintf("lowercase: %s", s.Input)
@@ -88,7 +89,7 @@ func main() {
 		}
 	})
 
-	// Branch 3: Reverse the string
+	// Branch 3: Reverse the string.
 	reverse := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
 		time.Sleep(120 * time.Millisecond) // Simulate processing
 		runes := []rune(s.Input)
@@ -103,7 +104,7 @@ func main() {
 		}
 	})
 
-	// Branch 4: Count characters
+	// Branch 4: Count characters.
 	count := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
 		time.Sleep(80 * time.Millisecond) // Simulate processing
 		result := fmt.Sprintf("length: %d characters", len(s.Input))
@@ -114,7 +115,7 @@ func main() {
 		}
 	})
 
-	// Build the workflow graph
+	// Build the workflow graph.
 	if err := engine.Add("fanout", fanout); err != nil {
 		log.Fatalf("Failed to add fanout node: %v", err)
 	}
@@ -135,7 +136,7 @@ func main() {
 		log.Fatalf("Failed to set entry point: %v", err)
 	}
 
-	// Execute the workflow
+	// Execute the workflow.
 	ctx := context.Background()
 	initialState := ProcessingState{
 		Input: "LangGraph-Go",
@@ -151,7 +152,7 @@ func main() {
 
 	elapsed := time.Since(start)
 
-	// Display results
+	// Display results.
 	fmt.Printf("\n✅ Parallel execution completed in %v\n", elapsed)
 	fmt.Printf("\n📊 Results (merged deterministically by nodeID):\n")
 	for i, result := range finalState.Results {
@@ -159,8 +160,8 @@ func main() {
 	}
 	fmt.Printf("\nTotal branches processed: %d\n", finalState.Count)
 
-	// Note: If branches ran sequentially, total time would be ~450ms
-	// With parallel execution, total time should be ~150ms (longest branch)
+	// Note: If branches ran sequentially, total time would be ~450ms.
+	// With parallel execution, total time should be ~150ms (longest branch).
 	if elapsed < 200*time.Millisecond {
 		fmt.Println("\n🚀 Parallelism verified! All branches executed concurrently.")
 	} else {

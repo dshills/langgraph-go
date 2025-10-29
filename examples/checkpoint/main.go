@@ -1,3 +1,4 @@
+// Package main demonstrates usage of the LangGraph-Go framework.
 package main
 
 import (
@@ -23,9 +24,9 @@ func main() {
 	fmt.Println("================================")
 	fmt.Println()
 
-	// Create reducer to merge state updates
+	// Create reducer to merge state updates.
 	reducer := func(prev, delta WorkflowState) WorkflowState {
-		// Merge non-zero fields from delta into prev
+		// Merge non-zero fields from delta into prev.
 		if delta.Query != "" {
 			prev.Query = delta.Query
 		}
@@ -41,17 +42,17 @@ func main() {
 		return prev
 	}
 
-	// Create in-memory store for state persistence
+	// Create in-memory store for state persistence.
 	st := store.NewMemStore[WorkflowState]()
 
-	// Create simple emitter for observability
+	// Create simple emitter for observability.
 	emitter := &simpleEmitter{}
 
-	// Create engine
+	// Create engine.
 	engine := graph.New(reducer, st, emitter, graph.Options{MaxSteps: 10})
 
-	// Define the 3-node workflow
-	// Node 1: Parse Query
+	// Define the 3-node workflow.
+	// Node 1: Parse Query.
 	parseNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Printf("Node 1: Parsing query: %q\n", s.Query)
 		return graph.NodeResult[WorkflowState]{
@@ -63,7 +64,7 @@ func main() {
 		}
 	})
 
-	// Node 2: Process Request
+	// Node 2: Process Request.
 	processNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Printf("Node 2: Processing request from step %d\n", s.Step)
 		return graph.NodeResult[WorkflowState]{
@@ -75,7 +76,7 @@ func main() {
 		}
 	})
 
-	// Node 3: Finalize Result
+	// Node 3: Finalize Result.
 	finalizeNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Printf("Node 3: Finalizing result from step %d\n", s.Step)
 		return graph.NodeResult[WorkflowState]{
@@ -88,7 +89,7 @@ func main() {
 		}
 	})
 
-	// Add nodes to engine
+	// Add nodes to engine.
 	if err := engine.Add("parse", parseNode); err != nil {
 		log.Fatalf("Failed to add parse node: %v", err)
 	}
@@ -99,12 +100,12 @@ func main() {
 		log.Fatalf("Failed to add finalize node: %v", err)
 	}
 
-	// Set starting node
+	// Set starting node.
 	if err := engine.StartAt("parse"); err != nil {
 		log.Fatalf("Failed to set start node: %v", err)
 	}
 
-	// Example 1: Run complete workflow
+	// Example 1: Run complete workflow.
 	fmt.Println("Example 1: Running complete 3-node workflow")
 	fmt.Println("-------------------------------------------")
 
@@ -122,11 +123,11 @@ func main() {
 	fmt.Printf("Final state: %+v\n", finalState)
 	fmt.Println()
 
-	// Example 2: Checkpoint and resume
+	// Example 2: Checkpoint and resume.
 	fmt.Println("Example 2: Checkpoint and Resume")
 	fmt.Println("----------------------------------")
 
-	// Run workflow and create checkpoint after node 2
+	// Run workflow and create checkpoint after node 2.
 	initialState2 := WorkflowState{
 		Query: "How do I use checkpoints?",
 	}
@@ -136,14 +137,14 @@ func main() {
 		log.Fatalf("Workflow failed: %v", err)
 	}
 
-	// Save checkpoint
+	// Save checkpoint.
 	fmt.Println("\nSaving checkpoint after workflow completes...")
 	if err := engine.SaveCheckpoint(ctx, "run-002", "checkpoint-001"); err != nil {
 		log.Fatalf("Failed to save checkpoint: %v", err)
 	}
 	fmt.Println("Checkpoint saved: checkpoint-001")
 
-	// Resume from checkpoint with different query
+	// Resume from checkpoint with different query.
 	fmt.Println("\nResuming from checkpoint with new execution...")
 	resumedState, err := engine.ResumeFromCheckpoint(ctx, "checkpoint-001", "run-003", "parse")
 	if err != nil {
@@ -167,13 +168,13 @@ func (e *simpleEmitter) Emit(event emit.Event) {
 	}
 }
 
-func (e *simpleEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+func (e *simpleEmitter) EmitBatch(_ context.Context, events []emit.Event) error {
 	for _, event := range events {
 		e.Emit(event)
 	}
 	return nil
 }
 
-func (e *simpleEmitter) Flush(ctx context.Context) error {
+func (e *simpleEmitter) Flush(_ context.Context) error {
 	return nil
 }

@@ -1,3 +1,4 @@
+// Package emit provides event emission and observability for graph execution.
 package emit
 
 import (
@@ -30,7 +31,7 @@ func TestLogEmitter_StructuredOutput(t *testing.T) {
 			t.Fatal("expected output, got empty string")
 		}
 
-		// Verify all fields are present in output
+		// Verify all fields are present in output.
 		if !strings.Contains(output, "test-run-001") {
 			t.Errorf("expected output to contain RunID 'test-run-001', got: %s", output)
 		}
@@ -99,13 +100,13 @@ func TestLogEmitter_JSONFormatting(t *testing.T) {
 			t.Fatal("expected JSON output, got empty string")
 		}
 
-		// Verify it's valid JSON by parsing
+		// Verify it's valid JSON by parsing.
 		var parsed map[string]interface{}
 		if err := json.Unmarshal([]byte(output), &parsed); err != nil {
 			t.Fatalf("expected valid JSON, got error: %v\nOutput: %s", err, output)
 		}
 
-		// Verify all fields are present
+		// Verify all fields are present.
 		if parsed["runID"] != "json-run-001" {
 			t.Errorf("expected runID 'json-run-001', got %v", parsed["runID"])
 		}
@@ -119,7 +120,7 @@ func TestLogEmitter_JSONFormatting(t *testing.T) {
 			t.Errorf("expected msg 'node_end', got %v", parsed["msg"])
 		}
 
-		// Verify meta is present
+		// Verify meta is present.
 		meta, ok := parsed["meta"].(map[string]interface{})
 		if !ok {
 			t.Fatal("expected meta to be a map")
@@ -148,7 +149,7 @@ func TestLogEmitter_JSONFormatting(t *testing.T) {
 			t.Errorf("expected 2 lines of JSON, got %d", len(lines))
 		}
 
-		// Verify each line is valid JSON
+		// Verify each line is valid JSON.
 		for i, line := range lines {
 			var parsed map[string]interface{}
 			if err := json.Unmarshal([]byte(line), &parsed); err != nil {

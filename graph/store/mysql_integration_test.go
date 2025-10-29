@@ -1,3 +1,4 @@
+// Package store provides persistence implementations for graph state.
 package store
 
 import (
@@ -8,23 +9,23 @@ import (
 	"time"
 )
 
-// T191: MySQL Integration Test with Real Database
+// T191: MySQL Integration Test with Real Database.
 //
 // This test validates the MySQLStore implementation against a real MySQL database.
 // It tests the complete workflow persistence and resumption scenario.
 //
 // Prerequisites:
-//   - MySQL server running (local, Docker, or cloud)
-//   - TEST_MYSQL_DSN environment variable set with connection string
-//   - Database user has CREATE, INSERT, SELECT, UPDATE, DELETE permissions
+// - MySQL server running (local, Docker, or cloud).
+// - TEST_MYSQL_DSN environment variable set with connection string.
+// - Database user has CREATE, INSERT, SELECT, UPDATE, DELETE permissions.
 //
-// Example DSN: "user:password@tcp(localhost:3306)/test_db?parseTime=true"
+// Example DSN: "user:password@tcp(localhost:3306)/test_db?parseTime=true".
 //
 // To run this test:
-//   export TEST_MYSQL_DSN="user:password@tcp(localhost:3306)/test_db?parseTime=true"
-//   go test -v -run TestMySQLIntegration ./graph/store
+// export TEST_MYSQL_DSN="user:password@tcp(localhost:3306)/test_db?parseTime=true".
+// go test -v -run TestMySQLIntegration ./graph/store.
 
-// WorkflowState represents a realistic workflow state for testing
+// WorkflowState represents a realistic workflow state for testing.
 type WorkflowState struct {
 	WorkflowID string
 	Steps      int
@@ -42,20 +43,20 @@ func TestMySQLIntegration(t *testing.T) {
 	t.Run("complete workflow lifecycle with checkpoints", func(t *testing.T) {
 		ctx := context.Background()
 
-		// Create store
+		// Create store.
 		store, err := NewMySQLStore[WorkflowState](dsn)
 		if err != nil {
 			t.Fatalf("Failed to create MySQLStore: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
 		// Test scenario: 5-node workflow that crashes after node 3,
-		// then resumes from checkpoint to complete
+		// then resumes from checkpoint to complete.
 
-		// Phase 1: Execute nodes 1-3, save checkpoint
+		// Phase 1: Execute nodes 1-3, save checkpoint.
 		runID := fmt.Sprintf("integration-test-%d", time.Now().UnixNano())
 
-		// Node 1
+		// Node 1.
 		state1 := WorkflowState{
 			WorkflowID: runID,
 			Steps:      1,
@@ -68,7 +69,7 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Fatalf("Failed to save step 1: %v", err)
 		}
 
-		// Node 2
+		// Node 2.
 		state2 := state1
 		state2.Steps = 2
 		state2.Data = map[string]interface{}{"node": "process", "count": 42}
@@ -78,7 +79,7 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Fatalf("Failed to save step 2: %v", err)
 		}
 
-		// Node 3 - save checkpoint before crash
+		// Node 3 - save checkpoint before crash.
 		state3 := state2
 		state3.Steps = 3
 		state3.Data = map[string]interface{}{"node": "transform", "count": 42, "transformed": true}
@@ -88,14 +89,14 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Fatalf("Failed to save step 3: %v", err)
 		}
 
-		// Save checkpoint at node 3
+		// Save checkpoint at node 3.
 		checkpointID := fmt.Sprintf("%s-before-crash", runID)
 		err = store.SaveCheckpoint(ctx, checkpointID, state3, 3)
 		if err != nil {
 			t.Fatalf("Failed to save checkpoint: %v", err)
 		}
 
-		// Verify we can load the latest state
+		// Verify we can load the latest state.
 		loadedState, loadedStep, err := store.LoadLatest(ctx, runID)
 		if err != nil {
 			t.Fatalf("Failed to load latest state: %v", err)
@@ -107,26 +108,26 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Errorf("LoadLatest state.Steps = %d, want 3", loadedState.Steps)
 		}
 
-		// Simulate crash - close store
+		// Simulate crash - close store.
 		store.Close()
 
-		// Phase 2: Resume from checkpoint
+		// Phase 2: Resume from checkpoint.
 		t.Log("Simulating process restart...")
 
-		// Create new store instance (simulating process restart)
+		// Create new store instance (simulating process restart).
 		store2, err := NewMySQLStore[WorkflowState](dsn)
 		if err != nil {
 			t.Fatalf("Failed to create MySQLStore after restart: %v", err)
 		}
-		defer store2.Close()
+		defer func() { _ = store2.Close() }()
 
-		// Load from checkpoint
+		// Load from checkpoint.
 		checkpointState, checkpointStep, err := store2.LoadCheckpoint(ctx, checkpointID)
 		if err != nil {
 			t.Fatalf("Failed to load checkpoint: %v", err)
 		}
 
-		// Verify checkpoint data
+		// Verify checkpoint data.
 		if checkpointStep != 3 {
 			t.Errorf("Checkpoint step = %d, want 3", checkpointStep)
 		}
@@ -137,7 +138,7 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Errorf("Checkpoint state.Status = %q, want %q", checkpointState.Status, "processing")
 		}
 
-		// Verify data integrity
+		// Verify data integrity.
 		if transformed, ok := checkpointState.Data["transformed"].(bool); !ok || !transformed {
 			t.Error("Checkpoint state.Data missing 'transformed' field or incorrect value")
 		}
@@ -145,7 +146,7 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Errorf("Checkpoint state.Data['count'] = %v, want 42", checkpointState.Data["count"])
 		}
 
-		// Resume execution: Node 4
+		// Resume execution: Node 4.
 		state4 := checkpointState
 		state4.Steps = 4
 		state4.Data = map[string]interface{}{
@@ -160,7 +161,7 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Fatalf("Failed to save step 4: %v", err)
 		}
 
-		// Node 5 - complete
+		// Node 5 - complete.
 		state5 := state4
 		state5.Steps = 5
 		state5.Status = "completed"
@@ -177,7 +178,7 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Fatalf("Failed to save step 5: %v", err)
 		}
 
-		// Verify final state
+		// Verify final state.
 		finalState, finalStep, err := store2.LoadLatest(ctx, runID)
 		if err != nil {
 			t.Fatalf("Failed to load final state: %v", err)
@@ -193,7 +194,7 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Errorf("Final state.Steps = %d, want 5", finalState.Steps)
 		}
 
-		// Verify result data
+		// Verify result data.
 		if result, ok := finalState.Data["result"].(string); !ok || result != "success" {
 			t.Errorf("Final state.Data['result'] = %v, want %q", finalState.Data["result"], "success")
 		}
@@ -208,15 +209,15 @@ func TestMySQLIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQLStore: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
-		// Test 3 concurrent workflows
+		// Test 3 concurrent workflows.
 		workflows := []string{"workflow-A", "workflow-B", "workflow-C"}
 		done := make(chan error, len(workflows))
 
 		for _, wfID := range workflows {
 			go func(workflowID string) {
-				// Execute 3 steps
+				// Execute 3 steps.
 				for step := 1; step <= 3; step++ {
 					state := WorkflowState{
 						WorkflowID: workflowID,
@@ -236,14 +237,14 @@ func TestMySQLIntegration(t *testing.T) {
 			}(wfID)
 		}
 
-		// Wait for all workflows to complete
+		// Wait for all workflows to complete.
 		for i := 0; i < len(workflows); i++ {
 			if err := <-done; err != nil {
 				t.Errorf("Concurrent workflow failed: %v", err)
 			}
 		}
 
-		// Verify each workflow's final state
+		// Verify each workflow's final state.
 		for _, wfID := range workflows {
 			state, step, err := store.LoadLatest(ctx, wfID)
 			if err != nil {
@@ -268,9 +269,9 @@ func TestMySQLIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQLStore: %v", err)
 		}
-		defer store.Close()
+		defer func() { _ = store.Close() }()
 
-		// Create two workflows with same checkpoint labels
+		// Create two workflows with same checkpoint labels.
 		workflow1 := fmt.Sprintf("checkpoint-test-1-%d", time.Now().UnixNano())
 		workflow2 := fmt.Sprintf("checkpoint-test-2-%d", time.Now().UnixNano())
 
@@ -290,7 +291,7 @@ func TestMySQLIntegration(t *testing.T) {
 			Timestamp:  time.Now(),
 		}
 
-		// Save checkpoints with same label
+		// Save checkpoints with same label.
 		checkpoint1ID := fmt.Sprintf("%s-milestone", workflow1)
 		checkpoint2ID := fmt.Sprintf("%s-milestone", workflow2)
 
@@ -304,19 +305,19 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Fatalf("Failed to save checkpoint for workflow2: %v", err)
 		}
 
-		// Load checkpoint for workflow1
+		// Load checkpoint for workflow1.
 		loaded1, step1, err := store.LoadCheckpoint(ctx, checkpoint1ID)
 		if err != nil {
 			t.Fatalf("Failed to load checkpoint for workflow1: %v", err)
 		}
 
-		// Load checkpoint for workflow2
+		// Load checkpoint for workflow2.
 		loaded2, step2, err := store.LoadCheckpoint(ctx, checkpoint2ID)
 		if err != nil {
 			t.Fatalf("Failed to load checkpoint for workflow2: %v", err)
 		}
 
-		// Verify isolation
+		// Verify isolation.
 		if step1 != 1 {
 			t.Errorf("Workflow1 checkpoint step = %d, want 1", step1)
 		}
@@ -331,7 +332,7 @@ func TestMySQLIntegration(t *testing.T) {
 			t.Errorf("Workflow2 checkpoint status = %q, want %q", loaded2.Status, "workflow2")
 		}
 
-		// Verify data isolation
+		// Verify data isolation.
 		if source1, ok := loaded1.Data["source"].(string); !ok || source1 != "workflow1" {
 			t.Error("Workflow1 checkpoint data corrupted or mixed with workflow2")
 		}

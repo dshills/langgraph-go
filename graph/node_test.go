@@ -1,3 +1,4 @@
+// Package graph provides the core graph execution engine for LangGraph-Go.
 package graph
 
 import (
@@ -17,7 +18,7 @@ func TestNodeInterface(t *testing.T) {
 	ctx := context.Background()
 	state := TestState{Value: "initial", Counter: 0}
 
-	// Create a simple node implementation
+	// Create a simple node implementation.
 	node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
 		return NodeResult[TestState]{
 			Delta: TestState{Value: "updated", Counter: s.Counter + 1},
@@ -25,10 +26,10 @@ func TestNodeInterface(t *testing.T) {
 		}
 	})
 
-	// Verify node can be called
+	// Verify node can be called.
 	result := node.Run(ctx, state)
 
-	// Verify result structure
+	// Verify result structure.
 	if result.Delta.Value != "updated" {
 		t.Errorf("expected Delta.Value = 'updated', got %q", result.Delta.Value)
 	}
@@ -140,8 +141,8 @@ func TestNodeResult_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// All NodeResult configurations should be valid
-			// (validation happens at Engine level, not struct level)
+			// All NodeResult configurations should be valid.
+			// (validation happens at Engine level, not struct level).
 			if !tt.valid {
 				t.Error("NodeResult should be valid")
 			}

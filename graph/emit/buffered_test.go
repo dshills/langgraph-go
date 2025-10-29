@@ -1,3 +1,4 @@
+// Package emit provides event emission and observability for graph execution.
 package emit
 
 import (
@@ -255,7 +256,7 @@ func TestBufferedEmitter_ThreadSafety(t *testing.T) {
 	t.Run("concurrent emit and read", func(t *testing.T) {
 		emitter := NewBufferedEmitter()
 
-		// Start 10 goroutines emitting events
+		// Start 10 goroutines emitting events.
 		done := make(chan bool)
 		for i := 0; i < 10; i++ {
 			go func(id int) {
@@ -270,7 +271,7 @@ func TestBufferedEmitter_ThreadSafety(t *testing.T) {
 			}(i)
 		}
 
-		// Read history concurrently
+		// Read history concurrently.
 		readDone := make(chan bool)
 		go func() {
 			for i := 0; i < 100; i++ {
@@ -280,7 +281,7 @@ func TestBufferedEmitter_ThreadSafety(t *testing.T) {
 			readDone <- true
 		}()
 
-		// Wait for all goroutines
+		// Wait for all goroutines.
 		for i := 0; i < 10; i++ {
 			<-done
 		}

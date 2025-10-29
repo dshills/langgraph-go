@@ -1,3 +1,4 @@
+// Package model provides LLM integration adapters.
 package model
 
 import (
@@ -54,7 +55,7 @@ func TestMessage_Construction(t *testing.T) {
 // TestMessage_Roles verifies standard role constants (T120).
 func TestMessage_Roles(t *testing.T) {
 	t.Run("verify role constants exist", func(t *testing.T) {
-		// Common LLM roles should be available as constants
+		// Common LLM roles should be available as constants.
 		roles := []string{
 			RoleSystem,
 			RoleUser,
@@ -95,7 +96,7 @@ func TestMessage_Conversation(t *testing.T) {
 			t.Errorf("expected 4 messages, got %d", len(conversation))
 		}
 
-		// Verify alternating user/assistant after system
+		// Verify alternating user/assistant after system.
 		if conversation[1].Role != RoleUser {
 			t.Errorf("expected second message to be user, got %q", conversation[1].Role)
 		}
@@ -113,7 +114,7 @@ func TestMessage_EmptyContent(t *testing.T) {
 			Content: "",
 		}
 
-		// Empty content is valid (e.g., for messages with only tool calls)
+		// Empty content is valid (e.g., for messages with only tool calls).
 		if msg.Role != RoleUser {
 			t.Errorf("expected Role = %q, got %q", RoleUser, msg.Role)
 		}
@@ -162,7 +163,7 @@ func TestToolSpec_Construction(t *testing.T) {
 			t.Errorf("expected Name = 'get_weather', got %q", spec.Name)
 		}
 		if spec.Schema == nil {
-			// Schema being nil is acceptable for simple tools
+			// Schema being nil is acceptable for simple tools.
 		}
 	})
 }
@@ -184,7 +185,7 @@ func TestToolSpec_JSONSchema(t *testing.T) {
 			},
 		}
 
-		// Verify schema structure
+		// Verify schema structure.
 		schemaType, ok := spec.Schema["type"].(string)
 		if !ok || schemaType != "object" {
 			t.Errorf("expected schema type = 'object', got %v", schemaType)
@@ -302,7 +303,7 @@ func TestToolCall_Structure(t *testing.T) {
 // TestChatModel_Interface verifies ChatModel interface contract (T126).
 func TestChatModel_Interface(t *testing.T) {
 	t.Run("interface can be implemented", func(t *testing.T) {
-		// Verify that a concrete type can implement ChatModel
+		// Verify that a concrete type can implement ChatModel.
 		var _ ChatModel = &testChatModel{}
 	})
 
@@ -408,8 +409,8 @@ func TestChatModel_Interface(t *testing.T) {
 		}
 
 		_, err := model.Chat(ctx, messages, nil)
-		// Implementation should check context and return error
-		// The testChatModel will verify ctx was passed
+		// Implementation should check context and return error.
+		// The testChatModel will verify ctx was passed.
 		if err != nil && ctx.Err() == nil {
 			t.Errorf("expected context-related error when cancelled")
 		}
@@ -423,7 +424,7 @@ type testChatModel struct {
 }
 
 func (m *testChatModel) Chat(ctx context.Context, messages []Message, tools []ToolSpec) (ChatOut, error) {
-	// Check context for cancellation
+	// Check context for cancellation.
 	if ctx.Err() != nil {
 		return ChatOut{}, ctx.Err()
 	}

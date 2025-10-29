@@ -935,25 +935,55 @@ func buildResearchGraph(engine *graph.Engine[ResearchState], gptModel, claudeMod
 	})
 
 	// Add all nodes with their respective models
-	engine.Add("fanout", fanout)
-	engine.Add("gpt_analysis", &GPTAnalysisNode{model: gptModel})
-	engine.Add("claude_analysis", &ClaudeAnalysisNode{model: claudeModel})
-	engine.Add("gemini_analysis", &GeminiAnalysisNode{model: geminiModel})
-	engine.Add("fetch_arxiv", &FetchArxivPapersNode{})
-	engine.Add("fetch_github", &FetchGitHubProjectsNode{})
-	engine.Add("fetch_wikipedia", &FetchWikipediaNode{})
-	engine.Add("synthesize", &SynthesizeNode{})
+	if err := engine.Add("fanout", fanout); err != nil {
+		log.Fatalf("Failed to add fanout node: %v", err)
+	}
+	if err := engine.Add("gpt_analysis", &GPTAnalysisNode{model: gptModel}); err != nil {
+		log.Fatalf("Failed to add gpt_analysis node: %v", err)
+	}
+	if err := engine.Add("claude_analysis", &ClaudeAnalysisNode{model: claudeModel}); err != nil {
+		log.Fatalf("Failed to add claude_analysis node: %v", err)
+	}
+	if err := engine.Add("gemini_analysis", &GeminiAnalysisNode{model: geminiModel}); err != nil {
+		log.Fatalf("Failed to add gemini_analysis node: %v", err)
+	}
+	if err := engine.Add("fetch_arxiv", &FetchArxivPapersNode{}); err != nil {
+		log.Fatalf("Failed to add fetch_arxiv node: %v", err)
+	}
+	if err := engine.Add("fetch_github", &FetchGitHubProjectsNode{}); err != nil {
+		log.Fatalf("Failed to add fetch_github node: %v", err)
+	}
+	if err := engine.Add("fetch_wikipedia", &FetchWikipediaNode{}); err != nil {
+		log.Fatalf("Failed to add fetch_wikipedia node: %v", err)
+	}
+	if err := engine.Add("synthesize", &SynthesizeNode{}); err != nil {
+		log.Fatalf("Failed to add synthesize node: %v", err)
+	}
 
 	// Set up routing: fanout → 6 parallel nodes → synthesize
-	engine.StartAt("fanout")
+	if err := engine.StartAt("fanout"); err != nil {
+		log.Fatalf("Failed to set start node: %v", err)
+	}
 
 	// All parallel nodes route to synthesize
-	engine.Connect("gpt_analysis", "synthesize", nil)
-	engine.Connect("claude_analysis", "synthesize", nil)
-	engine.Connect("gemini_analysis", "synthesize", nil)
-	engine.Connect("fetch_arxiv", "synthesize", nil)
-	engine.Connect("fetch_github", "synthesize", nil)
-	engine.Connect("fetch_wikipedia", "synthesize", nil)
+	if err := engine.Connect("gpt_analysis", "synthesize", nil); err != nil {
+		log.Fatalf("Failed to connect gpt_analysis to synthesize: %v", err)
+	}
+	if err := engine.Connect("claude_analysis", "synthesize", nil); err != nil {
+		log.Fatalf("Failed to connect claude_analysis to synthesize: %v", err)
+	}
+	if err := engine.Connect("gemini_analysis", "synthesize", nil); err != nil {
+		log.Fatalf("Failed to connect gemini_analysis to synthesize: %v", err)
+	}
+	if err := engine.Connect("fetch_arxiv", "synthesize", nil); err != nil {
+		log.Fatalf("Failed to connect fetch_arxiv to synthesize: %v", err)
+	}
+	if err := engine.Connect("fetch_github", "synthesize", nil); err != nil {
+		log.Fatalf("Failed to connect fetch_github to synthesize: %v", err)
+	}
+	if err := engine.Connect("fetch_wikipedia", "synthesize", nil); err != nil {
+		log.Fatalf("Failed to connect fetch_wikipedia to synthesize: %v", err)
+	}
 }
 
 func runReplayDemo(topic, depth string, maxSources int) {

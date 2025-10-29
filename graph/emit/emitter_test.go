@@ -1,3 +1,4 @@
+// Package emit provides event emission and observability for graph execution.
 package emit
 
 import (
@@ -7,7 +8,7 @@ import (
 
 // TestEmitter_InterfaceContract verifies Emitter interface can be implemented (T031).
 func TestEmitter_InterfaceContract(t *testing.T) {
-	// Verify interface can be declared
+	// Verify interface can be declared.
 	var _ Emitter = (*mockEmitter)(nil)
 }
 
@@ -24,7 +25,7 @@ func (m *mockEmitter) Emit(event Event) {
 }
 
 // TODO: Implement in Phase 8
-func (m *mockEmitter) EmitBatch(ctx context.Context, events []Event) error {
+func (m *mockEmitter) EmitBatch(_ context.Context, events []Event) error {
 	for _, event := range events {
 		m.Emit(event)
 	}
@@ -32,7 +33,7 @@ func (m *mockEmitter) EmitBatch(ctx context.Context, events []Event) error {
 }
 
 // TODO: Implement in Phase 8
-func (m *mockEmitter) Flush(ctx context.Context) error {
+func (m *mockEmitter) Flush(_ context.Context) error {
 	return nil
 }
 
@@ -115,7 +116,7 @@ func TestEmitter_Emit(t *testing.T) {
 	t.Run("emit zero value event", func(t *testing.T) {
 		emitter := &mockEmitter{}
 
-		// Zero value event should be accepted (no panic)
+		// Zero value event should be accepted (no panic).
 		emitter.Emit(Event{})
 
 		if len(emitter.events) != 1 {
@@ -127,7 +128,7 @@ func TestEmitter_Emit(t *testing.T) {
 // TestEmitter_Patterns verifies common emitter patterns.
 func TestEmitter_Patterns(t *testing.T) {
 	t.Run("buffering emitter", func(t *testing.T) {
-		// Emitters can buffer events before flushing
+		// Emitters can buffer events before flushing.
 		emitter := &mockEmitter{
 			events: make([]Event, 0, 10), // pre-allocated buffer
 		}
@@ -146,7 +147,7 @@ func TestEmitter_Patterns(t *testing.T) {
 	})
 
 	t.Run("filtering emitter", func(t *testing.T) {
-		// Emitters can filter events based on criteria
+		// Emitters can filter events based on criteria.
 		type filteringEmitter struct {
 			events      []Event
 			minLogLevel string
@@ -157,7 +158,7 @@ func TestEmitter_Patterns(t *testing.T) {
 			minLogLevel: "ERROR",
 		}
 
-		// Only emit ERROR level events
+		// Only emit ERROR level events.
 		emit := func(event Event) {
 			level, ok := event.Meta["level"].(string)
 			if ok && level == "ERROR" {

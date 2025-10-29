@@ -1,3 +1,4 @@
+// Package main demonstrates usage of the LangGraph-Go framework.
 package main
 
 import (
@@ -11,7 +12,7 @@ import (
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
-// State represents the workflow state
+// State represents the workflow state.
 type State struct {
 	UserQuery    string
 	Location     string
@@ -20,7 +21,7 @@ type State struct {
 	Summary      string
 }
 
-// Reducer merges state updates
+// Reducer merges state updates.
 func reducer(prev, delta State) State {
 	if delta.UserQuery != "" {
 		prev.UserQuery = delta.UserQuery
@@ -40,20 +41,20 @@ func reducer(prev, delta State) State {
 	return prev
 }
 
-// DemoWeatherTool is a demonstration tool that simulates a weather API
+// DemoWeatherTool is a demonstration tool that simulates a weather API.
 type DemoWeatherTool struct{}
 
 func (d *DemoWeatherTool) Name() string {
 	return "get_weather"
 }
 
-func (d *DemoWeatherTool) Call(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {
+func (d *DemoWeatherTool) Call(_ context.Context, input map[string]interface{}) (map[string]interface{}, error) {
 	location, ok := input["location"].(string)
 	if !ok || location == "" {
 		return nil, fmt.Errorf("location parameter required (string)")
 	}
 
-	// Simulate API call with mock data
+	// Simulate API call with mock data.
 	weatherData := map[string]interface{}{
 		"location":    location,
 		"temperature": 72,
@@ -65,14 +66,14 @@ func (d *DemoWeatherTool) Call(ctx context.Context, input map[string]interface{}
 	return weatherData, nil
 }
 
-// DemoNewsTool is a demonstration tool that simulates a news API
+// DemoNewsTool is a demonstration tool that simulates a news API.
 type DemoNewsTool struct{}
 
 func (d *DemoNewsTool) Name() string {
 	return "get_news"
 }
 
-func (d *DemoNewsTool) Call(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {
+func (d *DemoNewsTool) Call(_ context.Context, input map[string]interface{}) (map[string]interface{}, error) {
 	location, ok := input["location"].(string)
 	if !ok || location == "" {
 		return nil, fmt.Errorf("location parameter required (string)")
@@ -96,19 +97,19 @@ func main() {
 	fmt.Println("=== LangGraph-Go Tool Invocation Example ===")
 	fmt.Println()
 
-	// Create demo tools (custom implementations)
+	// Create demo tools (custom implementations).
 	weatherTool := &DemoWeatherTool{}
 	newsTool := &DemoNewsTool{}
 
-	// Node 1: Extract location from query
+	// Node 1: Extract location from query.
 	parseNode := graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
 		fmt.Printf("📝 Parsing query: %q\n", state.UserQuery)
 
-		// Simplified demo: Extract location from query
-		// Production implementation should use NLP or regex
+		// Simplified demo: Extract location from query.
+		// Production implementation should use NLP or regex.
 		location := "San Francisco" // Default
 		if state.UserQuery != "" {
-			// Simplified extraction - always returns New York for demo
+			// Simplified extraction - always returns New York for demo.
 			location = "New York"
 		}
 
@@ -120,11 +121,11 @@ func main() {
 		}
 	})
 
-	// Node 2: Fetch weather data using custom DemoWeatherTool
+	// Node 2: Fetch weather data using custom DemoWeatherTool.
 	fetchWeatherNode := graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
 		fmt.Printf("🌤️  Fetching weather for %s...\n", state.Location)
 
-		// Call weather tool
+		// Call weather tool.
 		result, err := weatherTool.Call(ctx, map[string]interface{}{
 			"location": state.Location,
 		})
@@ -144,11 +145,11 @@ func main() {
 		}
 	})
 
-	// Node 3: Fetch news articles using custom DemoNewsTool
+	// Node 3: Fetch news articles using custom DemoNewsTool.
 	fetchNewsNode := graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
 		fmt.Printf("📰 Fetching news for %s...\n", state.Location)
 
-		// Call news tool
+		// Call news tool.
 		result, err := newsTool.Call(ctx, map[string]interface{}{
 			"location": state.Location,
 		})
@@ -172,11 +173,11 @@ func main() {
 		}
 	})
 
-	// Node 4: Summarize results
+	// Node 4: Summarize results.
 	summarizeNode := graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
 		fmt.Println("📊 Generating summary...")
 
-		// Extract weather data with proper type checking
+		// Extract weather data with proper type checking.
 		weatherTemp := 0
 		weatherCond := "unknown"
 		if state.WeatherData != nil {
@@ -208,7 +209,7 @@ func main() {
 		}
 	})
 
-	// Build workflow
+	// Build workflow.
 	st := store.NewMemStore[State]()
 	emitter := emit.NewLogEmitter(os.Stdout, false)
 	opts := graph.Options{MaxSteps: 20}
@@ -218,9 +219,11 @@ func main() {
 	engine.Add("fetch_weather", fetchWeatherNode)
 	engine.Add("fetch_news", fetchNewsNode)
 	engine.Add("summarize", summarizeNode)
-	engine.StartAt("parse")
+	if err := engine.StartAt("parse"); err != nil {
+		log.Fatalf("failed to set start node: %v", err)
+	}
 
-	// Run workflow
+	// Run workflow.
 	ctx := context.Background()
 	initialState := State{
 		UserQuery: "What's happening in New York today?",
@@ -236,7 +239,7 @@ func main() {
 		log.Fatalf("Workflow failed: %v", err)
 	}
 
-	// Display results
+	// Display results.
 	fmt.Println("─────────────────────────────────────────────")
 	fmt.Println()
 	fmt.Println("🎉 Workflow Complete!")

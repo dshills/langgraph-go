@@ -1,3 +1,4 @@
+// Package graph provides the core graph execution engine for LangGraph-Go.
 package graph
 
 import (
@@ -13,7 +14,7 @@ import (
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
-// TestState is a simple state type for testing exactly-once semantics
+// TestState is a simple state type for testing exactly-once semantics.
 type ExactlyOnceTestState struct {
 	Counter    int    `json:"counter"`
 	Message    string `json:"message"`
@@ -21,24 +22,24 @@ type ExactlyOnceTestState struct {
 }
 
 // TestAtomicStepCommit verifies that checkpoint commits are atomic:
-// - State is persisted
-// - Frontier is persisted
-// - Idempotency key is recorded
-// - All succeed together or all roll back together
+// - State is persisted.
+// - Frontier is persisted.
+// - Idempotency key is recorded.
+// - All succeed together or all roll back together.
 //
-// This test ensures that the transactional boundary in SaveCheckpointV2
-// guarantees exactly-once semantics. If any part fails, the entire
+// This test ensures that the transactional boundary in SaveCheckpointV2.
+// guarantees exactly-once semantics. If any part fails, the entire.
 // checkpoint commit must be rolled back.
 //
 // Test scenarios:
-// 1. Normal commit: All components persisted atomically
-// 2. Idempotency violation: Duplicate key causes rollback (entire checkpoint rejected)
-// 3. Verify atomicity: Partial commits are impossible
+// 1. Normal commit: All components persisted atomically.
+// 2. Idempotency violation: Duplicate key causes rollback (entire checkpoint rejected).
+// 3. Verify atomicity: Partial commits are impossible.
 func TestAtomicStepCommit(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("successful atomic commit", func(t *testing.T) {
-		// Use MySQL store for real transaction testing
+		// Use MySQL store for real transaction testing.
 		dsn := getTestDSN(t)
 		if dsn == "" {
 			t.Skip("Skipping MySQL test: TEST_MYSQL_DSN not set")
@@ -48,9 +49,9 @@ func TestAtomicStepCommit(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer st.Close()
+		defer func() { _ = st.Close() }()
 
-		// Create a checkpoint with all components
+		// Create a checkpoint with all components.
 		initialState := ExactlyOnceTestState{Counter: 1, Message: "initial"}
 		frontier := []WorkItem[ExactlyOnceTestState]{
 			{
@@ -64,7 +65,7 @@ func TestAtomicStepCommit(t *testing.T) {
 			},
 		}
 
-		// Compute idempotency key
+		// Compute idempotency key.
 		idempotencyKey, err := computeIdempotencyKey("run-001", 1, frontier, initialState)
 		if err != nil {
 			t.Fatalf("Failed to compute idempotency key: %v", err)
@@ -82,32 +83,32 @@ func TestAtomicStepCommit(t *testing.T) {
 			Label:          "test-checkpoint",
 		}
 
-		// Save checkpoint (should succeed atomically)
+		// Save checkpoint (should succeed atomically).
 		err = st.SaveCheckpointV2(ctx, checkpoint)
 		if err != nil {
 			t.Fatalf("Failed to save checkpoint: %v", err)
 		}
 
-		// Verify all components were persisted
+		// Verify all components were persisted.
 		loaded, err := st.LoadCheckpointV2(ctx, "run-001", 1)
 		if err != nil {
 			t.Fatalf("Failed to load checkpoint: %v", err)
 		}
 
-		// Verify state
+		// Verify state.
 		if loaded.State.Counter != initialState.Counter {
 			t.Errorf("State not persisted correctly: got counter=%d, want=%d",
 				loaded.State.Counter, initialState.Counter)
 		}
 
-		// Verify frontier
+		// Verify frontier.
 		loadedFrontier, ok := loaded.Frontier.([]interface{})
 		if !ok || len(loadedFrontier) != len(frontier) {
 			t.Errorf("Frontier not persisted correctly: got length=%d, want=%d",
 				len(loadedFrontier), len(frontier))
 		}
 
-		// Verify idempotency key was recorded
+		// Verify idempotency key was recorded.
 		exists, err := st.CheckIdempotency(ctx, idempotencyKey)
 		if err != nil {
 			t.Fatalf("Failed to check idempotency: %v", err)
@@ -116,7 +117,7 @@ func TestAtomicStepCommit(t *testing.T) {
 			t.Error("Idempotency key was not recorded")
 		}
 
-		// Verify RNG seed
+		// Verify RNG seed.
 		if loaded.RNGSeed != checkpoint.RNGSeed {
 			t.Errorf("RNG seed not persisted correctly: got=%d, want=%d",
 				loaded.RNGSeed, checkpoint.RNGSeed)
@@ -133,9 +134,9 @@ func TestAtomicStepCommit(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer st.Close()
+		defer func() { _ = st.Close() }()
 
-		// Create first checkpoint
+		// Create first checkpoint.
 		state1 := ExactlyOnceTestState{Counter: 10, Message: "first"}
 		frontier1 := []WorkItem[ExactlyOnceTestState]{
 			{StepID: 2, OrderKey: 200, NodeID: "node-x", State: state1},
@@ -154,14 +155,14 @@ func TestAtomicStepCommit(t *testing.T) {
 			Timestamp:      time.Now(),
 		}
 
-		// Save first checkpoint (should succeed)
+		// Save first checkpoint (should succeed).
 		err = st.SaveCheckpointV2(ctx, checkpoint1)
 		if err != nil {
 			t.Fatalf("Failed to save first checkpoint: %v", err)
 		}
 
-		// Attempt to save checkpoint with same idempotency key
-		// This should FAIL and the entire checkpoint should be rolled back
+		// Attempt to save checkpoint with same idempotency key.
+		// This should FAIL and the entire checkpoint should be rolled back.
 		state2 := ExactlyOnceTestState{Counter: 999, Message: "duplicate attempt"}
 		checkpoint2 := store.CheckpointV2[ExactlyOnceTestState]{
 			RunID:          "run-002",
@@ -179,13 +180,13 @@ func TestAtomicStepCommit(t *testing.T) {
 			t.Fatal("Expected error for duplicate idempotency key, got nil")
 		}
 
-		// Verify second checkpoint was NOT persisted (atomic rollback)
+		// Verify second checkpoint was NOT persisted (atomic rollback).
 		_, err = st.LoadCheckpointV2(ctx, "run-002", 2)
 		if !errors.Is(err, store.ErrNotFound) {
 			t.Errorf("Second checkpoint should not exist after rollback: got error=%v", err)
 		}
 
-		// Verify first checkpoint still exists unchanged
+		// Verify first checkpoint still exists unchanged.
 		loaded, err := st.LoadCheckpointV2(ctx, "run-002", 1)
 		if err != nil {
 			t.Fatalf("First checkpoint should still exist: %v", err)
@@ -198,7 +199,7 @@ func TestAtomicStepCommit(t *testing.T) {
 	})
 
 	t.Run("in-memory store atomic semantics", func(t *testing.T) {
-		// MemStore should also provide atomic semantics
+		// MemStore should also provide atomic semantics.
 		st := store.NewMemStore[ExactlyOnceTestState]()
 
 		state := ExactlyOnceTestState{Counter: 5, Message: "memstore"}
@@ -219,13 +220,13 @@ func TestAtomicStepCommit(t *testing.T) {
 			Timestamp:      time.Now(),
 		}
 
-		// Save checkpoint
+		// Save checkpoint.
 		err := st.SaveCheckpointV2(ctx, checkpoint)
 		if err != nil {
 			t.Fatalf("Failed to save checkpoint to MemStore: %v", err)
 		}
 
-		// Verify idempotency
+		// Verify idempotency.
 		exists, err := st.CheckIdempotency(ctx, idempotencyKey)
 		if err != nil {
 			t.Fatalf("Failed to check idempotency: %v", err)
@@ -234,7 +235,7 @@ func TestAtomicStepCommit(t *testing.T) {
 			t.Error("Idempotency key not recorded in MemStore")
 		}
 
-		// Attempt duplicate
+		// Attempt duplicate.
 		err = st.SaveCheckpointV2(ctx, checkpoint)
 		if err == nil {
 			t.Error("MemStore should reject duplicate idempotency key")
@@ -242,19 +243,19 @@ func TestAtomicStepCommit(t *testing.T) {
 	})
 }
 
-// TestIdempotencyEnforcement verifies that the idempotency key prevents
+// TestIdempotencyEnforcement verifies that the idempotency key prevents.
 // duplicate checkpoint commits even under retry scenarios.
 //
 // Idempotency is critical for exactly-once semantics:
-// - Same (runID, stepID, state, frontier) → Same idempotency key
-// - Duplicate key → Commit rejected
-// - Ensures no duplicate execution of non-idempotent operations
+// - Same (runID, stepID, state, frontier) → Same idempotency key.
+// - Duplicate key → Commit rejected.
+// - Ensures no duplicate execution of non-idempotent operations.
 //
 // Test scenarios:
-// 1. Same checkpoint data produces same idempotency key
-// 2. Different step produces different key (allows progression)
-// 3. Different state produces different key (detects state changes)
-// 4. Store rejects duplicate keys atomically
+// 1. Same checkpoint data produces same idempotency key.
+// 2. Different step produces different key (allows progression).
+// 3. Different state produces different key (detects state changes).
+// 4. Store rejects duplicate keys atomically.
 func TestIdempotencyEnforcement(t *testing.T) {
 	ctx := context.Background()
 
@@ -264,7 +265,7 @@ func TestIdempotencyEnforcement(t *testing.T) {
 			{StepID: 1, OrderKey: 100, NodeID: "node-a", State: state},
 		}
 
-		// Compute key twice with same data
+		// Compute key twice with same data.
 		key1, err := computeIdempotencyKey("run-id", 1, frontier, state)
 		if err != nil {
 			t.Fatalf("Failed to compute key: %v", err)
@@ -279,7 +280,7 @@ func TestIdempotencyEnforcement(t *testing.T) {
 			t.Errorf("Same data produced different keys: %s vs %s", key1, key2)
 		}
 
-		// Verify key format
+		// Verify key format.
 		if len(key1) < 10 || key1[:7] != "sha256:" {
 			t.Errorf("Invalid key format: %s", key1)
 		}
@@ -341,7 +342,7 @@ func TestIdempotencyEnforcement(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to create MySQL store: %v", err)
 		}
-		defer st.Close()
+		defer func() { _ = st.Close() }()
 
 		state := ExactlyOnceTestState{Counter: 100, Message: "duplicate test"}
 		frontier := []WorkItem[ExactlyOnceTestState]{
@@ -361,19 +362,19 @@ func TestIdempotencyEnforcement(t *testing.T) {
 			Timestamp:      time.Now(),
 		}
 
-		// First save should succeed
+		// First save should succeed.
 		err = st.SaveCheckpointV2(ctx, checkpoint)
 		if err != nil {
 			t.Fatalf("First save failed: %v", err)
 		}
 
-		// Second save with same idempotency key should fail
+		// Second save with same idempotency key should fail.
 		err = st.SaveCheckpointV2(ctx, checkpoint)
 		if err == nil {
 			t.Fatal("Expected error for duplicate idempotency key, got nil")
 		}
 
-		// Verify only one checkpoint exists
+		// Verify only one checkpoint exists.
 		loaded, err := st.LoadCheckpointV2(ctx, "dup-run", 1)
 		if err != nil {
 			t.Fatalf("Failed to load checkpoint: %v", err)
@@ -395,7 +396,7 @@ func TestIdempotencyEnforcement(t *testing.T) {
 
 		key, _ := computeIdempotencyKey("mem-dup-run", 1, frontier, state)
 
-		// First check should return false
+		// First check should return false.
 		exists, err := st.CheckIdempotency(ctx, key)
 		if err != nil {
 			t.Fatalf("CheckIdempotency failed: %v", err)
@@ -404,7 +405,7 @@ func TestIdempotencyEnforcement(t *testing.T) {
 			t.Error("Key should not exist before first save")
 		}
 
-		// Save checkpoint
+		// Save checkpoint.
 		checkpoint := store.CheckpointV2[ExactlyOnceTestState]{
 			RunID:          "mem-dup-run",
 			StepID:         1,
@@ -421,7 +422,7 @@ func TestIdempotencyEnforcement(t *testing.T) {
 			t.Fatalf("First save failed: %v", err)
 		}
 
-		// Second check should return true
+		// Second check should return true.
 		exists, err = st.CheckIdempotency(ctx, key)
 		if err != nil {
 			t.Fatalf("CheckIdempotency failed: %v", err)
@@ -430,7 +431,7 @@ func TestIdempotencyEnforcement(t *testing.T) {
 			t.Error("Key should exist after save")
 		}
 
-		// Duplicate save should fail
+		// Duplicate save should fail.
 		err = st.SaveCheckpointV2(ctx, checkpoint)
 		if err == nil {
 			t.Error("Duplicate save should have failed")
@@ -438,21 +439,21 @@ func TestIdempotencyEnforcement(t *testing.T) {
 	})
 }
 
-// TestNoDuplicatesUnderConcurrency verifies that the exactly-once guarantees
-// hold even under high concurrency with multiple workflow executions racing
+// TestNoDuplicatesUnderConcurrency verifies that the exactly-once guarantees.
+// hold even under high concurrency with multiple workflow executions racing.
 // to commit checkpoints.
 //
 // This is the ultimate stress test for idempotency:
-// - 1000 concurrent workflow executions
-// - Each attempts to commit multiple steps
-// - Verify zero duplicate step commits
-// - Verify all steps completed exactly once
+// - 1000 concurrent workflow executions.
+// - Each attempts to commit multiple steps.
+// - Verify zero duplicate step commits.
+// - Verify all steps completed exactly once.
 //
 // Test ensures:
-// - Concurrent transactions don't create duplicates
-// - Idempotency keys prevent race conditions
-// - Database constraints enforce uniqueness
-// - State remains consistent under load
+// - Concurrent transactions don't create duplicates.
+// - Idempotency keys prevent race conditions.
+// - Database constraints enforce uniqueness.
+// - State remains consistent under load.
 func TestNoDuplicatesUnderConcurrency(t *testing.T) {
 	ctx := context.Background()
 
@@ -465,7 +466,7 @@ func TestNoDuplicatesUnderConcurrency(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create MySQL store: %v", err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	const (
 		numWorkflows      = 100 // Number of concurrent workflows
@@ -482,20 +483,20 @@ func TestNoDuplicatesUnderConcurrency(t *testing.T) {
 		semaphore         = make(chan struct{}, concurrentWorkers)
 	)
 
-	// Execute workflows concurrently
+	// Execute workflows concurrently.
 	for workflowID := 0; workflowID < numWorkflows; workflowID++ {
 		wg.Add(1)
 
 		go func(wid int) {
 			defer wg.Done()
 
-			// Acquire semaphore
+			// Acquire semaphore.
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
 			runID := formatRunID(wid)
 
-			// Execute steps in sequence
+			// Execute steps in sequence.
 			for step := 1; step <= stepsPerWorkflow; step++ {
 				state := ExactlyOnceTestState{
 					Counter:    step,
@@ -528,8 +529,8 @@ func TestNoDuplicatesUnderConcurrency(t *testing.T) {
 					Timestamp:      time.Now(),
 				}
 
-				// Simulate retries: attempt to save multiple times
-				// Only first attempt should succeed
+				// Simulate retries: attempt to save multiple times.
+				// Only first attempt should succeed.
 				committed := false
 				for retry := 0; retry < retriesPerStep; retry++ {
 					atomic.AddInt64(&totalAttempts, 1)
@@ -556,10 +557,10 @@ func TestNoDuplicatesUnderConcurrency(t *testing.T) {
 		}(workflowID)
 	}
 
-	// Wait for all workflows to complete
+	// Wait for all workflows to complete.
 	wg.Wait()
 
-	// Verify results
+	// Verify results.
 	expectedCommits := int64(numWorkflows * stepsPerWorkflow)
 
 	t.Logf("Concurrency test results:")
@@ -573,7 +574,7 @@ func TestNoDuplicatesUnderConcurrency(t *testing.T) {
 			successfulCommits, expectedCommits)
 	}
 
-	// Verify each checkpoint exists exactly once
+	// Verify each checkpoint exists exactly once.
 	for wid := 0; wid < numWorkflows; wid++ {
 		runID := formatRunID(wid)
 
@@ -585,7 +586,7 @@ func TestNoDuplicatesUnderConcurrency(t *testing.T) {
 				continue
 			}
 
-			// Verify checkpoint data integrity
+			// Verify checkpoint data integrity.
 			if loaded.State.Counter != step {
 				t.Errorf("Corrupted checkpoint: run=%s, step=%d, counter=%d",
 					runID, step, loaded.State.Counter)
@@ -598,7 +599,7 @@ func TestNoDuplicatesUnderConcurrency(t *testing.T) {
 		}
 	}
 
-	// Verify idempotency keys are all present
+	// Verify idempotency keys are all present.
 	keysChecked := 0
 	for wid := 0; wid < numWorkflows; wid++ {
 		runID := formatRunID(wid)
@@ -630,10 +631,10 @@ func TestNoDuplicatesUnderConcurrency(t *testing.T) {
 	}
 }
 
-// Helper functions
+// Helper functions.
 
 func getTestDSN(t *testing.T) string {
-	// Read from environment variable
+	// Read from environment variable.
 	dsn := os.Getenv("TEST_MYSQL_DSN")
 	return dsn
 }

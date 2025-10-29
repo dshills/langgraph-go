@@ -196,7 +196,7 @@ func (c *defaultClient) createChatCompletion(ctx context.Context, messages []mod
 
 	// Build request parameters
 	params := openaisdk.ChatCompletionNewParams{
-		Model:    openaisdk.ChatModel(c.modelName),
+		Model:    c.modelName,
 		Messages: openaiMessages,
 	}
 

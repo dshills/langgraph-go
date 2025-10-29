@@ -1,3 +1,4 @@
+// Package main demonstrates usage of the LangGraph-Go framework.
 package main
 
 import (
@@ -19,7 +20,7 @@ import (
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
-// State represents the workflow state with metrics-relevant fields
+// State represents the workflow state with metrics-relevant fields.
 type State struct {
 	Counter       int
 	LastNodeID    string
@@ -28,7 +29,7 @@ type State struct {
 	RetryCount    int
 }
 
-// Reducer merges state updates
+// Reducer merges state updates.
 func reducer(prev, delta State) State {
 	if delta.LastNodeID != "" {
 		prev.LastNodeID = delta.LastNodeID
@@ -40,10 +41,10 @@ func reducer(prev, delta State) State {
 	return prev
 }
 
-// Node implementations demonstrating metrics collection
+// Node implementations demonstrating metrics collection.
 
-// FastNode executes quickly (1-10ms)
-func FastNode(ctx context.Context, s State) graph.NodeResult[State] {
+// FastNode executes quickly (1-10ms).
+func FastNode(_ context.Context, s State) graph.NodeResult[State] {
 	start := time.Now()
 	time.Sleep(time.Duration(1+rand.Intn(10)) * time.Millisecond)
 
@@ -57,8 +58,8 @@ func FastNode(ctx context.Context, s State) graph.NodeResult[State] {
 	}
 }
 
-// MediumNode executes with medium latency (50-100ms)
-func MediumNode(ctx context.Context, s State) graph.NodeResult[State] {
+// MediumNode executes with medium latency (50-100ms).
+func MediumNode(_ context.Context, s State) graph.NodeResult[State] {
 	start := time.Now()
 	time.Sleep(time.Duration(50+rand.Intn(50)) * time.Millisecond)
 
@@ -72,8 +73,8 @@ func MediumNode(ctx context.Context, s State) graph.NodeResult[State] {
 	}
 }
 
-// SlowNode executes slowly (500-1000ms)
-func SlowNode(ctx context.Context, s State) graph.NodeResult[State] {
+// SlowNode executes slowly (500-1000ms).
+func SlowNode(_ context.Context, s State) graph.NodeResult[State] {
 	start := time.Now()
 	time.Sleep(time.Duration(500+rand.Intn(500)) * time.Millisecond)
 
@@ -87,8 +88,8 @@ func SlowNode(ctx context.Context, s State) graph.NodeResult[State] {
 	}
 }
 
-// ParallelNode demonstrates fan-out (triggers parallel branches)
-func ParallelNode(ctx context.Context, s State) graph.NodeResult[State] {
+// ParallelNode demonstrates fan-out (triggers parallel branches).
+func ParallelNode(_ context.Context, s State) graph.NodeResult[State] {
 	start := time.Now()
 	time.Sleep(10 * time.Millisecond)
 
@@ -102,7 +103,7 @@ func ParallelNode(ctx context.Context, s State) graph.NodeResult[State] {
 	}
 }
 
-// BranchNode processes parallel branch
+// BranchNode processes parallel branch.
 func BranchNode(name string) graph.NodeFunc[State] {
 	return func(ctx context.Context, s State) graph.NodeResult[State] {
 		start := time.Now()
@@ -119,14 +120,14 @@ func BranchNode(name string) graph.NodeFunc[State] {
 	}
 }
 
-// FlakyNode demonstrates retry metrics (fails 30% of the time)
+// FlakyNode demonstrates retry metrics (fails 30% of the time).
 type FlakyNode struct{}
 
-func (f *FlakyNode) Run(ctx context.Context, s State) graph.NodeResult[State] {
+func (f *FlakyNode) Run(_ context.Context, s State) graph.NodeResult[State] {
 	start := time.Now()
 	time.Sleep(50 * time.Millisecond)
 
-	// Fail 30% of attempts
+	// Fail 30% of attempts.
 	if rand.Float64() < 0.3 {
 		return graph.NodeResult[State]{
 			Delta: State{
@@ -146,7 +147,7 @@ func (f *FlakyNode) Run(ctx context.Context, s State) graph.NodeResult[State] {
 	}
 }
 
-// Policy configures retry behavior for FlakyNode
+// Policy configures retry behavior for FlakyNode.
 func (f *FlakyNode) Policy() graph.NodePolicy {
 	return graph.NodePolicy{
 		RetryPolicy: &graph.RetryPolicy{
@@ -161,12 +162,12 @@ func (f *FlakyNode) Policy() graph.NodePolicy {
 }
 
 func main() {
-	// 1. Setup Prometheus metrics with custom registry
+	// 1. Setup Prometheus metrics with custom registry.
 	log.Println("Setting up Prometheus metrics...")
 	registry := prometheus.NewRegistry()
 	metrics := graph.NewPrometheusMetrics(registry)
 
-	// Expose /metrics endpoint for Prometheus scraping
+	// Expose /metrics endpoint for Prometheus scraping.
 	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	go func() {
 		log.Println("Metrics server listening on :9090")
@@ -176,10 +177,10 @@ func main() {
 		}
 	}()
 
-	// 2. Setup cost tracker
+	// 2. Setup cost tracker.
 	tracker := graph.NewCostTracker("run-001", "USD")
 
-	// 3. Create engine with full observability
+	// 3. Create engine with full observability.
 	log.Println("Creating workflow engine with observability...")
 	engine := graph.New(
 		reducer,
@@ -194,26 +195,36 @@ func main() {
 		},
 	)
 
-	// 4. Build workflow graph
+	// 4. Build workflow graph.
 	log.Println("Building workflow graph...")
-	engine.Add("fast", graph.NodeFunc[State](FastNode))
+	if err := engine.Add("fast", graph.NodeFunc[State](FastNode)); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 	engine.Add("medium", graph.NodeFunc[State](MediumNode))
-	engine.Add("slow", graph.NodeFunc[State](SlowNode))
+	if err := engine.Add("slow", graph.NodeFunc[State](SlowNode)); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 	engine.Add("parallel", graph.NodeFunc[State](ParallelNode))
-	engine.Add("branchA", BranchNode("branchA"))
+	if err := engine.Add("branchA", BranchNode("branchA")); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 	engine.Add("branchB", BranchNode("branchB"))
-	engine.Add("branchC", BranchNode("branchC"))
+	if err := engine.Add("branchC", BranchNode("branchC")); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 	engine.Add("flaky", &FlakyNode{})
-	engine.StartAt("fast")
+	if err := engine.StartAt("fast"); err != nil {
+		log.Fatalf("failed to set start node: %v", err)
+	}
 
-	// 5. Setup graceful shutdown
+	// 5. Setup graceful shutdown.
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	// 6. Run workflow continuously to generate metrics
+	// 6. Run workflow continuously to generate metrics.
 	log.Println("Starting continuous workflow execution...")
 	log.Println("Press Ctrl+C to stop")
 	log.Println("")
@@ -238,14 +249,14 @@ func main() {
 
 			log.Printf("Starting workflow execution: %s\n", runID)
 
-			// Execute workflow
+			// Execute workflow.
 			result, err := engine.Run(ctx, runID, State{})
 			if err != nil {
 				log.Printf("  Error: %v\n", err)
 				continue
 			}
 
-			// Print execution summary
+			// Print execution summary.
 			log.Printf("  Completed: %d steps, %d nodes executed\n",
 				result.Counter, len(result.ExecutionPath))
 			log.Printf("  Total latency: %v\n", result.TotalLatency)
@@ -253,7 +264,7 @@ func main() {
 			log.Printf("  Retries: %d\n", result.RetryCount)
 			log.Println("")
 
-			// Every 10 runs, print metrics summary
+			// Every 10 runs, print metrics summary.
 			if runCount%10 == 0 {
 				printMetricsSummary(runCount)
 			}

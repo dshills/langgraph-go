@@ -1,3 +1,4 @@
+// Package graph provides the core graph execution engine for LangGraph-Go.
 package graph
 
 import (
@@ -241,12 +242,12 @@ func TestBothPatternsTogether(t *testing.T) {
 			WithQueueDepth(2048),  // Override
 		)
 
-		// Check base opts preserved
+		// Check base opts preserved.
 		if engine.opts.MaxSteps != 100 {
 			t.Errorf("MaxSteps = %d, want 100", engine.opts.MaxSteps)
 		}
 
-		// Check functional options override
+		// Check functional options override.
 		if engine.opts.MaxConcurrentNodes != 16 {
 			t.Errorf("MaxConcurrentNodes = %d, want 16 (should be overridden)", engine.opts.MaxConcurrentNodes)
 		}
@@ -305,21 +306,21 @@ func TestConflictPolicy(t *testing.T) {
 	emitter := emit.NewLogEmitter(io.Discard, false)
 
 	t.Run("ConflictFail policy accepted", func(t *testing.T) {
-		// ConflictFail is the only supported policy
+		// ConflictFail is the only supported policy.
 		engine := New(reducer, st, emitter, WithConflictPolicy(ConflictFail))
 
-		// Should not panic or error during construction
+		// Should not panic or error during construction.
 		if engine == nil {
 			t.Fatal("Expected engine to be created")
 		}
 	})
 
 	t.Run("Unsupported policies handled gracefully", func(t *testing.T) {
-		// LastWriterWins not yet implemented - should be handled gracefully
-		// The error is returned by the Option function, but New ignores it
+		// LastWriterWins not yet implemented - should be handled gracefully.
+		// The error is returned by the Option function, but New ignores it.
 		engine := New(reducer, st, emitter, WithConflictPolicy(LastWriterWins))
 
-		// Engine still created (validation deferred to Run time)
+		// Engine still created (validation deferred to Run time).
 		if engine == nil {
 			t.Fatal("Expected engine to be created even with unsupported policy")
 		}

@@ -20,7 +20,7 @@ func TestOTelEmitter_Emit(t *testing.T) {
 		sdktrace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	tracer := otel.Tracer("test")
 	emitter := NewOTelEmitter(tracer)
@@ -84,7 +84,7 @@ func TestOTelEmitter_EmitWithError(t *testing.T) {
 		sdktrace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	tracer := otel.Tracer("test")
 	emitter := NewOTelEmitter(tracer)
@@ -136,7 +136,7 @@ func TestOTelEmitter_EmitBatch(t *testing.T) {
 		sdktrace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	tracer := otel.Tracer("test")
 	emitter := NewOTelEmitter(tracer)
@@ -182,7 +182,7 @@ func TestOTelEmitter_EmitBatch_Empty(t *testing.T) {
 		sdktrace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	tracer := otel.Tracer("test")
 	emitter := NewOTelEmitter(tracer)
@@ -207,7 +207,7 @@ func TestOTelEmitter_Flush(t *testing.T) {
 		sdktrace.WithBatcher(exporter),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	tracer := otel.Tracer("test")
 	emitter := NewOTelEmitter(tracer)
@@ -246,7 +246,7 @@ func TestOTelEmitter_Flush_Timeout(t *testing.T) {
 		sdktrace.WithBatcher(exporter),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	tracer := otel.Tracer("test")
 	emitter := NewOTelEmitter(tracer)
@@ -270,7 +270,7 @@ func TestOTelEmitter_ConcurrencyAttributes(t *testing.T) {
 		sdktrace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	tracer := otel.Tracer("test")
 	emitter := NewOTelEmitter(tracer)
@@ -321,7 +321,7 @@ func TestOTelEmitter_ConcurrencyAttributes_Missing(t *testing.T) {
 		sdktrace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	tracer := otel.Tracer("test")
 	emitter := NewOTelEmitter(tracer)
@@ -364,7 +364,7 @@ func TestOTelEmitter_MetadataTypes(t *testing.T) {
 		sdktrace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	tracer := otel.Tracer("test")
 	emitter := NewOTelEmitter(tracer)
@@ -424,7 +424,7 @@ func TestOTelEmitter_NilMeta(t *testing.T) {
 		sdktrace.WithSyncer(exporter),
 	)
 	otel.SetTracerProvider(tp)
-	defer tp.Shutdown(context.Background())
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	tracer := otel.Tracer("test")
 	emitter := NewOTelEmitter(tracer)

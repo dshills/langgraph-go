@@ -1,3 +1,4 @@
+// Package emit provides event emission and observability for graph execution.
 package emit
 
 import (
@@ -9,7 +10,7 @@ func TestNullEmitter_NoOp(t *testing.T) {
 	t.Run("emits events without error", func(t *testing.T) {
 		emitter := NewNullEmitter()
 
-		// Emit several events - should not panic or error
+		// Emit several events - should not panic or error.
 		events := []Event{
 			{RunID: "run-001", Step: 0, NodeID: "node1", Msg: "node_start"},
 			{RunID: "run-001", Step: 0, NodeID: "node1", Msg: "node_end"},
@@ -17,7 +18,7 @@ func TestNullEmitter_NoOp(t *testing.T) {
 		}
 
 		for _, event := range events {
-			// Should not panic
+			// Should not panic.
 			emitter.Emit(event)
 		}
 
@@ -35,7 +36,7 @@ func TestNullEmitter_NoOp(t *testing.T) {
 			Meta:   nil, // nil meta should be fine
 		}
 
-		// Should not panic
+		// Should not panic.
 		emitter.Emit(event)
 
 		t.Log("NullEmitter handled nil meta without error")

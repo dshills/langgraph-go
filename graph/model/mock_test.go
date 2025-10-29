@@ -1,3 +1,4 @@
+// Package model provides LLM integration adapters.
 package model
 
 import (
@@ -38,13 +39,13 @@ func TestMockChatModel_SingleResponse(t *testing.T) {
 
 		messages := []Message{{Role: RoleUser, Content: "Test"}}
 
-		// First call
+		// First call.
 		out1, err := mock.Chat(context.Background(), messages, nil)
 		if err != nil {
 			t.Fatalf("first call failed: %v", err)
 		}
 
-		// Second call should repeat the response
+		// Second call should repeat the response.
 		out2, err := mock.Chat(context.Background(), messages, nil)
 		if err != nil {
 			t.Fatalf("second call failed: %v", err)
@@ -87,7 +88,7 @@ func TestMockChatModel_MultipleResponses(t *testing.T) {
 
 		messages := []Message{{Role: RoleUser, Content: "Test"}}
 
-		// Call 1
+		// Call 1.
 		out1, err := mock.Chat(context.Background(), messages, nil)
 		if err != nil {
 			t.Fatalf("call 1 failed: %v", err)
@@ -96,7 +97,7 @@ func TestMockChatModel_MultipleResponses(t *testing.T) {
 			t.Errorf("call 1: expected 'First', got %q", out1.Text)
 		}
 
-		// Call 2
+		// Call 2.
 		out2, err := mock.Chat(context.Background(), messages, nil)
 		if err != nil {
 			t.Fatalf("call 2 failed: %v", err)
@@ -105,7 +106,7 @@ func TestMockChatModel_MultipleResponses(t *testing.T) {
 			t.Errorf("call 2: expected 'Second', got %q", out2.Text)
 		}
 
-		// Call 3
+		// Call 3.
 		out3, err := mock.Chat(context.Background(), messages, nil)
 		if err != nil {
 			t.Fatalf("call 3 failed: %v", err)
@@ -114,7 +115,7 @@ func TestMockChatModel_MultipleResponses(t *testing.T) {
 			t.Errorf("call 3: expected 'Third', got %q", out3.Text)
 		}
 
-		// Call 4 should repeat last response
+		// Call 4 should repeat last response.
 		out4, err := mock.Chat(context.Background(), messages, nil)
 		if err != nil {
 			t.Fatalf("call 4 failed: %v", err)
@@ -171,7 +172,7 @@ func TestMockChatModel_CallHistory(t *testing.T) {
 			Responses: []ChatOut{{Text: "OK"}},
 		}
 
-		// Make multiple calls with different inputs
+		// Make multiple calls with different inputs.
 		messages1 := []Message{{Role: RoleUser, Content: "First"}}
 		messages2 := []Message{{Role: RoleUser, Content: "Second"}}
 		tools := []ToolSpec{{Name: "search", Description: "Search"}}
@@ -183,7 +184,7 @@ func TestMockChatModel_CallHistory(t *testing.T) {
 			t.Fatalf("expected 2 calls recorded, got %d", len(mock.Calls))
 		}
 
-		// Verify first call
+		// Verify first call.
 		if len(mock.Calls[0].Messages) != 1 {
 			t.Errorf("call 0: expected 1 message, got %d", len(mock.Calls[0].Messages))
 		}
@@ -194,7 +195,7 @@ func TestMockChatModel_CallHistory(t *testing.T) {
 			t.Errorf("call 0: expected nil tools, got %v", mock.Calls[0].Tools)
 		}
 
-		// Verify second call
+		// Verify second call.
 		if len(mock.Calls[1].Messages) != 1 {
 			t.Errorf("call 1: expected 1 message, got %d", len(mock.Calls[1].Messages))
 		}
@@ -230,7 +231,7 @@ func TestMockChatModel_Reset(t *testing.T) {
 
 		messages := []Message{{Role: RoleUser, Content: "Test"}}
 
-		// Make some calls
+		// Make some calls.
 		_, _ = mock.Chat(context.Background(), messages, nil)
 		_, _ = mock.Chat(context.Background(), messages, nil)
 
@@ -238,7 +239,7 @@ func TestMockChatModel_Reset(t *testing.T) {
 			t.Fatalf("expected 2 calls before reset, got %d", len(mock.Calls))
 		}
 
-		// Reset
+		// Reset.
 		mock.Reset()
 
 		if len(mock.Calls) != 0 {
@@ -256,13 +257,13 @@ func TestMockChatModel_Reset(t *testing.T) {
 
 		messages := []Message{{Role: RoleUser, Content: "Test"}}
 
-		// Exhaust first response
+		// Exhaust first response.
 		out1, _ := mock.Chat(context.Background(), messages, nil)
 		if out1.Text != "First" {
 			t.Fatalf("expected 'First', got %q", out1.Text)
 		}
 
-		// Reset and verify we get first response again
+		// Reset and verify we get first response again.
 		mock.Reset()
 
 		out2, _ := mock.Chat(context.Background(), messages, nil)
@@ -408,7 +409,7 @@ func TestMockChatModel_ContextCancellation(t *testing.T) {
 
 		_, _ = mock.Chat(ctx, messages, nil)
 
-		// Call should not be recorded when context is cancelled
+		// Call should not be recorded when context is cancelled.
 		if mock.CallCount() != 0 {
 			t.Errorf("expected 0 calls when context cancelled, got %d", mock.CallCount())
 		}
@@ -424,7 +425,7 @@ func TestMockChatModel_Concurrency(t *testing.T) {
 
 		messages := []Message{{Role: RoleUser, Content: "Test"}}
 
-		// Launch multiple concurrent calls
+		// Launch multiple concurrent calls.
 		const goroutines = 10
 		done := make(chan bool, goroutines)
 
@@ -435,12 +436,12 @@ func TestMockChatModel_Concurrency(t *testing.T) {
 			}()
 		}
 
-		// Wait for all to complete
+		// Wait for all to complete.
 		for i := 0; i < goroutines; i++ {
 			<-done
 		}
 
-		// Verify all calls were recorded
+		// Verify all calls were recorded.
 		if mock.CallCount() != goroutines {
 			t.Errorf("expected %d calls, got %d", goroutines, mock.CallCount())
 		}

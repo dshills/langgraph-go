@@ -1,3 +1,4 @@
+// Package tool provides tool interfaces for graph nodes.
 package tool
 
 import (
@@ -60,13 +61,13 @@ func TestMockTool_SingleResponse(t *testing.T) {
 
 		input := map[string]interface{}{"message": "test"}
 
-		// First call
+		// First call.
 		out1, err := mock.Call(context.Background(), input)
 		if err != nil {
 			t.Fatalf("first call failed: %v", err)
 		}
 
-		// Second call should repeat the response
+		// Second call should repeat the response.
 		out2, err := mock.Call(context.Background(), input)
 		if err != nil {
 			t.Fatalf("second call failed: %v", err)
@@ -109,7 +110,7 @@ func TestMockTool_MultipleResponses(t *testing.T) {
 
 		input := map[string]interface{}{}
 
-		// Call 1
+		// Call 1.
 		out1, err := mock.Call(context.Background(), input)
 		if err != nil {
 			t.Fatalf("call 1 failed: %v", err)
@@ -118,7 +119,7 @@ func TestMockTool_MultipleResponses(t *testing.T) {
 			t.Errorf("call 1: expected count = 1, got %v", out1["count"])
 		}
 
-		// Call 2
+		// Call 2.
 		out2, err := mock.Call(context.Background(), input)
 		if err != nil {
 			t.Fatalf("call 2 failed: %v", err)
@@ -127,7 +128,7 @@ func TestMockTool_MultipleResponses(t *testing.T) {
 			t.Errorf("call 2: expected count = 2, got %v", out2["count"])
 		}
 
-		// Call 3
+		// Call 3.
 		out3, err := mock.Call(context.Background(), input)
 		if err != nil {
 			t.Fatalf("call 3 failed: %v", err)
@@ -136,7 +137,7 @@ func TestMockTool_MultipleResponses(t *testing.T) {
 			t.Errorf("call 3: expected count = 3, got %v", out3["count"])
 		}
 
-		// Call 4 should repeat last response
+		// Call 4 should repeat last response.
 		out4, err := mock.Call(context.Background(), input)
 		if err != nil {
 			t.Fatalf("call 4 failed: %v", err)
@@ -194,7 +195,7 @@ func TestMockTool_CallHistory(t *testing.T) {
 			Responses: []map[string]interface{}{{"ok": true}},
 		}
 
-		// Make multiple calls with different inputs
+		// Make multiple calls with different inputs.
 		input1 := map[string]interface{}{"query": "first"}
 		input2 := map[string]interface{}{"query": "second", "limit": 10}
 
@@ -205,7 +206,7 @@ func TestMockTool_CallHistory(t *testing.T) {
 			t.Fatalf("expected 2 calls recorded, got %d", len(mock.Calls))
 		}
 
-		// Verify first call
+		// Verify first call.
 		if len(mock.Calls[0].Input) != 1 {
 			t.Errorf("call 0: expected 1 input param, got %d", len(mock.Calls[0].Input))
 		}
@@ -213,7 +214,7 @@ func TestMockTool_CallHistory(t *testing.T) {
 			t.Errorf("call 0: expected query = 'first', got %v", mock.Calls[0].Input["query"])
 		}
 
-		// Verify second call
+		// Verify second call.
 		if len(mock.Calls[1].Input) != 2 {
 			t.Errorf("call 1: expected 2 input params, got %d", len(mock.Calls[1].Input))
 		}
@@ -268,7 +269,7 @@ func TestMockTool_Reset(t *testing.T) {
 
 		input := map[string]interface{}{"test": "data"}
 
-		// Make some calls
+		// Make some calls.
 		_, _ = mock.Call(context.Background(), input)
 		_, _ = mock.Call(context.Background(), input)
 
@@ -276,7 +277,7 @@ func TestMockTool_Reset(t *testing.T) {
 			t.Fatalf("expected 2 calls before reset, got %d", len(mock.Calls))
 		}
 
-		// Reset
+		// Reset.
 		mock.Reset()
 
 		if len(mock.Calls) != 0 {
@@ -295,13 +296,13 @@ func TestMockTool_Reset(t *testing.T) {
 
 		input := map[string]interface{}{}
 
-		// Exhaust first response
+		// Exhaust first response.
 		out1, _ := mock.Call(context.Background(), input)
 		if out1["value"] != "first" {
 			t.Fatalf("expected 'first', got %v", out1["value"])
 		}
 
-		// Reset and verify we get first response again
+		// Reset and verify we get first response again.
 		mock.Reset()
 
 		out2, _ := mock.Call(context.Background(), input)
@@ -394,7 +395,7 @@ func TestMockTool_ContextCancellation(t *testing.T) {
 
 		_, _ = mock.Call(ctx, input)
 
-		// Call should not be recorded when context is cancelled
+		// Call should not be recorded when context is cancelled.
 		if mock.CallCount() != 0 {
 			t.Errorf("expected 0 calls when context cancelled, got %d", mock.CallCount())
 		}
@@ -458,7 +459,7 @@ func TestMockTool_Concurrency(t *testing.T) {
 
 		input := map[string]interface{}{"test": "data"}
 
-		// Launch multiple concurrent calls
+		// Launch multiple concurrent calls.
 		const goroutines = 10
 		done := make(chan bool, goroutines)
 
@@ -469,12 +470,12 @@ func TestMockTool_Concurrency(t *testing.T) {
 			}()
 		}
 
-		// Wait for all to complete
+		// Wait for all to complete.
 		for i := 0; i < goroutines; i++ {
 			<-done
 		}
 
-		// Verify all calls were recorded
+		// Verify all calls were recorded.
 		if mock.CallCount() != goroutines {
 			t.Errorf("expected %d calls, got %d", goroutines, mock.CallCount())
 		}

@@ -1,3 +1,4 @@
+// Package graph provides the core graph execution engine for LangGraph-Go.
 package graph
 
 import "testing"
@@ -33,7 +34,7 @@ func TestEdge_Struct(t *testing.T) {
 			When: predicate,
 		}
 
-		// Test predicate evaluation
+		// Test predicate evaluation.
 		if !edge.When(TestState{Counter: 15}) {
 			t.Error("predicate should return true for Counter = 15")
 		}
@@ -72,12 +73,12 @@ func TestEdge_Struct(t *testing.T) {
 			When: predicate,
 		}
 
-		// Both conditions met
+		// Both conditions met.
 		if !edge.When(TestState{Counter: 1, Value: "test"}) {
 			t.Error("predicate should return true when both conditions met")
 		}
 
-		// Only one condition met
+		// Only one condition met.
 		if edge.When(TestState{Counter: 1, Value: ""}) {
 			t.Error("predicate should return false when Value empty")
 		}
@@ -109,7 +110,7 @@ func TestPredicate_Type(t *testing.T) {
 			t.Error("uninitialized predicate should be nil")
 		}
 
-		// Nil predicate represents unconditional edge
+		// Nil predicate represents unconditional edge.
 		edge := Edge[TestState]{
 			From: "a",
 			To:   "b",
@@ -122,7 +123,7 @@ func TestPredicate_Type(t *testing.T) {
 	})
 
 	t.Run("predicate composition", func(t *testing.T) {
-		// Multiple predicates can be composed
+		// Multiple predicates can be composed.
 		isPositive := func(s TestState) bool {
 			return s.Counter > 0
 		}
@@ -130,7 +131,7 @@ func TestPredicate_Type(t *testing.T) {
 			return s.Value != ""
 		}
 
-		// AND composition
+		// AND composition.
 		bothTrue := func(s TestState) bool {
 			return isPositive(s) && hasValue(s)
 		}
@@ -147,7 +148,7 @@ func TestPredicate_Type(t *testing.T) {
 // TestEdge_MultipleEdges verifies multiple edges from same node (T024).
 func TestEdge_MultipleEdges(t *testing.T) {
 	t.Run("fan-out with predicates", func(t *testing.T) {
-		// Simulate routing logic with multiple edges from same node
+		// Simulate routing logic with multiple edges from same node.
 		edges := []Edge[TestState]{
 			{
 				From: "router",
@@ -161,7 +162,7 @@ func TestEdge_MultipleEdges(t *testing.T) {
 			},
 		}
 
-		// Test routing for Counter = 5 (should go to path-a)
+		// Test routing for Counter = 5 (should go to path-a).
 		state1 := TestState{Counter: 5}
 		var selected string
 		for _, edge := range edges {
@@ -174,7 +175,7 @@ func TestEdge_MultipleEdges(t *testing.T) {
 			t.Errorf("expected route to 'path-a', got %q", selected)
 		}
 
-		// Test routing for Counter = 15 (should go to path-b)
+		// Test routing for Counter = 15 (should go to path-b).
 		state2 := TestState{Counter: 15}
 		selected = ""
 		for _, edge := range edges {

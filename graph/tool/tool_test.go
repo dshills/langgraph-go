@@ -1,3 +1,4 @@
+// Package tool provides tool interfaces for graph nodes.
 package tool
 
 import (
@@ -6,14 +7,14 @@ import (
 	"testing"
 )
 
-// T176: Tool interface tests
+// T176: Tool interface tests.
 
-// TestTool_InterfaceContract verifies Tool interface can be implemented
+// TestTool_InterfaceContract verifies Tool interface can be implemented.
 func TestTool_InterfaceContract(t *testing.T) {
 	var _ Tool = (*mockTool)(nil)
 }
 
-// mockTool is a minimal Tool implementation for testing
+// mockTool is a minimal Tool implementation for testing.
 type mockTool struct {
 	name   string
 	called bool
@@ -26,7 +27,7 @@ func (m *mockTool) Name() string {
 	return m.name
 }
 
-func (m *mockTool) Call(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {
+func (m *mockTool) Call(_ context.Context, input map[string]interface{}) (map[string]interface{}, error) {
 	m.called = true
 	m.input = input
 	if m.err != nil {
@@ -211,27 +212,27 @@ func TestTool_MultipleCallsIdempotent(t *testing.T) {
 
 	ctx := context.Background()
 
-	// First call
+	// First call.
 	input1 := map[string]interface{}{"id": 1}
 	result1, err1 := tool.Call(ctx, input1)
 	if err1 != nil {
 		t.Fatalf("First Call() error = %v", err1)
 	}
 
-	// Second call
+	// Second call.
 	input2 := map[string]interface{}{"id": 2}
 	result2, err2 := tool.Call(ctx, input2)
 	if err2 != nil {
 		t.Fatalf("Second Call() error = %v", err2)
 	}
 
-	// Both should succeed
+	// Both should succeed.
 	if result1["result"] != result2["result"] {
 		t.Errorf("Results differ: %v vs %v", result1, result2)
 	}
 }
 
-// TestTool_NameConsistency verifies Name() returns consistent values
+// TestTool_NameConsistency verifies Name() returns consistent values.
 func TestTool_NameConsistency(t *testing.T) {
 	tool := &mockTool{name: "consistent-tool"}
 
@@ -244,7 +245,7 @@ func TestTool_NameConsistency(t *testing.T) {
 	}
 }
 
-// TestTool_ConcurrentCalls verifies tools are safe for concurrent use
+// TestTool_ConcurrentCalls verifies tools are safe for concurrent use.
 func TestTool_ConcurrentCalls(t *testing.T) {
 	tool := &mockTool{
 		name:   "concurrent",
@@ -263,7 +264,7 @@ func TestTool_ConcurrentCalls(t *testing.T) {
 		}(i)
 	}
 
-	// Check all calls succeeded
+	// Check all calls succeeded.
 	for i := 0; i < numGoroutines; i++ {
 		if err := <-errChan; err != nil {
 			t.Errorf("Concurrent call %d failed: %v", i, err)

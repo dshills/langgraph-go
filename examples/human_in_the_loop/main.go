@@ -1,9 +1,11 @@
+// Package main demonstrates usage of the LangGraph-Go framework.
 package main
 
 import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -13,7 +15,7 @@ import (
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
-// ApprovalState represents a workflow that requires human approval
+// ApprovalState represents a workflow that requires human approval.
 type ApprovalState struct {
 	Request          string
 	GeneratedOutput  string
@@ -24,7 +26,7 @@ type ApprovalState struct {
 	Attempts         int
 }
 
-// Reducer merges state updates
+// Reducer merges state updates.
 func reducer(prev, delta ApprovalState) ApprovalState {
 	if delta.Request != "" {
 		prev.Request = delta.Request
@@ -50,11 +52,11 @@ func reducer(prev, delta ApprovalState) ApprovalState {
 	return prev
 }
 
-// GenerateOutputNode simulates generating output that needs approval
-func GenerateOutputNode(ctx context.Context, s ApprovalState) graph.NodeResult[ApprovalState] {
+// GenerateOutputNode simulates generating output that needs approval.
+func GenerateOutputNode(_ context.Context, s ApprovalState) graph.NodeResult[ApprovalState] {
 	fmt.Printf("\n🤖 Generating output for request: %s\n", s.Request)
 
-	// Simulate output generation
+	// Simulate output generation.
 	output := fmt.Sprintf("Generated response for '%s': This is an automated output that needs review.", s.Request)
 
 	return graph.NodeResult[ApprovalState]{
@@ -68,21 +70,21 @@ func GenerateOutputNode(ctx context.Context, s ApprovalState) graph.NodeResult[A
 	}
 }
 
-// ApprovalGateNode pauses execution until approval is received
-func ApprovalGateNode(ctx context.Context, s ApprovalState) graph.NodeResult[ApprovalState] {
-	// Check if approval has been provided
+// ApprovalGateNode pauses execution until approval is received.
+func ApprovalGateNode(_ context.Context, s ApprovalState) graph.NodeResult[ApprovalState] {
+	// Check if approval has been provided.
 	if s.Approved == nil {
 		fmt.Printf("\n⏸️  Workflow paused - awaiting human approval\n")
 		fmt.Printf("Generated Output:\n%s\n\n", s.GeneratedOutput)
 
-		// Pause: Return Stop to halt execution
-		// Workflow will resume when state is updated with approval
+		// Pause: Return Stop to halt execution.
+		// Workflow will resume when state is updated with approval.
 		return graph.NodeResult[ApprovalState]{
 			Route: graph.Stop(),
 		}
 	}
 
-	// Approval decision has been made
+	// Approval decision has been made.
 	if *s.Approved {
 		fmt.Printf("\n✅ Approved by human reviewer\n")
 		if s.ApprovalComment != "" {
@@ -97,10 +99,10 @@ func ApprovalGateNode(ctx context.Context, s ApprovalState) graph.NodeResult[App
 			fmt.Printf("Reason: %s\n", s.ApprovalComment)
 		}
 
-		// Check if we should retry
+		// Check if we should retry.
 		if s.Attempts < 3 {
 			fmt.Printf("Regenerating output (attempt %d/3)...\n", s.Attempts+1)
-			// Reset approval state and regenerate
+			// Reset approval state and regenerate.
 			return graph.NodeResult[ApprovalState]{
 				Delta: ApprovalState{
 					Approved: nil, // Reset approval status
@@ -116,8 +118,8 @@ func ApprovalGateNode(ctx context.Context, s ApprovalState) graph.NodeResult[App
 	}
 }
 
-// FinalizeNode completes the approved workflow
-func FinalizeNode(ctx context.Context, s ApprovalState) graph.NodeResult[ApprovalState] {
+// FinalizeNode completes the approved workflow.
+func FinalizeNode(_ context.Context, s ApprovalState) graph.NodeResult[ApprovalState] {
 	fmt.Printf("\n✨ Finalizing approved output...\n")
 	fmt.Printf("Output: %s\n", s.GeneratedOutput)
 	fmt.Printf("Status: Approved and published\n")
@@ -127,12 +129,12 @@ func FinalizeNode(ctx context.Context, s ApprovalState) graph.NodeResult[Approva
 	}
 }
 
-// setupEngine creates and configures the workflow engine
+// setupEngine creates and configures the workflow engine.
 func setupEngine() (*graph.Engine[ApprovalState], store.Store[ApprovalState]) {
 	st := store.NewMemStore[ApprovalState]()
 	emitter := emit.NewLogEmitter(os.Stdout, false)
 
-	// Configure engine with Options struct for MaxSteps
+	// Configure engine with Options struct for MaxSteps.
 	opts := graph.Options{
 		MaxSteps: 20, // Prevent infinite loops
 	}
@@ -144,18 +146,24 @@ func setupEngine() (*graph.Engine[ApprovalState], store.Store[ApprovalState]) {
 		opts,
 	)
 
-	// Add nodes
-	engine.Add("generate", graph.NodeFunc[ApprovalState](GenerateOutputNode))
+	// Add nodes.
+	if err := engine.Add("generate", graph.NodeFunc[ApprovalState](GenerateOutputNode)); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 	engine.Add("approval-gate", graph.NodeFunc[ApprovalState](ApprovalGateNode))
-	engine.Add("finalize", graph.NodeFunc[ApprovalState](FinalizeNode))
+	if err := engine.Add("finalize", graph.NodeFunc[ApprovalState](FinalizeNode)); err != nil {
+		log.Fatalf("failed to add node: %v", err)
+	}
 
-	// Define workflow
-	engine.StartAt("generate")
+	// Define workflow.
+	if err := engine.StartAt("generate"); err != nil {
+		log.Fatalf("failed to set start node: %v", err)
+	}
 
 	return engine, st
 }
 
-// getApprovalFromUser prompts for user input
+// getApprovalFromUser prompts for user input.
 func getApprovalFromUser() (bool, string) {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -172,7 +180,7 @@ func getApprovalFromUser() (bool, string) {
 	return approved, comment
 }
 
-// demonstrateApprovalWorkflow shows interactive approval workflow
+// demonstrateApprovalWorkflow shows interactive approval workflow.
 func demonstrateApprovalWorkflow() {
 	fmt.Println("=" + strings.Repeat("=", 70))
 	fmt.Println("Human-in-the-Loop: Approval Workflow Demo")
@@ -182,12 +190,12 @@ func demonstrateApprovalWorkflow() {
 	engine, st := setupEngine()
 	runID := "approval-demo-001"
 
-	// Initial state
+	// Initial state.
 	initialState := ApprovalState{
 		Request: "Create a marketing email for new product launch",
 	}
 
-	// Start workflow
+	// Start workflow.
 	fmt.Println("\n🚀 Starting workflow...")
 	final, err := engine.Run(ctx, runID, initialState)
 	if err != nil {
@@ -195,34 +203,34 @@ func demonstrateApprovalWorkflow() {
 		return
 	}
 
-	// Check if paused for approval
+	// Check if paused for approval.
 	if final.Approved == nil {
 		fmt.Println("\n📋 Workflow paused at approval gate")
 
-		// Get human approval
+		// Get human approval.
 		approved, comment := getApprovalFromUser()
 
-		// Load the latest checkpoint
-		// LoadCheckpointV2 expects (runID, stepID) but we need the latest step
-		// For simplicity, we'll load the state directly and create a minimal checkpoint
+		// Load the latest checkpoint.
+		// LoadCheckpointV2 expects (runID, stepID) but we need the latest step.
+		// For simplicity, we'll load the state directly and create a minimal checkpoint.
 		latestState, latestStep, err := st.LoadLatest(ctx, runID)
 		if err != nil {
 			fmt.Printf("Error loading latest state: %v\n", err)
 			return
 		}
 
-		// Update state with approval decision
+		// Update state with approval decision.
 		latestState.Approved = &approved
 		latestState.ApprovalComment = comment
 
-		// Create a checkpoint to resume from
+		// Create a checkpoint to resume from.
 		checkpoint := store.CheckpointV2[ApprovalState]{
 			RunID:  runID,
 			StepID: latestStep,
 			State:  latestState,
 		}
 
-		// Resume workflow
+		// Resume workflow.
 		fmt.Println("\n▶️  Resuming workflow...")
 		final, err = engine.RunWithCheckpoint(ctx, checkpoint)
 		if err != nil {
@@ -231,7 +239,7 @@ func demonstrateApprovalWorkflow() {
 		}
 	}
 
-	// Show final result
+	// Show final result.
 	fmt.Println("\n" + strings.Repeat("=", 70))
 	if final.Approved != nil && *final.Approved {
 		fmt.Println("✅ Workflow completed successfully - Output approved and finalized")
@@ -243,7 +251,7 @@ func demonstrateApprovalWorkflow() {
 	fmt.Println(strings.Repeat("=", 70))
 }
 
-// demonstrateAutomaticResume shows resuming paused workflow later
+// demonstrateAutomaticResume shows resuming paused workflow later.
 func demonstrateAutomaticResume() {
 	fmt.Println("\n\n" + strings.Repeat("=", 70))
 	fmt.Println("Demo: Automatic Resume from Saved Checkpoint")
@@ -253,7 +261,7 @@ func demonstrateAutomaticResume() {
 	engine, st := setupEngine()
 	runID := "auto-resume-001"
 
-	// Start workflow
+	// Start workflow.
 	fmt.Println("\n🚀 Starting workflow...")
 	initialState := ApprovalState{
 		Request: "Generate quarterly report summary",
@@ -265,28 +273,28 @@ func demonstrateAutomaticResume() {
 		return
 	}
 
-	// Workflow paused - simulate saving for later
+	// Workflow paused - simulate saving for later.
 	if final.Approved == nil {
 		fmt.Println("\n💾 Checkpoint saved. Workflow can be resumed later...")
 		fmt.Println("(In production, approval could come from web UI, API, etc.)")
 
-		// Simulate time passing
+		// Simulate time passing.
 		fmt.Println("\n⏰ [Simulating: approval received via external system]")
 		time.Sleep(1 * time.Second)
 
-		// Load the latest state
+		// Load the latest state.
 		latestState, latestStep, err := st.LoadLatest(ctx, runID)
 		if err != nil {
 			fmt.Printf("Error loading latest state: %v\n", err)
 			return
 		}
 
-		// Apply approval (simulating external approval system)
+		// Apply approval (simulating external approval system).
 		approved := true
 		latestState.Approved = &approved
 		latestState.ApprovalComment = "Approved via external system"
 
-		// Create checkpoint for resumption
+		// Create checkpoint for resumption.
 		checkpoint := store.CheckpointV2[ApprovalState]{
 			RunID:  runID,
 			StepID: latestStep,
@@ -304,7 +312,7 @@ func demonstrateAutomaticResume() {
 	}
 }
 
-// demonstrateRejectionAndRetry shows rejection with regeneration
+// demonstrateRejectionAndRetry shows rejection with regeneration.
 func demonstrateRejectionAndRetry() {
 	fmt.Println("\n\n" + strings.Repeat("=", 70))
 	fmt.Println("Demo: Rejection with Automatic Retry")
@@ -314,7 +322,7 @@ func demonstrateRejectionAndRetry() {
 	engine, st := setupEngine()
 	runID := "rejection-demo-001"
 
-	// Start workflow
+	// Start workflow.
 	fmt.Println("\n🚀 Starting workflow...")
 	initialState := ApprovalState{
 		Request: "Draft customer apology email",
@@ -326,30 +334,30 @@ func demonstrateRejectionAndRetry() {
 		return
 	}
 
-	// Simulate rejection
+	// Simulate rejection.
 	if final.Approved == nil {
 		fmt.Println("\n📋 Simulating rejection by reviewer...")
 
-		// Load latest state
+		// Load latest state.
 		latestState, latestStep, err := st.LoadLatest(ctx, runID)
 		if err != nil {
 			fmt.Printf("Error loading latest state: %v\n", err)
 			return
 		}
 
-		// Reject with feedback
+		// Reject with feedback.
 		approved := false
 		latestState.Approved = &approved
 		latestState.ApprovalComment = "Tone is too formal - needs to be more personal"
 
-		// Create checkpoint for resumption
+		// Create checkpoint for resumption.
 		checkpoint := store.CheckpointV2[ApprovalState]{
 			RunID:  runID,
 			StepID: latestStep,
 			State:  latestState,
 		}
 
-		// Resume - will regenerate
+		// Resume - will regenerate.
 		fmt.Println("\n▶️  Resuming workflow...")
 		final, err = engine.RunWithCheckpoint(ctx, checkpoint)
 		if err != nil {
@@ -357,18 +365,18 @@ func demonstrateRejectionAndRetry() {
 			return
 		}
 
-		// Now at approval gate again after regeneration
+		// Now at approval gate again after regeneration.
 		if final.Approved == nil {
 			fmt.Println("\n📋 New output generated - awaiting approval again...")
 
-			// Load latest state again
+			// Load latest state again.
 			latestState, latestStep, err = st.LoadLatest(ctx, runID)
 			if err != nil {
 				fmt.Printf("Error loading latest state: %v\n", err)
 				return
 			}
 
-			// Approve the revised version
+			// Approve the revised version.
 			approved = true
 			latestState.Approved = &approved
 			latestState.ApprovalComment = "Much better - approved!"
@@ -391,13 +399,13 @@ func demonstrateRejectionAndRetry() {
 }
 
 func main() {
-	// Demo 1: Interactive approval workflow
+	// Demo 1: Interactive approval workflow.
 	demonstrateApprovalWorkflow()
 
-	// Demo 2: Automatic resume from checkpoint
+	// Demo 2: Automatic resume from checkpoint.
 	demonstrateAutomaticResume()
 
-	// Demo 3: Rejection with retry
+	// Demo 3: Rejection with retry.
 	demonstrateRejectionAndRetry()
 
 	fmt.Println("\n" + strings.Repeat("=", 70))

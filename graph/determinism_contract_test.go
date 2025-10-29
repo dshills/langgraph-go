@@ -1,13 +1,14 @@
+// Package graph provides the core graph execution engine for LangGraph-Go.
 package graph
 
 import (
 	"testing"
 )
 
-// TestReplayMismatchDetection (T082) validates ErrReplayMismatch detection
+// TestReplayMismatchDetection (T082) validates ErrReplayMismatch detection.
 func TestReplayMismatchDetection(t *testing.T) {
 	t.Run("replay mismatch error defined", func(t *testing.T) {
-		// Verify ErrReplayMismatch is exported and defined
+		// Verify ErrReplayMismatch is exported and defined.
 		if ErrReplayMismatch == nil {
 			t.Error("ErrReplayMismatch should be defined")
 		}
@@ -27,10 +28,10 @@ func TestReplayMismatchDetection(t *testing.T) {
 	})
 }
 
-// TestMergeOrderingWithRandomDelays (T083) validates deterministic merge order
+// TestMergeOrderingWithRandomDelays (T083) validates deterministic merge order.
 func TestMergeOrderingWithRandomDelays(t *testing.T) {
 	t.Run("order key determinism", func(t *testing.T) {
-		// Verify ComputeOrderKey produces consistent results
+		// Verify ComputeOrderKey produces consistent results.
 		key1 := ComputeOrderKey("parent", 0)
 		key2 := ComputeOrderKey("parent", 0)
 
@@ -38,7 +39,7 @@ func TestMergeOrderingWithRandomDelays(t *testing.T) {
 			t.Error("same inputs produced different order keys")
 		}
 
-		// Verify different edges produce different keys
+		// Verify different edges produce different keys.
 		keys := make(map[uint64]bool)
 		for i := 0; i < 5; i++ {
 			key := ComputeOrderKey("parent", i)

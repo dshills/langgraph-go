@@ -1,3 +1,4 @@
+// Package graph provides the core graph execution engine for LangGraph-Go.
 package graph
 
 import (
@@ -170,7 +171,7 @@ func TestErrorDocumentation(t *testing.T) {
 				t.Error("Error message is empty")
 			}
 
-			// Error messages should be descriptive (at least 10 characters)
+			// Error messages should be descriptive (at least 10 characters).
 			if len(msg) < 10 {
 				t.Errorf("Error message too short (%d chars): %q", len(msg), msg)
 			}

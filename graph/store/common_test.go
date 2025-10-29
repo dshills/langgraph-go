@@ -1,3 +1,4 @@
+// Package store_test provides functionality for the LangGraph-Go framework.
 package store_test
 
 import (
@@ -11,21 +12,21 @@ import (
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
-// TestIdempotencyAcrossStores (T087) verifies that idempotency enforcement works
+// TestIdempotencyAcrossStores (T087) verifies that idempotency enforcement works.
 // consistently across all Store implementations: MemStore, MySQLStore, SQLiteStore.
 //
-// According to spec.md FR-009: All Store implementations MUST enforce idempotency
+// According to spec.md FR-009: All Store implementations MUST enforce idempotency.
 // to prevent duplicate checkpoint commits.
 //
 // Requirements:
-// - MemStore enforces idempotency
-// - MySQLStore enforces idempotency
-// - SQLiteStore enforces idempotency
-// - All stores reject duplicate idempotency keys
-// - All stores allow progression with unique keys
+// - MemStore enforces idempotency.
+// - MySQLStore enforces idempotency.
+// - SQLiteStore enforces idempotency.
+// - All stores reject duplicate idempotency keys.
+// - All stores allow progression with unique keys.
 //
-// This test ensures that the idempotency contract is consistently implemented
-// across all persistence backends, providing exactly-once guarantees regardless
+// This test ensures that the idempotency contract is consistently implemented.
+// across all persistence backends, providing exactly-once guarantees regardless.
 // of which store is used in production.
 func TestIdempotencyAcrossStores(t *testing.T) {
 	type TestState struct {
@@ -33,12 +34,12 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 		Message string `json:"message"`
 	}
 
-	// Test data
+	// Test data.
 	runID := "idempotency-test-" + time.Now().Format("20060102-150405")
 	state1 := TestState{Counter: 1, Message: "first"}
 	state2 := TestState{Counter: 2, Message: "second"}
 
-	// Compute idempotency keys
+	// Compute idempotency keys.
 	key1 := "sha256:abc123def456ghi789" // Simulated key for step 1
 	key2 := "sha256:jkl012mno345pqr678" // Simulated key for step 2 (different)
 
@@ -75,7 +76,7 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 		Timestamp:      time.Now(),
 	}
 
-	// Test scenarios for each store
+	// Test scenarios for each store.
 	testScenarios := []struct {
 		name      string
 		storeFunc func(*testing.T) (store.Store[TestState], func())
@@ -90,7 +91,7 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 		{
 			name: "SQLiteStore",
 			storeFunc: func(t *testing.T) (store.Store[TestState], func()) {
-				// Create temporary database file
+				// Create temporary database file.
 				tmpDir := t.TempDir()
 				dbPath := filepath.Join(tmpDir, "test.db")
 
@@ -130,13 +131,13 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 			st, cleanup := scenario.storeFunc(t)
 			defer cleanup()
 
-			// Test 1: First checkpoint should succeed
+			// Test 1: First checkpoint should succeed.
 			err := st.SaveCheckpointV2(ctx, checkpoint1)
 			if err != nil {
 				t.Fatalf("First checkpoint save failed: %v", err)
 			}
 
-			// Verify idempotency key was recorded
+			// Verify idempotency key was recorded.
 			exists, err := st.CheckIdempotency(ctx, key1)
 			if err != nil {
 				t.Fatalf("CheckIdempotency failed: %v", err)
@@ -145,20 +146,20 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 				t.Error("Idempotency key was not recorded after save")
 			}
 
-			// Test 2: Duplicate key should be rejected
+			// Test 2: Duplicate key should be rejected.
 			err = st.SaveCheckpointV2(ctx, checkpoint1Duplicate)
 			if err == nil {
 				t.Fatal("Duplicate idempotency key was not rejected")
 			}
 			t.Logf("✓ Duplicate key correctly rejected with error: %v", err)
 
-			// Test 3: Verify duplicate checkpoint was NOT saved
+			// Test 3: Verify duplicate checkpoint was NOT saved.
 			_, err = st.LoadCheckpointV2(ctx, runID, 3)
 			if !errors.Is(err, store.ErrNotFound) {
 				t.Errorf("Duplicate checkpoint should not exist, got error: %v", err)
 			}
 
-			// Test 4: Verify first checkpoint still exists unchanged
+			// Test 4: Verify first checkpoint still exists unchanged.
 			loaded, err := st.LoadCheckpointV2(ctx, runID, 1)
 			if err != nil {
 				t.Fatalf("Failed to load first checkpoint: %v", err)
@@ -168,13 +169,13 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 					loaded.State.Counter, state1.Counter)
 			}
 
-			// Test 5: Second checkpoint with different key should succeed
+			// Test 5: Second checkpoint with different key should succeed.
 			err = st.SaveCheckpointV2(ctx, checkpoint2)
 			if err != nil {
 				t.Fatalf("Second checkpoint with different key failed: %v", err)
 			}
 
-			// Verify second key was recorded
+			// Verify second key was recorded.
 			exists, err = st.CheckIdempotency(ctx, key2)
 			if err != nil {
 				t.Fatalf("CheckIdempotency for key2 failed: %v", err)
@@ -183,7 +184,7 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 				t.Error("Second idempotency key was not recorded")
 			}
 
-			// Test 6: Verify both checkpoints exist
+			// Test 6: Verify both checkpoints exist.
 			loaded1, err := st.LoadCheckpointV2(ctx, runID, 1)
 			if err != nil {
 				t.Fatalf("Failed to load checkpoint 1: %v", err)
@@ -202,7 +203,7 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 					loaded2.State.Counter, state2.Counter)
 			}
 
-			// Test 7: Verify both keys still exist
+			// Test 7: Verify both keys still exist.
 			for _, key := range []string{key1, key2} {
 				exists, err := st.CheckIdempotency(ctx, key)
 				if err != nil {
@@ -218,7 +219,7 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 	}
 }
 
-// TestStoreContractConsistency verifies that all Store implementations behave
+// TestStoreContractConsistency verifies that all Store implementations behave.
 // consistently for core operations.
 func TestStoreContractConsistency(t *testing.T) {
 	type SimpleState struct {
@@ -285,19 +286,19 @@ func TestStoreContractConsistency(t *testing.T) {
 				Timestamp:      time.Now(),
 			}
 
-			// Save checkpoint
+			// Save checkpoint.
 			err := st.SaveCheckpointV2(ctx, checkpoint)
 			if err != nil {
 				t.Fatalf("SaveCheckpointV2 failed: %v", err)
 			}
 
-			// Load checkpoint
+			// Load checkpoint.
 			loaded, err := st.LoadCheckpointV2(ctx, runID, 1)
 			if err != nil {
 				t.Fatalf("LoadCheckpointV2 failed: %v", err)
 			}
 
-			// Verify fields
+			// Verify fields.
 			if loaded.RunID != checkpoint.RunID {
 				t.Errorf("RunID mismatch: got=%s, want=%s", loaded.RunID, checkpoint.RunID)
 			}
@@ -320,7 +321,7 @@ func TestStoreContractConsistency(t *testing.T) {
 			st, cleanup := scenario.storeFunc(t)
 			defer cleanup()
 
-			// Load nonexistent checkpoint
+			// Load nonexistent checkpoint.
 			_, err := st.LoadCheckpointV2(ctx, "nonexistent-run", 999)
 			if !errors.Is(err, store.ErrNotFound) {
 				t.Errorf("Expected ErrNotFound, got: %v", err)

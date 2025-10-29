@@ -1,3 +1,4 @@
+// Package emit provides event emission and observability for graph execution.
 package emit
 
 import (
@@ -452,7 +453,7 @@ func TestEvent_MetaHelpers_Integration(t *testing.T) {
 			WithMeta("cache_hits", 850).
 			WithMeta("cost", 0.05)
 
-		// Verify all metadata is present
+		// Verify all metadata is present.
 		if result.Meta["duration_ms"] != int64(500) {
 			t.Error("expected duration_ms")
 		}

@@ -1,3 +1,4 @@
+// Package model provides LLM integration adapters.
 package model
 
 import (
@@ -7,31 +8,35 @@ import (
 
 // MockChatModel is a test implementation of ChatModel.
 //
-// Use MockChatModel in tests to verify workflow behavior without
+// Use MockChatModel in tests to verify workflow behavior without.
 // making actual LLM API calls. It provides:
-//   - Configurable responses
-//   - Call history tracking
-//   - Error injection
-//   - Thread-safe operation
+// - Configurable responses.
+// - Call history tracking.
+// - Error injection.
+// - Thread-safe operation.
 //
 // Example usage:
 //
-//	mock := &MockChatModel{
-//	    Responses: []ChatOut{
-//	        {Text: "First response"},
-//	        {Text: "Second response"},
-//	    },
-//	}
-//	out, err := mock.Chat(ctx, messages, nil)
-//	// Returns "First response", then "Second response" on subsequent calls
+// mock := &MockChatModel{.
+// Responses: []ChatOut{.
+//
+//		        {Text: "First response"},
+//		        {Text: "Second response"},
+//		    },
+//	}.
+//
+// out, err := mock.Chat(ctx, messages, nil).
+// // Returns "First response", then "Second response" on subsequent calls.
 //
 // Example with error injection:
 //
-//	mock := &MockChatModel{
-//	    Err: errors.New("API error"),
-//	}
-//	_, err := mock.Chat(ctx, messages, nil)
-//	// Returns the configured error
+// mock := &MockChatModel{.
+//
+//		    Err: errors.New("API error"),
+//	}.
+//
+// _, err := mock.Chat(ctx, messages, nil).
+// // Returns the configured error.
 type MockChatModel struct {
 	// Responses contains the sequence of responses to return.
 	// Each call to Chat() returns the next response in order.
@@ -58,12 +63,12 @@ type MockChatCall struct {
 // Chat implements the ChatModel interface.
 //
 // Returns:
-//   - The next response from Responses (or repeats the last response)
-//   - Or Err if configured
+// - The next response from Responses (or repeats the last response).
+// - Or Err if configured.
 //
 // Always records the call in Calls history regardless of success/failure.
 func (m *MockChatModel) Chat(ctx context.Context, messages []Message, tools []ToolSpec) (ChatOut, error) {
-	// Check context cancellation first (before acquiring lock)
+	// Check context cancellation first (before acquiring lock).
 	if ctx.Err() != nil {
 		return ChatOut{}, ctx.Err()
 	}
@@ -71,23 +76,23 @@ func (m *MockChatModel) Chat(ctx context.Context, messages []Message, tools []To
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Record the call
+	// Record the call.
 	m.Calls = append(m.Calls, MockChatCall{
 		Messages: messages,
 		Tools:    tools,
 	})
 
-	// Return error if configured
+	// Return error if configured.
 	if m.Err != nil {
 		return ChatOut{}, m.Err
 	}
 
-	// Return empty response if no responses configured
+	// Return empty response if no responses configured.
 	if len(m.Responses) == 0 {
 		return ChatOut{}, nil
 	}
 
-	// Get the current response
+	// Get the current response.
 	idx := m.callIndex
 	if idx >= len(m.Responses) {
 		idx = len(m.Responses) - 1 // Repeat last response
@@ -102,9 +107,12 @@ func (m *MockChatModel) Chat(ctx context.Context, messages []Message, tools []To
 //
 // Useful when reusing the same mock across multiple test cases:
 //
-//	mock := &MockChatModel{Responses: []ChatOut{{Text: "OK"}}}
+// mock := &MockChatModel{Responses: []ChatOut{{Text: "OK"}}}.
+//
 //	// ... run test 1 ...
-//	mock.Reset()
+//
+// mock.Reset().
+//
 //	// ... run test 2 with clean state ...
 func (m *MockChatModel) Reset() {
 	m.mu.Lock()
@@ -118,9 +126,9 @@ func (m *MockChatModel) Reset() {
 //
 // Thread-safe convenience method:
 //
-//	if mock.CallCount() != 3 {
-//	    t.Errorf("expected 3 calls, got %d", mock.CallCount())
-//	}
+// if mock.CallCount() != 3 {.
+// t.Errorf("expected 3 calls, got %d", mock.CallCount()).
+// }.
 func (m *MockChatModel) CallCount() int {
 	m.mu.Lock()
 	defer m.mu.Unlock()

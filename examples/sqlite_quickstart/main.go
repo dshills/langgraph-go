@@ -1,3 +1,4 @@
+// Package main demonstrates usage of the LangGraph-Go framework.
 package main
 
 import (
@@ -30,10 +31,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create SQLite store: %v", err)
 	}
-	defer sqliteStore.Close()
+	defer func() { _ = sqliteStore.Close() }()
 	fmt.Printf("✓ Created SQLite database at: %s\n\n", dbPath)
 
-	// 2. Define a simple reducer to merge state updates
+	// 2. Define a simple reducer to merge state updates.
 	reducer := func(prev, delta State) State {
 		if delta.Message != "" {
 			prev.Message = delta.Message
@@ -47,15 +48,15 @@ func main() {
 		return prev
 	}
 
-	// 3. Create a simple emitter for observability
+	// 3. Create a simple emitter for observability.
 	emitter := emit.NewLogEmitter(os.Stdout, false)
 
-	// 4. Create engine with SQLite store
+	// 4. Create engine with SQLite store.
 	engine := graph.New(reducer, sqliteStore, emitter, graph.Options{
 		MaxSteps: 10,
 	})
 
-	// 5. Define workflow nodes
+	// 5. Define workflow nodes.
 	startNode := graph.NodeFunc[State](func(ctx context.Context, s State) graph.NodeResult[State] {
 		fmt.Println("→ Node 'start': Initializing workflow")
 		return graph.NodeResult[State]{
@@ -90,7 +91,7 @@ func main() {
 		}
 	})
 
-	// 6. Add nodes to engine
+	// 6. Add nodes to engine.
 	if err := engine.Add("start", startNode); err != nil {
 		log.Fatalf("Failed to add start node: %v", err)
 	}
@@ -101,12 +102,12 @@ func main() {
 		log.Fatalf("Failed to add finish node: %v", err)
 	}
 
-	// 7. Set entry point for workflow
+	// 7. Set entry point for workflow.
 	if err := engine.StartAt("start"); err != nil {
 		log.Fatalf("Failed to set entry point: %v", err)
 	}
 
-	// Run the workflow
+	// Run the workflow.
 	runID := "quickstart-001"
 	ctx := context.Background()
 
@@ -124,7 +125,7 @@ func main() {
 	fmt.Printf("  Final count: %d\n", finalState.Count)
 	fmt.Printf("  Done: %v\n\n", finalState.Done)
 
-	// 8. Demonstrate persistence: Load state from database
+	// 8. Demonstrate persistence: Load state from database.
 	fmt.Println("Demonstrating persistence...")
 	fmt.Println("─────────────────────────────")
 
@@ -139,7 +140,7 @@ func main() {
 	fmt.Printf("  Count: %d\n", loadedState.Count)
 	fmt.Printf("  Done: %v\n\n", loadedState.Done)
 
-	// 9. Show database file info
+	// 9. Show database file info.
 	fileInfo, err := os.Stat(dbPath)
 	if err == nil {
 		fmt.Printf("Database file: %s (%d bytes)\n", dbPath, fileInfo.Size())

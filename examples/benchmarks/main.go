@@ -1,8 +1,10 @@
+// Package main demonstrates usage of the LangGraph-Go framework.
 package main
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -11,7 +13,7 @@ import (
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
-// State represents workflow state for benchmarking
+// State represents workflow state for benchmarking.
 type State struct {
 	WorkflowType string
 	Steps        int
@@ -19,7 +21,7 @@ type State struct {
 	Data         map[string]interface{}
 }
 
-// Reducer merges state updates
+// Reducer merges state updates.
 func reducer(prev, delta State) State {
 	if delta.WorkflowType != "" {
 		prev.WorkflowType = delta.WorkflowType
@@ -45,7 +47,7 @@ func main() {
 	fmt.Println("=== LangGraph-Go Performance Comparison ===")
 	fmt.Println()
 
-	// Scenario 1: Small High-Frequency Workflows
+	// Scenario 1: Small High-Frequency Workflows.
 	fmt.Println("📊 Scenario 1: High-Frequency Small Workflows")
 	fmt.Println("Testing 1,000 executions of a 3-node workflow...")
 
@@ -58,31 +60,39 @@ func main() {
 
 	engine := graph.New(reducer, st, emitter, opts)
 
-	// 3-node workflow: start → process → finish
-	engine.Add("start", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	// 3-node workflow: start → process → finish.
+	if err := engine.Add("start", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
 		return graph.NodeResult[State]{
 			Delta: State{Steps: 1, Data: map[string]interface{}{"step": "start"}},
 			Route: graph.Goto("process"),
 		}
-	}))
+	})); err != nil {
+		log.Fatalf("Failed to add start node: %v", err)
+	}
 
-	engine.Add("process", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	if err := engine.Add("process", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
 		return graph.NodeResult[State]{
 			Delta: State{Steps: 2, Data: map[string]interface{}{"step": "process"}},
 			Route: graph.Goto("finish"),
 		}
-	}))
+	})); err != nil {
+		log.Fatalf("Failed to add process node: %v", err)
+	}
 
-	engine.Add("finish", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	if err := engine.Add("finish", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
 		return graph.NodeResult[State]{
 			Delta: State{Steps: 3, Data: map[string]interface{}{"step": "finish"}},
 			Route: graph.Stop(),
 		}
-	}))
+	})); err != nil {
+		log.Fatalf("Failed to add finish node: %v", err)
+	}
 
-	engine.StartAt("start")
+	if err := engine.StartAt("start"); err != nil {
+		log.Fatalf("Failed to set start node: %v", err)
+	}
 
-	// Execute 1,000 workflows
+	// Execute 1,000 workflows.
 	for i := 0; i < smallWorkflowCount; i++ {
 		runID := fmt.Sprintf("small-%d", i)
 		initialState := State{
@@ -108,7 +118,7 @@ func main() {
 	fmt.Printf("📈 Average latency: %v\n", avgLatency)
 	fmt.Println()
 
-	// Scenario 2: Large Complex Workflow
+	// Scenario 2: Large Complex Workflow.
 	fmt.Println("📊 Scenario 2: Large Complex Workflow")
 	fmt.Println("Testing execution of a 50-node sequential workflow...")
 
@@ -119,13 +129,13 @@ func main() {
 
 	engine2 := graph.New(reducer, st2, emitter2, opts2)
 
-	// Build 50-node sequential workflow
+	// Build 50-node sequential workflow.
 	for i := 0; i < nodeCount; i++ {
 		nodeID := fmt.Sprintf("node%d", i)
 		nextNodeID := fmt.Sprintf("node%d", i+1)
 		stepNum := i + 1
 
-		engine2.Add(nodeID, graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+		if err := engine2.Add(nodeID, graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
 			delta := State{
 				Steps: stepNum,
 				Data: map[string]interface{}{
@@ -145,12 +155,16 @@ func main() {
 				Delta: delta,
 				Route: route,
 			}
-		}))
+		})); err != nil {
+			log.Fatalf("Failed to add node %s: %v", nodeID, err)
+		}
 	}
 
-	engine2.StartAt("node0")
+	if err := engine2.StartAt("node0"); err != nil {
+		log.Fatalf("Failed to set start node: %v", err)
+	}
 
-	// Execute large workflow
+	// Execute large workflow.
 	start = time.Now()
 	runID := "large-workflow-001"
 	initialState := State{
@@ -174,7 +188,7 @@ func main() {
 	fmt.Printf("🕐 Average step time: %v\n", avgStepTime)
 	fmt.Println()
 
-	// Scenario 3: Parallel Execution Performance
+	// Scenario 3: Parallel Execution Performance.
 	fmt.Println("📊 Scenario 3: Parallel Branch Execution")
 	fmt.Println("Testing 4 parallel branches with fan-out/fan-in...")
 
@@ -184,19 +198,21 @@ func main() {
 
 	engine3 := graph.New(reducer, st3, emitter3, opts3)
 
-	// Fan-out node
-	engine3.Add("start", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	// Fan-out node.
+	if err := engine3.Add("start", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
 		return graph.NodeResult[State]{
 			Delta: State{Steps: 1, Data: map[string]interface{}{"fanout": true}},
 			Route: graph.Next{Many: []string{"branch1", "branch2", "branch3", "branch4"}},
 		}
-	}))
+	})); err != nil {
+		log.Fatalf("Failed to add start node: %v", err)
+	}
 
-	// 4 parallel branches
+	// 4 parallel branches.
 	for i := 1; i <= 4; i++ {
 		branchID := fmt.Sprintf("branch%d", i)
-		engine3.Add(branchID, graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
-			// Simulate work
+		if err := engine3.Add(branchID, graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+			// Simulate work.
 			time.Sleep(50 * time.Millisecond)
 
 			return graph.NodeResult[State]{
@@ -207,20 +223,26 @@ func main() {
 				},
 				Route: graph.Goto("join"),
 			}
-		}))
+		})); err != nil {
+			log.Fatalf("Failed to add branch node %s: %v", branchID, err)
+		}
 	}
 
-	// Join node
-	engine3.Add("join", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	// Join node.
+	if err := engine3.Add("join", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
 		return graph.NodeResult[State]{
 			Delta: State{Steps: state.Steps + 1, Data: map[string]interface{}{"joined": true}},
 			Route: graph.Stop(),
 		}
-	}))
+	})); err != nil {
+		log.Fatalf("Failed to add join node: %v", err)
+	}
 
-	engine3.StartAt("start")
+	if err := engine3.StartAt("start"); err != nil {
+		log.Fatalf("Failed to set start node: %v", err)
+	}
 
-	// Execute parallel workflow
+	// Execute parallel workflow.
 	start = time.Now()
 	runID = "parallel-workflow-001"
 	initialState = State{
@@ -245,7 +267,7 @@ func main() {
 	fmt.Printf("📊 Branches completed: 4\n")
 	fmt.Println()
 
-	// Scenario 4: Checkpoint Performance
+	// Scenario 4: Checkpoint Performance.
 	fmt.Println("📊 Scenario 4: Checkpoint Save/Restore Performance")
 	fmt.Println("Testing 100 checkpoint save and 100 load operations...")
 
@@ -267,7 +289,7 @@ func main() {
 		},
 	}
 
-	// Benchmark saves
+	// Benchmark saves.
 	start = time.Now()
 	for i := 0; i < checkpointCount; i++ {
 		cpID := fmt.Sprintf("checkpoint-%d", i)
@@ -280,7 +302,7 @@ func main() {
 	saveElapsed := time.Since(start)
 	avgSaveTime := saveElapsed / time.Duration(checkpointCount)
 
-	// Benchmark loads
+	// Benchmark loads.
 	start = time.Now()
 	for i := 0; i < checkpointCount; i++ {
 		cpID := fmt.Sprintf("checkpoint-%d", i)
@@ -302,7 +324,7 @@ func main() {
 	fmt.Printf("📊 Average load time: %v\n", avgLoadTime)
 	fmt.Println()
 
-	// Summary
+	// Summary.
 	fmt.Println("─────────────────────────────────────────────")
 	fmt.Println()
 	fmt.Println("📋 Performance Summary")

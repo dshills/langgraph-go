@@ -1,3 +1,4 @@
+// Package emit provides event emission and observability for graph execution.
 package emit
 
 import (
@@ -7,41 +8,41 @@ import (
 
 // BufferedEmitter implements Emitter by storing events in memory (T169-T172).
 //
-// This emitter captures all events and provides query capabilities for
-// execution history analysis. Events are organized by runID for efficient
+// This emitter captures all events and provides query capabilities for.
+// execution history analysis. Events are organized by runID for efficient.
 // retrieval and filtering.
 //
 // Features:
-//   - Thread-safe concurrent access
-//   - Query by runID with optional filtering
-//   - Filter by nodeID, message, step range
-//   - Clear events by runID or all events
+// - Thread-safe concurrent access.
+// - Query by runID with optional filtering.
+// - Filter by nodeID, message, step range.
+// - Clear events by runID or all events.
 //
 // Use cases:
-//   - Development and debugging
-//   - Testing and validation
-//   - Real-time monitoring dashboards
-//   - Post-execution analysis
+// - Development and debugging.
+// - Testing and validation.
+// - Real-time monitoring dashboards.
+// - Post-execution analysis.
 //
-// Warning: This emitter stores all events in memory. For production
-// deployments with long-running workflows or high event volume, consider
+// Warning: This emitter stores all events in memory. For production.
+// deployments with long-running workflows or high event volume, consider.
 // using a persistent storage backend or implement event rotation/cleanup.
 //
 // Example usage:
 //
-//	// Create buffered emitter for testing
-//	emitter := emit.NewBufferedEmitter()
-//	engine := graph.New(reducer, store, emitter, opts)
+// // Create buffered emitter for testing.
+// emitter := emit.NewBufferedEmitter().
+// engine := graph.New(reducer, store, emitter, opts).
 //
-//	// Run workflow
-//	engine.Run(ctx, "run-001", initialState)
+// // Run workflow.
+// engine.Run(ctx, "run-001", initialState).
 //
-//	// Query execution history
-//	allEvents := emitter.GetHistory("run-001")
-//	errorEvents := emitter.GetHistoryWithFilter("run-001", emit.HistoryFilter{Msg: "error"})
+// // Query execution history.
+// allEvents := emitter.GetHistory("run-001").
+// errorEvents := emitter.GetHistoryWithFilter("run-001", emit.HistoryFilter{Msg: "error"}).
 //
-//	// Clean up old runs
-//	emitter.Clear("run-001")
+// // Clean up old runs.
+// emitter.Clear("run-001").
 type BufferedEmitter struct {
 	mu     sync.RWMutex
 	events map[string][]Event // runID -> events
@@ -49,31 +50,35 @@ type BufferedEmitter struct {
 
 // HistoryFilter specifies criteria for filtering execution history (T171, T172).
 //
-// All filter fields are optional. When multiple fields are set, they are
+// All filter fields are optional. When multiple fields are set, they are.
 // combined with AND logic (all conditions must match).
 //
 // Fields:
-//   - NodeID: Filter by specific node
-//   - Msg: Filter by message type (e.g., "node_start", "error")
-//   - MinStep: Filter events with step >= MinStep (nil = no lower bound)
-//   - MaxStep: Filter events with step <= MaxStep (nil = no upper bound)
+// - NodeID: Filter by specific node.
+// - Msg: Filter by message type (e.g., "node_start", "error").
+// - MinStep: Filter events with step >= MinStep (nil = no lower bound).
+// - MaxStep: Filter events with step <= MaxStep (nil = no upper bound).
 //
 // Example usage:
 //
-//	// Get all errors from a specific node
-//	filter := emit.HistoryFilter{
-//		NodeID: "validator",
-//		Msg:    "error",
-//	}
-//	errors := emitter.GetHistoryWithFilter("run-001", filter)
+// // Get all errors from a specific node.
+// filter := emit.HistoryFilter{.
 //
-//	// Get events from steps 5-10
-//	minStep, maxStep := 5, 10
-//	filter := emit.HistoryFilter{
-//		MinStep: &minStep,
-//		MaxStep: &maxStep,
-//	}
-//	stepEvents := emitter.GetHistoryWithFilter("run-001", filter)
+//			NodeID: "validator",
+//			Msg:    "error",
+//	}.
+//
+// errors := emitter.GetHistoryWithFilter("run-001", filter).
+//
+// // Get events from steps 5-10.
+// minStep, maxStep := 5, 10.
+// filter := emit.HistoryFilter{.
+//
+//			MinStep: &minStep,
+//			MaxStep: &maxStep,
+//	}.
+//
+// stepEvents := emitter.GetHistoryWithFilter("run-001", filter).
 type HistoryFilter struct {
 	NodeID  string // Filter by node ID (empty = no filter)
 	Msg     string // Filter by message (empty = no filter)
@@ -83,7 +88,7 @@ type HistoryFilter struct {
 
 // NewBufferedEmitter creates a new BufferedEmitter (T169).
 //
-// Returns a BufferedEmitter that stores all events in memory and provides
+// Returns a BufferedEmitter that stores all events in memory and provides.
 // query capabilities. Safe for concurrent use.
 func NewBufferedEmitter() *BufferedEmitter {
 	return &BufferedEmitter{
@@ -93,7 +98,7 @@ func NewBufferedEmitter() *BufferedEmitter {
 
 // Emit stores an event in the buffer (T169).
 //
-// Events are organized by runID for efficient retrieval. This method is
+// Events are organized by runID for efficient retrieval. This method is.
 // thread-safe and can be called concurrently from multiple goroutines.
 func (b *BufferedEmitter) Emit(event Event) {
 	b.mu.Lock()
@@ -104,18 +109,18 @@ func (b *BufferedEmitter) Emit(event Event) {
 
 // GetHistory retrieves all events for a specific runID (T170).
 //
-// Returns events in the order they were emitted. Returns an empty slice
+// Returns events in the order they were emitted. Returns an empty slice.
 // if no events exist for the given runID.
 //
-// This method is thread-safe and returns a copy of the events to prevent
+// This method is thread-safe and returns a copy of the events to prevent.
 // concurrent modification issues.
 //
 // Example:
 //
-//	events := emitter.GetHistory("run-001")
-//	for _, event := range events {
-//		fmt.Printf("[%s] %s: %s\n", event.RunID, event.NodeID, event.Msg)
-//	}
+// events := emitter.GetHistory("run-001").
+// for _, event := range events {.
+// fmt.Printf("[%s] %s: %s\n", event.RunID, event.NodeID, event.Msg).
+// }.
 func (b *BufferedEmitter) GetHistory(runID string) []Event {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -125,7 +130,7 @@ func (b *BufferedEmitter) GetHistory(runID string) []Event {
 		return []Event{} // Return empty slice instead of nil
 	}
 
-	// Return a copy to prevent external modification
+	// Return a copy to prevent external modification.
 	result := make([]Event, len(events))
 	copy(result, events)
 	return result
@@ -133,30 +138,34 @@ func (b *BufferedEmitter) GetHistory(runID string) []Event {
 
 // GetHistoryWithFilter retrieves filtered events for a specific runID (T171, T172).
 //
-// Applies the provided filter criteria to select matching events. All filter
+// Applies the provided filter criteria to select matching events. All filter.
 // conditions must match for an event to be included (AND logic).
 //
-// Returns events in the order they were emitted. Returns an empty slice if
+// Returns events in the order they were emitted. Returns an empty slice if.
 // no events match the filter.
 //
 // This method is thread-safe and returns a copy of the events.
 //
 // Example:
 //
-//	// Get error events from "validator" node
-//	filter := emit.HistoryFilter{
-//		NodeID: "validator",
-//		Msg:    "error",
-//	}
-//	errors := emitter.GetHistoryWithFilter("run-001", filter)
+// // Get error events from "validator" node.
+// filter := emit.HistoryFilter{.
 //
-//	// Get events from steps 10-20
-//	minStep, maxStep := 10, 20
-//	filter := emit.HistoryFilter{
-//		MinStep: &minStep,
-//		MaxStep: &maxStep,
-//	}
-//	stepEvents := emitter.GetHistoryWithFilter("run-001", filter)
+//			NodeID: "validator",
+//			Msg:    "error",
+//	}.
+//
+// errors := emitter.GetHistoryWithFilter("run-001", filter).
+//
+// // Get events from steps 10-20.
+// minStep, maxStep := 10, 20.
+// filter := emit.HistoryFilter{.
+//
+//			MinStep: &minStep,
+//			MaxStep: &maxStep,
+//	}.
+//
+// stepEvents := emitter.GetHistoryWithFilter("run-001", filter).
 func (b *BufferedEmitter) GetHistoryWithFilter(runID string, filter HistoryFilter) []Event {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -166,14 +175,14 @@ func (b *BufferedEmitter) GetHistoryWithFilter(runID string, filter HistoryFilte
 		return []Event{}
 	}
 
-	// If filter is empty, return all events
+	// If filter is empty, return all events.
 	if filter.NodeID == "" && filter.Msg == "" && filter.MinStep == nil && filter.MaxStep == nil {
 		result := make([]Event, len(events))
 		copy(result, events)
 		return result
 	}
 
-	// Apply filters
+	// Apply filters.
 	var result []Event
 	for _, event := range events {
 		if !b.matchesFilter(event, filter) {
@@ -190,22 +199,22 @@ func (b *BufferedEmitter) GetHistoryWithFilter(runID string, filter HistoryFilte
 
 // matchesFilter checks if an event matches the filter criteria.
 func (b *BufferedEmitter) matchesFilter(event Event, filter HistoryFilter) bool {
-	// Filter by NodeID
+	// Filter by NodeID.
 	if filter.NodeID != "" && event.NodeID != filter.NodeID {
 		return false
 	}
 
-	// Filter by Msg
+	// Filter by Msg.
 	if filter.Msg != "" && event.Msg != filter.Msg {
 		return false
 	}
 
-	// Filter by MinStep
+	// Filter by MinStep.
 	if filter.MinStep != nil && event.Step < *filter.MinStep {
 		return false
 	}
 
-	// Filter by MaxStep
+	// Filter by MaxStep.
 	if filter.MaxStep != nil && event.Step > *filter.MaxStep {
 		return false
 	}
@@ -222,27 +231,27 @@ func (b *BufferedEmitter) matchesFilter(event Event, filter HistoryFilter) bool 
 //
 // Example:
 //
-//	// Clear specific run
-//	emitter.Clear("run-001")
+// // Clear specific run.
+// emitter.Clear("run-001").
 //
-//	// Clear all runs
-//	emitter.Clear("")
+// // Clear all runs.
+// emitter.Clear("").
 func (b *BufferedEmitter) Clear(runID string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	if runID == "" {
-		// Clear all events
+		// Clear all events.
 		b.events = make(map[string][]Event)
 	} else {
-		// Clear specific runID
+		// Clear specific runID.
 		delete(b.events, runID)
 	}
 }
 
 // TODO: Implement in Phase 8
 // EmitBatch stores multiple events in the buffer in a single operation.
-func (b *BufferedEmitter) EmitBatch(ctx context.Context, events []Event) error {
+func (b *BufferedEmitter) EmitBatch(_ context.Context, events []Event) error {
 	for _, event := range events {
 		b.Emit(event)
 	}
@@ -251,6 +260,6 @@ func (b *BufferedEmitter) EmitBatch(ctx context.Context, events []Event) error {
 
 // TODO: Implement in Phase 8
 // Flush is a no-op for buffered emitter (events are already stored in memory).
-func (b *BufferedEmitter) Flush(ctx context.Context) error {
+func (b *BufferedEmitter) Flush(_ context.Context) error {
 	return nil
 }

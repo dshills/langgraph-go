@@ -145,7 +145,7 @@ type defaultClient struct {
 func (c *defaultClient) createMessage(ctx context.Context, systemPrompt string, messages []model.Message, tools []model.ToolSpec) (model.ChatOut, error) {
 	// Validate API key
 	if c.apiKey == "" {
-		return model.ChatOut{}, errors.New("Anthropic API key is required")
+		return model.ChatOut{}, errors.New("anthropic API key is required")
 	}
 
 	// Create Anthropic client
@@ -176,7 +176,7 @@ func (c *defaultClient) createMessage(ctx context.Context, systemPrompt string, 
 	// Call Anthropic API
 	resp, err := client.Messages.New(ctx, params)
 	if err != nil {
-		return model.ChatOut{}, fmt.Errorf("Anthropic API error: %w", err)
+		return model.ChatOut{}, fmt.Errorf("anthropic API error: %w", err)
 	}
 
 	// Convert response to our format (resp is already a pointer)

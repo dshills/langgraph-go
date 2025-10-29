@@ -1,3 +1,4 @@
+// Package graph_test provides functionality for the LangGraph-Go framework.
 package graph_test
 
 import (
@@ -10,17 +11,17 @@ import (
 	"github.com/dshills/langgraph-go/graph"
 )
 
-// TestCheckpointSave (T041) verifies that saveCheckpoint creates a Checkpoint
+// TestCheckpointSave (T041) verifies that saveCheckpoint creates a Checkpoint.
 // with all required fields and can be serialized/deserialized correctly.
 //
-// According to spec.md FR-006: System MUST save checkpoints containing
+// According to spec.md FR-006: System MUST save checkpoints containing.
 // {run_id, step_id, state, frontier, rng_seed, recorded_io}.
 //
 // Requirements:
-// - Checkpoint contains all required fields
-// - Checkpoint can be serialized to JSON
-// - Checkpoint can be deserialized from JSON
-// - All fields preserved across serialization
+// - Checkpoint contains all required fields.
+// - Checkpoint can be serialized to JSON.
+// - Checkpoint can be deserialized from JSON.
+// - All fields preserved across serialization.
 //
 // This test should SKIP initially because saveCheckpoint function doesn't exist yet.
 func TestCheckpointSave(t *testing.T) {
@@ -30,7 +31,7 @@ func TestCheckpointSave(t *testing.T) {
 			Counter int
 		}
 
-		// Create a checkpoint
+		// Create a checkpoint.
 		state := CheckpointTestState{Value: "test", Counter: 42}
 		frontier := []graph.WorkItem[CheckpointTestState]{
 			{
@@ -66,7 +67,7 @@ func TestCheckpointSave(t *testing.T) {
 			"checkpoint-label",
 		)
 
-		// Verify all fields present
+		// Verify all fields present.
 		if checkpoint.RunID != "run-123" {
 			t.Errorf("expected RunID='run-123', got %q", checkpoint.RunID)
 		}
@@ -115,7 +116,7 @@ func TestCheckpointSave(t *testing.T) {
 			"",
 		)
 
-		// Serialize
+		// Serialize.
 		jsonBytes, err := json.Marshal(checkpoint)
 		if err != nil {
 			t.Fatalf("failed to marshal checkpoint: %v", err)
@@ -125,13 +126,13 @@ func TestCheckpointSave(t *testing.T) {
 			t.Error("serialized checkpoint is empty")
 		}
 
-		// Verify it's valid JSON
+		// Verify it's valid JSON.
 		var raw map[string]interface{}
 		if err := json.Unmarshal(jsonBytes, &raw); err != nil {
 			t.Fatalf("serialized checkpoint is not valid JSON: %v", err)
 		}
 
-		// Verify key fields present in JSON
+		// Verify key fields present in JSON.
 		if raw["run_id"] != "run-456" {
 			t.Errorf("expected run_id='run-456' in JSON, got %v", raw["run_id"])
 		}
@@ -146,7 +147,7 @@ func TestCheckpointSave(t *testing.T) {
 			Counter int
 		}
 
-		// Create original checkpoint
+		// Create original checkpoint.
 		originalState := DeserTestState{Value: "original", Counter: 123}
 		originalFrontier := []graph.WorkItem[DeserTestState]{
 			{StepID: 1, OrderKey: 100, NodeID: "node1", State: originalState},
@@ -162,19 +163,19 @@ func TestCheckpointSave(t *testing.T) {
 			"test-label",
 		)
 
-		// Serialize
+		// Serialize.
 		jsonBytes, err := json.Marshal(original)
 		if err != nil {
 			t.Fatalf("marshal failed: %v", err)
 		}
 
-		// Deserialize
+		// Deserialize.
 		var deserialized graph.Checkpoint[DeserTestState]
 		if err := json.Unmarshal(jsonBytes, &deserialized); err != nil {
 			t.Fatalf("unmarshal failed: %v", err)
 		}
 
-		// Verify all fields preserved
+		// Verify all fields preserved.
 		if deserialized.RunID != original.RunID {
 			t.Errorf("RunID not preserved: %s != %s", deserialized.RunID, original.RunID)
 		}
@@ -196,7 +197,7 @@ func TestCheckpointSave(t *testing.T) {
 	})
 
 	t.Run("idempotency key prevents duplicate saves", func(t *testing.T) {
-		// Create two checkpoints with identical content
+		// Create two checkpoints with identical content.
 		type IdempotentState struct {
 			Value string
 		}
@@ -209,13 +210,13 @@ func TestCheckpointSave(t *testing.T) {
 		checkpoint1 := createCheckpoint("run-same", 1, state, frontier, 12345, []graph.RecordedIO{}, "")
 		checkpoint2 := createCheckpoint("run-same", 1, state, frontier, 12345, []graph.RecordedIO{}, "")
 
-		// Idempotency keys should match
+		// Idempotency keys should match.
 		if checkpoint1.IdempotencyKey != checkpoint2.IdempotencyKey {
 			t.Errorf("identical checkpoints produced different idempotency keys: %s != %s",
 				checkpoint1.IdempotencyKey, checkpoint2.IdempotencyKey)
 		}
 
-		// Different checkpoint should have different key
+		// Different checkpoint should have different key.
 		differentState := IdempotentState{Value: "different"}
 		checkpoint3 := createCheckpoint("run-same", 1, differentState, frontier, 12345, []graph.RecordedIO{}, "")
 
@@ -225,20 +226,20 @@ func TestCheckpointSave(t *testing.T) {
 	})
 }
 
-// TestIdempotencyKey (T045) verifies that computeIdempotencyKey generates
+// TestIdempotencyKey (T045) verifies that computeIdempotencyKey generates.
 // consistent keys for identical checkpoints and different keys for different checkpoints.
 //
-// According to spec.md FR-019: System MUST use idempotency keys (hash of work items
+// According to spec.md FR-019: System MUST use idempotency keys (hash of work items.
 // and state) to prevent duplicate step commits.
 //
-// According to spec.md SC-012: Idempotency keys prevent 100% of duplicate state
+// According to spec.md SC-012: Idempotency keys prevent 100% of duplicate state.
 // applications during failure recovery.
 //
 // Requirements:
-// - Same inputs produce same key
-// - Different inputs produce different keys
-// - Key format is "sha256:hex"
-// - Key incorporates runID, stepID, state, and frontier
+// - Same inputs produce same key.
+// - Different inputs produce different keys.
+// - Key format is "sha256:hex".
+// - Key incorporates runID, stepID, state, and frontier.
 //
 // This test should SKIP initially because computeIdempotencyKey doesn't exist yet.
 func TestIdempotencyKey(t *testing.T) {
@@ -341,7 +342,7 @@ func TestIdempotencyKey(t *testing.T) {
 
 		key := computeIdempotencyKey("run-123", 1, state, frontier)
 
-		// Check format: "sha256:64_hex_chars"
+		// Check format: "sha256:64_hex_chars".
 		if len(key) < 71 {
 			t.Errorf("key too short: %d characters", len(key))
 		}
@@ -349,7 +350,7 @@ func TestIdempotencyKey(t *testing.T) {
 			t.Errorf("expected key to start with 'sha256:', got %q", key[:7])
 		}
 
-		// Verify hex encoding
+		// Verify hex encoding.
 		hexPart := key[7:]
 		if _, err := hex.DecodeString(hexPart); err != nil {
 			t.Errorf("key does not contain valid hex: %v", err)
@@ -357,7 +358,7 @@ func TestIdempotencyKey(t *testing.T) {
 	})
 
 	t.Run("key is collision resistant", func(t *testing.T) {
-		// Generate many keys and verify no collisions
+		// Generate many keys and verify no collisions.
 		type KeyTestState struct {
 			Value   string
 			Counter int
@@ -399,7 +400,7 @@ func TestIdempotencyKey(t *testing.T) {
 		state := KeyTestState{Value: "test"}
 		emptyFrontier := []graph.WorkItem[KeyTestState]{}
 
-		// Should not panic or error
+		// Should not panic or error.
 		key := computeIdempotencyKey("run-123", 1, state, emptyFrontier)
 
 		if key == "" {
@@ -411,7 +412,7 @@ func TestIdempotencyKey(t *testing.T) {
 	})
 }
 
-// Helper functions for checkpoint tests (these will be implemented in T046-T057)
+// Helper functions for checkpoint tests (these will be implemented in T046-T057).
 
 // createCheckpoint creates a Checkpoint with all required fields.
 // This is a test helper that mimics the real checkpoint creation.
@@ -424,7 +425,7 @@ func createCheckpoint[S any](
 	recordedIOs []graph.RecordedIO,
 	label string,
 ) graph.Checkpoint[S] {
-	// Compute idempotency key
+	// Compute idempotency key.
 	idempotencyKey := computeIdempotencyKey(runID, stepID, state, frontier)
 
 	return graph.Checkpoint[S]{
@@ -445,21 +446,21 @@ func createCheckpoint[S any](
 func computeIdempotencyKey[S any](runID string, stepID int, state S, frontier []graph.WorkItem[S]) string {
 	h := sha256.New()
 
-	// Write runID
+	// Write runID.
 	h.Write([]byte(runID))
 
-	// Write stepID (as string for simplicity in test)
+	// Write stepID (as string for simplicity in test).
 	h.Write([]byte{byte(stepID)})
 
-	// Write state
+	// Write state.
 	stateJSON, _ := json.Marshal(state)
 	h.Write(stateJSON)
 
-	// Write frontier
+	// Write frontier.
 	frontierJSON, _ := json.Marshal(frontier)
 	h.Write(frontierJSON)
 
-	// Compute hash
+	// Compute hash.
 	hashBytes := h.Sum(nil)
 	return "sha256:" + hex.EncodeToString(hashBytes)
 }

@@ -1,15 +1,16 @@
+// Package graph provides the core graph execution engine for LangGraph-Go.
 package graph
 
 // Edge represents a connection between two nodes in the workflow graph.
 //
 // Edges define the control flow between nodes. They can be:
-//   - Unconditional: Always traverse (When = nil)
-//   - Conditional: Only traverse if predicate returns true (When != nil)
+// - Unconditional: Always traverse (When = nil).
+// - Conditional: Only traverse if predicate returns true (When != nil).
 //
 // Edges are used during graph construction to define possible transitions.
 // At runtime, the Engine evaluates predicates to determine which edge to follow.
 //
-// For explicit routing, nodes can return Next in NodeResult which overrides
+// For explicit routing, nodes can return Next in NodeResult which overrides.
 // edge-based routing.
 //
 // Type parameter S is the state type used for predicate evaluation.
@@ -32,10 +33,10 @@ type Edge[S any] struct {
 // They should be pure functions (deterministic, no side effects).
 //
 // Common patterns:
-//   - Threshold: state.Score > 0.8
-//   - Presence: state.Result != ""
-//   - Boolean flag: state.IsReady
-//   - Complex logic: state.Retries < 3 && state.Error == nil
+// - Threshold: state.Score > 0.8.
+// - Presence: state.Result != "".
+// - Boolean flag: state.IsReady.
+// - Complex logic: state.Retries < 3 && state.Error == nil.
 //
 // Type parameter S is the state type to evaluate.
 type Predicate[S any] func(state S) bool

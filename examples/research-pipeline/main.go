@@ -1,8 +1,10 @@
+// Package main demonstrates usage of the LangGraph-Go framework.
 package main
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -12,29 +14,29 @@ import (
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
-// ResearchState represents the state of a multi-agent research pipeline
+// ResearchState represents the state of a multi-agent research pipeline.
 type ResearchState struct {
 	Topic            string
 	ResearchQuestion string
 
-	// Agent outputs
+	// Agent outputs.
 	HistoricalContext string
 	TechnicalAnalysis string
 	MarketTrends      string
 	ExpertOpinions    string
 
-	// Aggregated results
+	// Aggregated results.
 	Summary         string
 	KeyFindings     []string
 	Recommendations []string
 
-	// Metadata
+	// Metadata.
 	AgentsCompleted   []string
 	TotalResearchTime time.Duration
 	StartTime         time.Time
 }
 
-// Reducer merges research state updates
+// Reducer merges research state updates.
 func reducer(prev, delta ResearchState) ResearchState {
 	if delta.Topic != "" {
 		prev.Topic = delta.Topic
@@ -75,7 +77,7 @@ func reducer(prev, delta ResearchState) ResearchState {
 	return prev
 }
 
-// MockResearchTool simulates external research tools
+// MockResearchTool simulates external research tools.
 type MockResearchTool struct {
 	name string
 }
@@ -84,10 +86,10 @@ func (m *MockResearchTool) Name() string {
 	return m.name
 }
 
-func (m *MockResearchTool) Call(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {
+func (m *MockResearchTool) Call(_ context.Context, input map[string]interface{}) (map[string]interface{}, error) {
 	query, _ := input["query"].(string)
 
-	// Simulate research delay
+	// Simulate research delay.
 	time.Sleep(100 * time.Millisecond)
 
 	results := map[string]interface{}{
@@ -110,19 +112,19 @@ func main() {
 	fmt.Println("• Complex workflow with synthesis and reporting")
 	fmt.Println()
 
-	// Create research tools
+	// Create research tools.
 	historicalDB := &MockResearchTool{name: "historical_database"}
 	technicalAPI := &MockResearchTool{name: "technical_api"}
 	marketData := &MockResearchTool{name: "market_data_service"}
 	expertNetwork := &MockResearchTool{name: "expert_network"}
 
-	// Setup workflow
+	// Setup workflow.
 	st := store.NewMemStore[ResearchState]()
 	emitter := emit.NewLogEmitter(os.Stdout, false)
 	opts := graph.Options{MaxSteps: 20}
 	engine := graph.New(reducer, st, emitter, opts)
 
-	// Node 1: Initialize research
+	// Node 1: Initialize research.
 	engine.Add("initialize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Printf("🔍 Initializing research on: %s\n", state.Topic)
 		fmt.Printf("📋 Research question: %s\n", state.ResearchQuestion)
@@ -136,11 +138,11 @@ func main() {
 		}
 	}))
 
-	// Agent 1: Historical Context Researcher
+	// Agent 1: Historical Context Researcher.
 	engine.Add("historical_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println("📚 Historical Agent: Researching historical context...")
 
-		// Use research tool
+		// Use research tool.
 		result, err := historicalDB.Call(ctx, map[string]interface{}{
 			"query": fmt.Sprintf("historical context of %s", state.Topic),
 		})
@@ -170,7 +172,7 @@ func main() {
 		}
 	}))
 
-	// Agent 2: Technical Analysis Researcher
+	// Agent 2: Technical Analysis Researcher.
 	engine.Add("technical_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println("🔧 Technical Agent: Analyzing technical aspects...")
 
@@ -202,7 +204,7 @@ func main() {
 		}
 	}))
 
-	// Agent 3: Market Trends Researcher
+	// Agent 3: Market Trends Researcher.
 	engine.Add("market_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println("📈 Market Agent: Analyzing market trends...")
 
@@ -235,7 +237,7 @@ func main() {
 		}
 	}))
 
-	// Agent 4: Expert Opinions Researcher
+	// Agent 4: Expert Opinions Researcher.
 	engine.Add("expert_agent", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println("👥 Expert Agent: Gathering expert opinions...")
 
@@ -267,9 +269,9 @@ func main() {
 		}
 	}))
 
-	// Node 5: Synthesize all research (Join point for parallel execution)
+	// Node 5: Synthesize all research (Join point for parallel execution).
 	engine.Add("synthesize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
-		// Count available research
+		// Count available research.
 		count := 0
 		if state.HistoricalContext != "" {
 			count++
@@ -287,20 +289,20 @@ func main() {
 		fmt.Printf("📊 Synthesize check: %d/4 agents complete\n", count)
 
 		if count < 4 {
-			// Not all agents done yet, wait
+			// Not all agents done yet, wait.
 			return graph.NodeResult[ResearchState]{
 				Route: graph.Goto("synthesize"),
 			}
 		}
 
-		// All research complete, proceed with synthesis
+		// All research complete, proceed with synthesis.
 		fmt.Println()
 		fmt.Println("🔄 Synthesizing research from all agents...")
 
-		// Simulate synthesis time
+		// Simulate synthesis time.
 		time.Sleep(200 * time.Millisecond)
 
-		// Create comprehensive summary
+		// Create comprehensive summary.
 		summary := fmt.Sprintf(
 			"Comprehensive Research Summary: %s\n\n"+
 				"This multi-agent research analysis combines historical context, "+
@@ -313,7 +315,7 @@ func main() {
 			state.Topic,
 		)
 
-		// Extract key findings
+		// Extract key findings.
 		keyFindings := []string{
 			"Strong historical foundation with accelerating recent progress",
 			"Technically mature with proven scalability and performance",
@@ -322,7 +324,7 @@ func main() {
 			"High adoption rate among leading organizations",
 		}
 
-		// Generate recommendations
+		// Generate recommendations.
 		recommendations := []string{
 			"Immediate action: Begin pilot implementation to gain early-mover advantage",
 			"Strategic priority: Allocate resources for skill development and training",
@@ -346,7 +348,7 @@ func main() {
 		}
 	}))
 
-	// Node 6: Generate final report
+	// Node 6: Generate final report.
 	engine.Add("report", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println()
 		fmt.Println("📊 Generating final research report...")
@@ -357,9 +359,11 @@ func main() {
 		}
 	}))
 
-	engine.StartAt("initialize")
+	if err := engine.StartAt("initialize"); err != nil {
+		log.Fatalf("failed to set start node: %v", err)
+	}
 
-	// Execute research pipeline
+	// Execute research pipeline.
 	ctx := context.Background()
 	initialState := ResearchState{
 		Topic:            "Artificial Intelligence in Healthcare",
@@ -372,7 +376,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Display final report
+	// Display final report.
 	fmt.Println("═══════════════════════════════════════════════════════════")
 	fmt.Println("                    RESEARCH REPORT")
 	fmt.Println("═══════════════════════════════════════════════════════════")

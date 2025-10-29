@@ -70,7 +70,7 @@ func basicProviderUsage(ctx context.Context) error {
 		m := anthropic.NewChatModel(anthropicKey, "claude-sonnet-4-5-20250929")
 		out, err := m.Chat(ctx, messages, nil)
 		if err != nil {
-			return fmt.Errorf("Anthropic error: %w", err)
+			return fmt.Errorf("anthropic error: %w", err)
 		}
 		fmt.Printf("Response: %s\n", out.Text)
 	} else {
@@ -91,7 +91,7 @@ func basicProviderUsage(ctx context.Context) error {
 					safetyErr.Reason(), safetyErr.Category())
 				return nil
 			}
-			return fmt.Errorf("Google error: %w", err)
+			return fmt.Errorf("google error: %w", err)
 		}
 		fmt.Printf("Response: %s\n", out.Text)
 	} else {
