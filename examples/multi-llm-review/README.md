@@ -1,6 +1,8 @@
 # Multi-LLM Code Review Workflow
 
-A LangGraph-Go example application that performs automated code reviews using multiple AI language model providers (OpenAI, Anthropic, Google) in parallel, consolidating their feedback into a single prioritized report.
+A fully functional LangGraph-Go example application that performs automated code reviews using multiple AI language model providers (OpenAI, Anthropic, Google) in parallel, consolidating their feedback into a single prioritized report.
+
+This example demonstrates real LLM integration with production-ready provider adapters - no mock data required!
 
 ## Features
 
@@ -32,34 +34,50 @@ cd langgraph-go/examples/multi-llm-review
 # Install dependencies
 go mod download
 
-# Copy example config
-cp config.example.yaml config.yaml
+# Build the binary
+go build -o multi-llm-review .
 
-# Set your API keys
+# Set your API keys (will be read from environment variables)
 export OPENAI_API_KEY="sk-..."
 export ANTHROPIC_API_KEY="sk-ant-..."
-export GOOGLE_API_KEY="AI..."
+export GOOGLE_API_KEY="AI..."  # Optional, disabled by default
+
+# On first run, a default config will be created at ~/.multi-llm-review/config.yaml
 ```
 
 ### Usage
 
 ```bash
-# Review a codebase
-go run . --config config.yaml /path/to/codebase
+# Review a codebase using the built binary
+./multi-llm-review /path/to/codebase
 
-# Review with specific focus
-go run . --config config.yaml --focus security,performance /path/to/codebase
+# Or run directly with go run
+go run . /path/to/codebase
 
-# Resume from checkpoint
-go run . --config config.yaml --resume /path/to/codebase
+# Use custom config file
+./multi-llm-review --config custom-config.yaml /path/to/codebase
 
-# Generate JSON report
-go run . --config config.yaml --format json /path/to/codebase
+# Generate JSON report instead of markdown
+./multi-llm-review --format json /path/to/codebase
+
+# Resume from a previous checkpoint
+./multi-llm-review --resume /path/to/codebase
+```
+
+**Important**: Make sure your API keys are set as environment variables before running:
+```bash
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Then run the review
+./multi-llm-review /path/to/your/code
 ```
 
 ## Configuration
 
-Edit `config.yaml` to customize:
+The configuration file is located at `~/.multi-llm-review/config.yaml` by default. On first run, a default config will be automatically created.
+
+Edit the config to customize:
 
 - **Providers**: Enable/disable AI providers, set models
 - **Batch Size**: Adjust for your file sizes (default: 20)
@@ -67,22 +85,33 @@ Edit `config.yaml` to customize:
 - **File Patterns**: Include/exclude file patterns
 - **Output**: Report format (markdown/json) and directory
 
-Example minimal config:
+**Config location:**
+- Default: `~/.multi-llm-review/config.yaml` (created automatically on first run)
+- Custom: Use `--config /path/to/config.yaml` to override
+
+Example config:
 
 ```yaml
 providers:
   - name: openai
-    api_key: ${OPENAI_API_KEY}
+    api_key: ${OPENAI_API_KEY}  # Reads from environment
     model: gpt-4
+    enabled: true
+
+  - name: anthropic
+    api_key: ${ANTHROPIC_API_KEY}
+    model: claude-3-5-sonnet-20241022
     enabled: true
 
 review:
   batch_size: 20
-  focus_areas: [security, performance]
-  include_patterns: ["*.go"]
+  focus_areas: [security, performance, best-practices]
+  include_patterns: ["*.go", "*.py"]
+  exclude_patterns: ["*_test.go", "vendor/**"]
 
 output:
   directory: ./review-results
+  format: markdown
 ```
 
 ## Development
