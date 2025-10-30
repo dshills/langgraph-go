@@ -921,7 +921,7 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 
 	for i := 0; i < maxWorkers; i++ {
 		wg.Add(1)
-		go func(workerID int) {
+		go func(_ int) {
 			defer wg.Done()
 
 			for {
