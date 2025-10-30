@@ -24,7 +24,13 @@ import (
 // TestRNGDataRace_DirectAccess demonstrates the race condition by directly
 // accessing a shared RNG from multiple goroutines, simulating what happens
 // in the concurrent engine workers.
-func TestRNGDataRace_DirectAccess(_ *testing.T) {
+func TestRNGDataRace_DirectAccess(t *testing.T) {
+	// Skip this test when race detector is enabled, as it intentionally
+	// demonstrates a race condition for educational purposes
+	if raceEnabled {
+		t.Skip("Skipping intentional race condition demonstration when -race is enabled")
+	}
+
 	// Create a single RNG instance (like what's in the context)
 	rng := rand.New(rand.NewSource(12345)) // #nosec G404 -- deterministic RNG for reproducible concurrent testing
 
