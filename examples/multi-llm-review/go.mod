@@ -3,6 +3,7 @@ module github.com/dshills/langgraph-go/examples/multi-llm-review
 go 1.24.0
 
 require (
+	github.com/agnivade/levenshtein v1.2.1
 	github.com/anthropics/anthropic-sdk-go v1.15.0
 	github.com/dshills/langgraph-go v0.0.0
 	github.com/google/generative-ai-go v0.20.1
@@ -19,7 +20,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/longrunning v0.5.7 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
