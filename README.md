@@ -94,10 +94,6 @@ func main() {
 # Install latest version (may include breaking changes)
 go get github.com/dshills/langgraph-go
 
-# Recommended: Pin to a specific version
-go get github.com/dshills/langgraph-go@v0.3.0  # Latest: Production hardening + comprehensive docs
-go get github.com/dshills/langgraph-go@v0.2.0  # Concurrent execution + deterministic replay
-go get github.com/dshills/langgraph-go@v0.1.0  # Initial release
 ```
 
 **Note:** Since this is alpha software, we recommend pinning to a specific version in your `go.mod` to avoid unexpected breaking changes.
