@@ -810,7 +810,9 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 	var zero S
 
 	// Result channel for collecting node execution outcomes
-	results := make(chan nodeResult[S], e.opts.MaxConcurrentNodes)
+	// Buffer sized at MaxConcurrentNodes*2 to handle concurrent error delivery (BUG-001 fix)
+	// This prevents deadlock when all workers fail simultaneously and need to report errors
+	results := make(chan nodeResult[S], e.opts.MaxConcurrentNodes*2)
 
 	// WaitGroup tracks active workers
 	var wg sync.WaitGroup
@@ -843,8 +845,35 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 	workerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// Derive base seed from runID for per-worker RNG generation (BUG-002 fix)
+	// We compute the base seed the same way as initRNG() does, then use it to
+	// derive unique seeds for each worker. This ensures deterministic replay
+	// while preventing concurrent access to shared RNG state.
+	hasher := sha256.New()
+	hasher.Write([]byte(runID))
+	hashBytes := hasher.Sum(nil)
+	baseSeed := int64(binary.BigEndian.Uint64(hashBytes[:8])) // #nosec G115 -- conversion for deterministic seeding
+
 	// T046: Track inflight nodes for metrics
 	var inflightCounter atomic.Int32
+
+	// BUG-004 fix (T025): Atomic completion flag for race-free workflow termination
+	// CompareAndSwap ensures exactly one worker triggers completion
+	var completionDetected atomic.Bool
+
+	// BUG-004 fix (T026): Helper function to check and signal completion atomically
+	// Returns true if this call detected completion (frontier empty + no inflight work)
+	checkCompletion := func() bool {
+		if e.frontier.Len() == 0 && inflightCounter.Load() == 0 {
+			// Atomically check and set completion flag
+			// Only the first worker to see completion will return true
+			if completionDetected.CompareAndSwap(false, true) {
+				cancel() // Signal all workers to stop
+				return true
+			}
+		}
+		return false
+	}
 
 	// T046: Start metrics updater goroutine if metrics enabled
 	if e.metrics != nil {
@@ -871,13 +900,26 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 
 	for i := 0; i < maxWorkers; i++ {
 		wg.Add(1)
-		go func() {
+		go func(workerID int) {
 			defer wg.Done()
+
+			// Create per-worker RNG derived from base seed (BUG-002 fix)
+			// Each worker gets a unique RNG instance to prevent concurrent access
+			// to shared RNG state while maintaining deterministic replay.
+			// Worker seed = baseSeed + workerID ensures unique but deterministic seeds.
+			workerSeed := baseSeed + int64(workerID)
+			workerRNG := rand.New(rand.NewSource(workerSeed)) // #nosec G404 -- deterministic RNG for replay, not security
+
+			// Create worker-specific context with its own RNG instance
+			workerRNGCtx := context.WithValue(workerCtx, RNGKey, workerRNG)
 
 			for {
 				// Dequeue next work item with worker context for proper cancellation
-				item, err := e.frontier.Dequeue(workerCtx)
+				item, err := e.frontier.Dequeue(workerRNGCtx)
 				if err != nil {
+					// BUG-004 fix (T027): Check for completion after dequeue failure
+					// This handles the case where the frontier is empty and no work is inflight
+					checkCompletion()
 					// Context cancelled or frontier closed
 					return
 				}
@@ -928,7 +970,8 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 					}
 
 					// Add attempt number to context (T088)
-					nodeCtx := context.WithValue(workerCtx, AttemptKey, item.Attempt)
+					// Use workerRNGCtx which contains the worker-specific RNG (BUG-002 fix)
+					nodeCtx := context.WithValue(workerRNGCtx, AttemptKey, item.Attempt)
 
 					// T046: Track node execution start time for latency metrics
 					startTime := time.Now()
@@ -957,18 +1000,16 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 					if result.Err != nil {
 						e.emitError(runID, item.NodeID, item.StepID, result.Err)
 
-						// Helper to send error result and cancel without blocking
-						// Uses non-blocking send to prevent deadlock if results channel is full
+						// Helper to send error result and cancel (BUG-001 fix: always block)
+						// Errors are rare and critical - we MUST deliver them to the caller
+						// Blocking is safe because results channel buffer is MaxConcurrentNodes*2
 						sendErrorAndCancel := func(err error) {
 							select {
 							case results <- nodeResult[S]{err: err}:
-								// Sent successfully
+								// Error sent successfully
 							case <-ctx.Done():
 								// Parent context canceled before send completed
-							default:
-								// Results channel full, cannot send error
-								// Cancel anyway to stop workflow execution
-								// Note: This error will not be visible to caller, but prevents deadlock
+								// This is acceptable - workflow is being torn down
 							}
 							cancel()
 						}
@@ -1001,8 +1042,9 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 								}
 
 								// Compute backoff delay (T086, T090)
+								// Use workerRNG for retry backoff calculation (BUG-002 fix)
 								var rng *rand.Rand
-								if rngVal := workerCtx.Value(RNGKey); rngVal != nil {
+								if rngVal := workerRNGCtx.Value(RNGKey); rngVal != nil {
 									rng = rngVal.(*rand.Rand)
 								}
 								delay := computeBackoff(item.Attempt, retryPol.BaseDelay, retryPol.MaxDelay, rng)
@@ -1163,8 +1205,15 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 						return
 					}
 				}() // T046: End inflight tracking func
+
+				// BUG-004 fix (T028): Check for completion after node execution completes
+				// This handles the case where this was the last node to finish
+				// inflightCounter has been decremented, so completion check is accurate
+				if checkCompletion() {
+					return
+				}
 			}
-		}()
+		}(i) // Pass worker ID to goroutine
 	}
 
 	// Wait for workers to complete in a separate goroutine
@@ -1173,24 +1222,9 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 		close(results)
 	}()
 
-	// Collect results from workers
-	// Monitor for completion: frontier empty + no inflight work
-	go func() {
-		ticker := time.NewTicker(10 * time.Millisecond)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-workerCtx.Done():
-				return
-			case <-ticker.C:
-				if e.frontier.Len() == 0 && inflightCounter.Load() == 0 {
-					// Workflow complete - cancel workers and close results
-					cancel()
-					return
-				}
-			}
-		}
-	}()
+	// BUG-004 fix (T025): Removed polling goroutine
+	// Completion detection now handled by atomic flag checks in worker loop
+	// This eliminates the 0-10ms completion detection race window
 
 	for result := range results {
 		if result.err != nil {

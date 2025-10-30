@@ -196,6 +196,8 @@ Nodes can return multiple next hops via `Next{Many: []string{...}}` to enable pa
 ## Active Technologies
 - Go 1.21+ (requires generics support) + Go standard library only (core framework), optional adapters for OpenTelemetry SDK, MySQL driver (002-concurrency-spec)
 - Store interface supports in-memory (testing) and MySQL/Aurora (production) implementations (002-concurrency-spec)
+- Go 1.21+ (requires generics, math/rand, sync/atomic) (005-critical-bug-fixes)
+- N/A (bug fixes in execution engine, not persistence layer) (005-critical-bug-fixes)
 
 ## Recent Changes
 - 002-concurrency-spec: Added Go 1.21+ (requires generics support) + Go standard library only (core framework), optional adapters for OpenTelemetry SDK, MySQL driver

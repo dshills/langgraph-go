@@ -44,7 +44,7 @@ examples: $(EXAMPLE_BINS)
 # Pattern rule to build individual examples
 $(BUILD_DIR)/%: | $(BUILD_DIR)
 	@echo "Building example: $*"
-	@$(GO) build $(GOFLAGS) -o $@ $(EXAMPLES_DIR)/$*/main.go
+	@cd $(EXAMPLES_DIR)/$* && $(GO) build $(GOFLAGS) -o $(CURDIR)/$@
 
 # Create build directory if it doesn't exist
 $(BUILD_DIR):
