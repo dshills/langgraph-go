@@ -53,7 +53,7 @@ func main() {
 
 	// Define the 3-node workflow.
 	// Node 1: Parse Query.
-	parseNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	parseNode := graph.NodeFunc[WorkflowState](func(_ context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Printf("Node 1: Parsing query: %q\n", s.Query)
 		return graph.NodeResult[WorkflowState]{
 			Delta: WorkflowState{
@@ -65,7 +65,7 @@ func main() {
 	})
 
 	// Node 2: Process Request.
-	processNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	processNode := graph.NodeFunc[WorkflowState](func(_ context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Printf("Node 2: Processing request from step %d\n", s.Step)
 		return graph.NodeResult[WorkflowState]{
 			Delta: WorkflowState{
@@ -77,7 +77,7 @@ func main() {
 	})
 
 	// Node 3: Finalize Result.
-	finalizeNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	finalizeNode := graph.NodeFunc[WorkflowState](func(_ context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Printf("Node 3: Finalizing result from step %d\n", s.Step)
 		return graph.NodeResult[WorkflowState]{
 			Delta: WorkflowState{

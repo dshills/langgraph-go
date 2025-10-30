@@ -36,7 +36,7 @@ type FailingNode struct {
 	CallCount   *atomic.Int32
 }
 
-func (f *FailingNode) Run(ctx context.Context, state ErrorTestState) NodeResult[ErrorTestState] {
+func (f *FailingNode) Run(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 	f.CallCount.Add(1)
 	return NodeResult[ErrorTestState]{
 		Err: f.ErrorToFail,
@@ -69,7 +69,7 @@ func TestErrorInjection_SimultaneousWorkerFailures(t *testing.T) {
 		var callCounts atomic.Int32
 		fanoutError := errors.New("simultaneous failure")
 
-		fanoutNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		fanoutNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 			// Fan out to maxWorkers nodes
 			nextNodes := make([]string, maxWorkers)
 			for i := 0; i < maxWorkers; i++ {
@@ -159,7 +159,7 @@ func TestErrorMetrics_AccuracyVerification(t *testing.T) {
 		var callCount atomic.Int32
 		expectedError := errors.New("node error")
 
-		failNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		failNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 			callCount.Add(1)
 			return NodeResult[ErrorTestState]{Err: expectedError}
 		})
@@ -213,7 +213,7 @@ func TestErrorEvents_AllFailureScenarios(t *testing.T) {
 			name: "node returns error",
 			makeNode: func() Node[ErrorTestState] {
 				err := errors.New("node execution error")
-				return NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+				return NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 					return NodeResult[ErrorTestState]{Err: err}
 				})
 			},
@@ -222,7 +222,7 @@ func TestErrorEvents_AllFailureScenarios(t *testing.T) {
 		{
 			name: "node not found during execution",
 			makeNode: func() Node[ErrorTestState] {
-				return NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+				return NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 					// Route to non-existent node
 					return NodeResult[ErrorTestState]{
 						Delta: ErrorTestState{Counter: 1},
@@ -235,7 +235,7 @@ func TestErrorEvents_AllFailureScenarios(t *testing.T) {
 		{
 			name: "max steps exceeded",
 			makeNode: func() Node[ErrorTestState] {
-				return NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+				return NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 					// Loop forever (will hit MaxSteps)
 					return NodeResult[ErrorTestState]{
 						Delta: ErrorTestState{Counter: 1},
@@ -324,7 +324,7 @@ func TestContextCancellation_DuringErrorDelivery(t *testing.T) {
 
 		// Create node that waits before failing
 		expectedError := errors.New("delayed error")
-		slowFailNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		slowFailNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 			// Small delay to allow cancellation to happen during execution
 			time.Sleep(50 * time.Millisecond)
 			return NodeResult[ErrorTestState]{Err: expectedError}
@@ -392,7 +392,7 @@ func TestContextCancellation_DuringErrorDelivery(t *testing.T) {
 		})
 
 		// Create fan-out node
-		fanoutNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		fanoutNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 			return NodeResult[ErrorTestState]{
 				Delta: ErrorTestState{Counter: 1},
 				Route: Next{Many: []string{"fail_1", "fail_2", "fail_3", "fail_4"}},
@@ -407,7 +407,7 @@ func TestContextCancellation_DuringErrorDelivery(t *testing.T) {
 		fanoutError := errors.New("fan-out error")
 		for i := 1; i <= 4; i++ {
 			nodeID := fmt.Sprintf("fail_%d", i)
-			failNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+			failNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 				time.Sleep(50 * time.Millisecond)
 				return NodeResult[ErrorTestState]{Err: fanoutError}
 			})
@@ -479,7 +479,7 @@ func TestErrorObservability_BufferedEmitter(t *testing.T) {
 			nodeError := fmt.Errorf("error from node %d", i)
 			nodeID := fmt.Sprintf("node_%d", i)
 
-			failNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+			failNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 				return NodeResult[ErrorTestState]{Err: nodeError}
 			})
 
@@ -489,7 +489,7 @@ func TestErrorObservability_BufferedEmitter(t *testing.T) {
 		}
 
 		// Create fan-out node that triggers all error nodes
-		fanoutNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		fanoutNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 			return NodeResult[ErrorTestState]{
 				Delta: ErrorTestState{Counter: 1},
 				Route: Next{Many: []string{"node_1", "node_2", "node_3"}},
@@ -564,7 +564,7 @@ func TestErrorObservability_BufferedEmitter(t *testing.T) {
 
 		// Create node with specific error message
 		specificError := errors.New("specific error with details")
-		errorNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		errorNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 			return NodeResult[ErrorTestState]{Err: specificError}
 		})
 
@@ -651,7 +651,7 @@ func TestErrorReporting_NoSilentDrops(t *testing.T) {
 				failingNodes = append(failingNodes, nodeID)
 				nodeError := fmt.Errorf("error from %s", nodeID)
 
-				failNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+				failNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 					return NodeResult[ErrorTestState]{Err: nodeError}
 				})
 
@@ -659,7 +659,7 @@ func TestErrorReporting_NoSilentDrops(t *testing.T) {
 					t.Fatalf("failed to add node %s: %v", nodeID, err)
 				}
 			} else {
-				successNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+				successNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 					return NodeResult[ErrorTestState]{
 						Delta: ErrorTestState{Counter: 1},
 						Route: Stop(),
@@ -678,7 +678,7 @@ func TestErrorReporting_NoSilentDrops(t *testing.T) {
 			fanoutTargets[i] = fmt.Sprintf("node_%d", i)
 		}
 
-		fanoutNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		fanoutNode := NodeFunc[ErrorTestState](func(_ context.Context, _ ErrorTestState) NodeResult[ErrorTestState] {
 			return NodeResult[ErrorTestState]{
 				Delta: ErrorTestState{Counter: 1},
 				Route: Next{Many: fanoutTargets},

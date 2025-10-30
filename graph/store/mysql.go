@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/dshills/langgraph-go/graph/emit"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // MySQL driver for database/sql
 )
 
 // MySQLStore is a MySQL/MariaDB implementation of Store[S].
@@ -413,7 +414,7 @@ func (m *MySQLStore[S]) Stats() sql.DBStats {
 //	    {2, "node-b", stateB},
 //	}
 //	err := store.SaveStepBatch(ctx, "run-001", steps)
-func (m *MySQLStore[S]) SaveStepBatch(ctx context.Context, runID string, steps interface{}) error {
+func (m *MySQLStore[S]) SaveStepBatch(ctx context.Context, _ string, _ interface{}) error {
 	m.mu.RLock()
 	if m.closed {
 		m.mu.RUnlock()
@@ -513,7 +514,10 @@ func (m *MySQLStore[S]) WithTransaction(ctx context.Context, fn func(context.Con
 	if err != nil {
 		// Rollback on error
 		if rbErr := tx.Rollback(); rbErr != nil {
-			return fmt.Errorf("transaction error: %w, rollback error: %v", err, rbErr)
+			return errors.Join(
+				fmt.Errorf("transaction failed: %w", err),
+				fmt.Errorf("rollback failed: %w", rbErr),
+			)
 		}
 		return err
 	}

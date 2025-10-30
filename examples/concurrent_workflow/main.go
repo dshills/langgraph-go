@@ -202,7 +202,7 @@ func (n *FetchPatentsNode) Effects() graph.SideEffectPolicy {
 // FetchMarketDataNode simulates querying financial/market data APIs.
 type FetchMarketDataNode struct{}
 
-func (n *FetchMarketDataNode) Run(_ context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+func (n *FetchMarketDataNode) Run(_ context.Context, _ ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("📈 [Market] Fetching market intelligence...")
 
 	// Simulate API latency.
@@ -266,7 +266,7 @@ func main() {
 	)
 
 	// Add fan-out entry node that triggers 5 parallel fetches.
-	fanout := graph.NodeFunc[ResearchState](func(ctx context.Context, s ResearchState) graph.NodeResult[ResearchState] {
+	fanout := graph.NodeFunc[ResearchState](func(_ context.Context, _ ResearchState) graph.NodeResult[ResearchState] {
 		return graph.NodeResult[ResearchState]{
 			Route: graph.Next{
 				Many: []string{"fetch_papers", "fetch_news", "fetch_social", "fetch_patents", "fetch_market"},

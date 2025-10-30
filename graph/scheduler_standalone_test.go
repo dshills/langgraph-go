@@ -104,7 +104,7 @@ func TestFrontierStandalone(t *testing.T) {
 
 		item := WorkItem[testState]{OrderKey: 999, NodeID: "blocking", StepID: 99}
 		err := f.Enqueue(timeoutCtx, item)
-		if err != context.DeadlineExceeded {
+		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Errorf("Expected DeadlineExceeded, got %v", err)
 		}
 	})

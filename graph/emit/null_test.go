@@ -44,6 +44,6 @@ func TestNullEmitter_NoOp(t *testing.T) {
 }
 
 // TestNullEmitter_InterfaceContract verifies NullEmitter implements Emitter interface (T164).
-func TestNullEmitter_InterfaceContract(t *testing.T) {
+func TestNullEmitter_InterfaceContract(_ *testing.T) {
 	var _ Emitter = NewNullEmitter()
 }

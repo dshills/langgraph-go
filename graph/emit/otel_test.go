@@ -240,7 +240,7 @@ func TestOTelEmitter_Flush(t *testing.T) {
 }
 
 // TestOTelEmitter_Flush_Timeout verifies flush respects context timeout (T112).
-func TestOTelEmitter_Flush_Timeout(t *testing.T) {
+func TestOTelEmitter_Flush_Timeout(_ *testing.T) {
 	exporter := tracetest.NewInMemoryExporter()
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),

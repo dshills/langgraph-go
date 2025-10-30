@@ -1,3 +1,4 @@
+// Package main demonstrates basic LLM integration with LangGraph-Go.
 package main
 
 import (

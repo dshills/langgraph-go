@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -683,7 +684,7 @@ func TestMySQLStore_LoadCheckpoint(t *testing.T) {
 		if err == nil {
 			t.Error("Expected error when loading non-existent checkpoint, got nil")
 		}
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("Expected ErrNotFound, got %v", err)
 		}
 	})
@@ -807,7 +808,7 @@ func cleanupTestTables(t *testing.T, dsn string) {
 	_, _ = db.ExecContext(ctx, "DROP TABLE IF EXISTS workflow_checkpoints")
 }
 
-func tableExists(ctx context.Context, store *MySQLStore[TestState], tableName string) bool {
+func tableExists(_ context.Context, _ *MySQLStore[TestState], _ string) bool {
 	// This will be implemented once MySQLStore is created
 	// For now, assume tables exist if no error
 	return true
@@ -973,7 +974,7 @@ func TestMySQLStore_LoadCheckpointV2(t *testing.T) {
 
 		ctx := context.Background()
 		_, err = store.LoadCheckpointV2(ctx, "non-existent-run", 999)
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("Expected ErrNotFound, got %v", err)
 		}
 	})

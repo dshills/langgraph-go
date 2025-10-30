@@ -1,3 +1,4 @@
+// Package anthropic provides ChatModel adapter for Anthropic Claude API.
 package anthropic
 
 import (

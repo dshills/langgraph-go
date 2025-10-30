@@ -169,7 +169,7 @@ func TestHTTPTool_WithHeaders(t *testing.T) {
 
 func TestHTTPTool_ContextTimeout(t *testing.T) {
 	// Create slow server
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		time.Sleep(2 * time.Second)
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -238,7 +238,7 @@ func TestHTTPTool_Error_UnsupportedMethod(t *testing.T) {
 
 func TestHTTPTool_Error_ServerError(t *testing.T) {
 	// Create server that returns 500
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("Internal Server Error"))
 	}))

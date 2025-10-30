@@ -197,7 +197,7 @@ func TestRetryAttempts(t *testing.T) {
 				MaxAttempts: tt.maxAttempts,
 				BaseDelay:   1 * time.Millisecond, // Small delay for testing
 				MaxDelay:    10 * time.Millisecond,
-				Retryable: func(err error) bool {
+				Retryable: func(_ error) bool {
 					// Treat all errors as retryable for this test.
 					return true
 				},
@@ -444,7 +444,7 @@ func TestRetryableError(t *testing.T) {
 		{
 			name: "always retry predicate",
 			err:  validationErr,
-			retryable: func(err error) bool {
+			retryable: func(_ error) bool {
 				return true
 			},
 			wantRetryable: true,
@@ -524,7 +524,7 @@ func TestMaxAttemptsExceeded(t *testing.T) {
 				MaxAttempts: tt.maxAttempts,
 				BaseDelay:   1 * time.Millisecond,
 				MaxDelay:    10 * time.Millisecond,
-				Retryable: func(err error) bool {
+				Retryable: func(_ error) bool {
 					return true
 				},
 			}

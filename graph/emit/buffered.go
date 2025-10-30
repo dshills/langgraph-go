@@ -183,7 +183,7 @@ func (b *BufferedEmitter) GetHistoryWithFilter(runID string, filter HistoryFilte
 	}
 
 	// Apply filters.
-	var result []Event
+	result := make([]Event, 0, len(events))
 	for _, event := range events {
 		if !b.matchesFilter(event, filter) {
 			continue
@@ -249,7 +249,6 @@ func (b *BufferedEmitter) Clear(runID string) {
 	}
 }
 
-// TODO: Implement in Phase 8
 // EmitBatch stores multiple events in the buffer in a single operation.
 func (b *BufferedEmitter) EmitBatch(_ context.Context, events []Event) error {
 	for _, event := range events {
@@ -258,7 +257,6 @@ func (b *BufferedEmitter) EmitBatch(_ context.Context, events []Event) error {
 	return nil
 }
 
-// TODO: Implement in Phase 8
 // Flush is a no-op for buffered emitter (events are already stored in memory).
 func (b *BufferedEmitter) Flush(_ context.Context) error {
 	return nil

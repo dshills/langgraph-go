@@ -56,6 +56,9 @@ const (
 	// Provides deterministic randomness for replay scenarios.
 	// Type: *rand.Rand (from math/rand package)
 	RNGKey contextKey = "langgraph.rng"
+
+	// RecordedIOsKey is the context key for storing recorded I/O during replay.
+	RecordedIOsKey contextKey = "langgraph.recordedIOs"
 )
 
 // initRNG creates a deterministic random number generator seeded from the runID.
@@ -846,7 +849,7 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 
 	// Track step counter and collected deltas
 	var stepCounter atomic.Int32
-	var collectedResults []nodeResult[S]
+	collectedResults := make([]nodeResult[S], 0, e.opts.MaxSteps)
 
 	// Determine number of worker goroutines (up to MaxConcurrentNodes)
 	const defaultMaxWorkers = 8
@@ -1379,7 +1382,7 @@ func (e *Engine[S]) executeParallel(ctx context.Context, branches []string, stat
 	close(results)
 
 	// Collect all results
-	var branchResults []branchResult
+	branchResults := make([]branchResult, 0, len(branches))
 	for result := range results {
 		branchResults = append(branchResults, result)
 	}
@@ -2083,7 +2086,7 @@ func (e *Engine[S]) runConcurrentFromCheckpoint(ctx context.Context, runID strin
 	// Track step counter starting from checkpoint
 	var stepCounter atomic.Int32
 	stepCounter.Store(int32(startStepID)) // #nosec G115 -- startStepID is bounded by MaxSteps (default 100)
-	var collectedResults []nodeResult[S]
+	collectedResults := make([]nodeResult[S], 0, e.opts.MaxSteps)
 
 	// Spawn worker goroutines
 	maxWorkers := e.opts.MaxConcurrentNodes
@@ -2348,7 +2351,7 @@ func (e *Engine[S]) ReplayRun(ctx context.Context, runID string) (S, error) {
 	// Find the highest step ID by loading incrementally
 	// Start with step 0 and increment until we find the latest
 	var latestCheckpoint store.CheckpointV2[S]
-	var latestStep int = -1
+	latestStep := -1
 
 	// Try loading checkpoints from step 0 upwards
 	// In production, stores should implement a LoadLatestCheckpointV2 method
@@ -2399,7 +2402,7 @@ func (e *Engine[S]) ReplayRun(ctx context.Context, runID string) (S, error) {
 	// Store recorded I/O in context for nodes to access during replay
 	// This is a placeholder - in real implementation, nodes would check for recorded I/O
 	// and use it instead of making live calls
-	ctx = context.WithValue(ctx, "recordedIOs", recordedIOs)
+	ctx = context.WithValue(ctx, RecordedIOsKey, recordedIOs)
 
 	// Resume execution from checkpoint
 	// The replay logic is handled in RunWithCheckpoint, which will use recorded I/O

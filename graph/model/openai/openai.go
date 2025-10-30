@@ -1,3 +1,4 @@
+// Package openai provides ChatModel adapter for OpenAI GPT API.
 package openai
 
 import (

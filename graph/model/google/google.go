@@ -1,3 +1,4 @@
+// Package google provides ChatModel adapter for Google Gemini API.
 package google
 
 import (

@@ -1049,7 +1049,7 @@ func TestMemStore_ConcurrentV2Operations(t *testing.T) {
 		}
 	})
 
-	t.Run("concurrent CheckIdempotency", func(t *testing.T) {
+	t.Run("concurrent CheckIdempotency", func(_ *testing.T) {
 		store := NewMemStore[TestState]()
 		ctx := context.Background()
 
@@ -1079,7 +1079,7 @@ func TestMemStore_ConcurrentV2Operations(t *testing.T) {
 		// Test passes if no race conditions detected
 	})
 
-	t.Run("concurrent PendingEvents and MarkEventsEmitted", func(t *testing.T) {
+	t.Run("concurrent PendingEvents and MarkEventsEmitted", func(_ *testing.T) {
 		store := NewMemStore[TestState]()
 		ctx := context.Background()
 

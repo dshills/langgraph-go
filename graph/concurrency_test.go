@@ -24,9 +24,9 @@ import (
 // TestRNGDataRace_DirectAccess demonstrates the race condition by directly
 // accessing a shared RNG from multiple goroutines, simulating what happens
 // in the concurrent engine workers.
-func TestRNGDataRace_DirectAccess(t *testing.T) {
+func TestRNGDataRace_DirectAccess(_ *testing.T) {
 	// Create a single RNG instance (like what's in the context)
-	rng := rand.New(rand.NewSource(12345))
+	rng := rand.New(rand.NewSource(12345)) // #nosec G404 -- deterministic RNG for reproducible concurrent testing
 
 	// Spawn multiple goroutines that all access the same RNG
 	// This simulates what happens when workers share the RNG from workerCtx
@@ -36,7 +36,7 @@ func TestRNGDataRace_DirectAccess(t *testing.T) {
 	var wg sync.WaitGroup
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
-		go func(workerID int) {
+		go func(_ int) {
 			defer wg.Done()
 			for i := 0; i < iterations; i++ {
 				_ = rng.Intn(1000)
@@ -221,7 +221,7 @@ func TestRNGDeterminism(t *testing.T) {
 	}
 
 	// Node that generates random sequence
-	randomNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+	randomNode := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 		rngVal := ctx.Value(RNGKey)
 		if rngVal == nil {
 			return NodeResult[TestState]{
@@ -251,7 +251,7 @@ func TestRNGDeterminism(t *testing.T) {
 		}
 	})
 
-	reducer := func(prev, delta TestState) TestState {
+	reducer := func(_, delta TestState) TestState {
 		return delta // Replace with new state
 	}
 
@@ -324,7 +324,7 @@ func TestRNGConcurrentStress(t *testing.T) {
 	}
 
 	// Node that uses RNG
-	node := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+	node := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 		rngVal := ctx.Value(RNGKey)
 		if rngVal == nil {
 			return NodeResult[TestState]{
@@ -341,7 +341,7 @@ func TestRNGConcurrentStress(t *testing.T) {
 		}
 	})
 
-	reducer := func(prev, delta TestState) TestState {
+	reducer := func(_, delta TestState) TestState {
 		return delta
 	}
 
@@ -430,7 +430,7 @@ func TestResultsChannelDeadlock_AllWorkersFailSimultaneously(t *testing.T) {
 
 	// Create nodes that all fail immediately
 	// This simulates the worst case: all workers try to send errors at once
-	failingNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	failingNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 		return NodeResult[TestState]{
 			Err: errors.New("node failed"),
 		}
@@ -445,7 +445,7 @@ func TestResultsChannelDeadlock_AllWorkersFailSimultaneously(t *testing.T) {
 	}
 
 	// Create start node that fans out to all failing nodes
-	startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	startNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 		nextNodes := make([]string, numNodes)
 		for i := 0; i < numNodes; i++ {
 			nextNodes[i] = fmt.Sprintf("fail_%d", i)
@@ -519,7 +519,7 @@ func TestResultsChannelDeadlock_ChannelFillsBeforeError(t *testing.T) {
 	engine := New(reducer, st, emitter, opts)
 
 	// Create slow successful nodes that hold results in channel
-	slowSuccessNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	slowSuccessNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 		// Simulate slow processing to fill up the results channel
 		time.Sleep(100 * time.Millisecond)
 		return NodeResult[TestState]{
@@ -529,7 +529,7 @@ func TestResultsChannelDeadlock_ChannelFillsBeforeError(t *testing.T) {
 	})
 
 	// Create one failing node
-	failingNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	failingNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 		return NodeResult[TestState]{
 			Err: errors.New("critical error"),
 		}
@@ -548,7 +548,7 @@ func TestResultsChannelDeadlock_ChannelFillsBeforeError(t *testing.T) {
 	}
 
 	// Start node fans out to all nodes
-	startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	startNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 		nextNodes := make([]string, totalNodes)
 		for i := 0; i < totalNodes-1; i++ {
 			nextNodes[i] = fmt.Sprintf("slow_%d", i)
@@ -622,7 +622,7 @@ func TestResultsChannelDeadlock_StressTest(t *testing.T) {
 			engine := New(reducer, st, emitter, opts)
 
 			// All nodes fail
-			failingNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			failingNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 				return NodeResult[TestState]{
 					Err: fmt.Errorf("error from iteration %d", iter),
 				}
@@ -635,7 +635,7 @@ func TestResultsChannelDeadlock_StressTest(t *testing.T) {
 				}
 			}
 
-			startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			startNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 				nextNodes := make([]string, numNodes)
 				for i := 0; i < numNodes; i++ {
 					nextNodes[i] = fmt.Sprintf("fail_%d", i)
@@ -702,7 +702,7 @@ func TestResultsChannelDeadlock_ErrorDeliveryRate(t *testing.T) {
 	for i := 0; i < numFailingNodes; i++ {
 		nodeID := fmt.Sprintf("fail_%d", i)
 		idx := i // Capture for closure
-		failNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		failNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			errorCount.Store(idx, true)
 			return NodeResult[TestState]{
 				Err: fmt.Errorf("error from node %d", idx),
@@ -713,7 +713,7 @@ func TestResultsChannelDeadlock_ErrorDeliveryRate(t *testing.T) {
 		}
 	}
 
-	startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	startNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 		nextNodes := make([]string, numFailingNodes)
 		for i := 0; i < numFailingNodes; i++ {
 			nextNodes[i] = fmt.Sprintf("fail_%d", i)
@@ -740,7 +740,7 @@ func TestResultsChannelDeadlock_ErrorDeliveryRate(t *testing.T) {
 
 	// Count how many unique errors were recorded (nodes that actually executed)
 	actualErrorCount := 0
-	errorCount.Range(func(key, value interface{}) bool {
+	errorCount.Range(func(_, _ interface{}) bool {
 		actualErrorCount++
 		return true
 	})
@@ -821,7 +821,7 @@ func TestCompletionDetectionRace(t *testing.T) {
 			nodeID := fmt.Sprintf("node_%d", i)
 			idx := i // Capture for closure
 
-			node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 				// Small delay to spread execution timing
 				time.Sleep(time.Microsecond * time.Duration(10+idx%5))
 
@@ -844,7 +844,7 @@ func TestCompletionDetectionRace(t *testing.T) {
 		}
 
 		// Start node fans out to all worker nodes
-		startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		startNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			nextNodes := make([]string, numNodes)
 			for i := 0; i < numNodes; i++ {
 				nextNodes[i] = fmt.Sprintf("node_%d", i)
@@ -933,7 +933,7 @@ func TestCompletionDetectionTiming(t *testing.T) {
 		var lastNodeCompletionTime atomic.Int64
 
 		// Single node that records completion time
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			lastNodeCompletionTime.Store(time.Now().UnixNano())
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
@@ -1026,7 +1026,6 @@ func TestCompletionDetectionStress(t *testing.T) {
 	// Run tests in parallel to increase stress
 	t.Run("stress", func(t *testing.T) {
 		for i := 0; i < numExecutions; i++ {
-			i := i // Capture
 			t.Run(fmt.Sprintf("exec_%d", i), func(t *testing.T) {
 				t.Parallel()
 
@@ -1043,7 +1042,7 @@ func TestCompletionDetectionStress(t *testing.T) {
 				// Create worker nodes
 				for j := 0; j < numNodes; j++ {
 					nodeID := fmt.Sprintf("node_%d", j)
-					node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+					node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 						count := executionCount.Add(1)
 						if int(count) == numNodes {
 							completionTime.Store(time.Now().UnixNano())
@@ -1060,7 +1059,7 @@ func TestCompletionDetectionStress(t *testing.T) {
 				}
 
 				// Fan-out start node
-				startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+				startNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 					nextNodes := make([]string, numNodes)
 					for j := 0; j < numNodes; j++ {
 						nextNodes[j] = fmt.Sprintf("node_%d", j)

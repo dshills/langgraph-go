@@ -19,7 +19,7 @@ func TestNodeInterface(t *testing.T) {
 	state := TestState{Value: "initial", Counter: 0}
 
 	// Create a simple node implementation.
-	node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	node := NodeFunc[TestState](func(_ context.Context, s TestState) NodeResult[TestState] {
 		return NodeResult[TestState]{
 			Delta: TestState{Value: "updated", Counter: s.Counter + 1},
 			Route: Stop(),
@@ -52,7 +52,7 @@ func TestNodeWithContext(t *testing.T) {
 	ctx := context.WithValue(context.Background(), key, "test-value")
 	state := TestState{Value: "initial"}
 
-	node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	node := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 		val := ctx.Value(key)
 		if val == nil {
 			return NodeResult[TestState]{Err: &NodeError{Message: "context value missing"}}
@@ -78,7 +78,7 @@ func TestNodeError(t *testing.T) {
 	ctx := context.Background()
 	state := TestState{}
 
-	node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 		return NodeResult[TestState]{
 			Err: &NodeError{Message: "test error", Code: "TEST_ERROR"},
 		}
@@ -228,15 +228,15 @@ func TestStopAndGoto_Helpers(t *testing.T) {
 
 // TestNodeFunc_Wrapper verifies NodeFunc functional wrapper (T020).
 func TestNodeFunc_Wrapper(t *testing.T) {
-	t.Run("NodeFunc implements Node interface", func(t *testing.T) {
-		var _ Node[TestState] = NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	t.Run("NodeFunc implements Node interface", func(_ *testing.T) {
+		var _ Node[TestState] = NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 	})
 
 	t.Run("NodeFunc executes function", func(t *testing.T) {
 		executed := false
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, s TestState) NodeResult[TestState] {
 			executed = true
 			return NodeResult[TestState]{
 				Delta: TestState{Value: s.Value + "-processed"},
@@ -256,7 +256,7 @@ func TestNodeFunc_Wrapper(t *testing.T) {
 	})
 
 	t.Run("NodeFunc can return errors", func(t *testing.T) {
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Err: &NodeError{Message: "func error"},
 			}
@@ -272,7 +272,7 @@ func TestNodeFunc_Wrapper(t *testing.T) {
 		type ctxKey string
 		const key ctxKey = "data"
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			val := ctx.Value(key)
 			if val == nil {
 				return NodeResult[TestState]{Err: &NodeError{Message: "missing context value"}}

@@ -1,3 +1,4 @@
+// Package main demonstrates an interactive approval workflow using LangGraph-Go.
 package main
 
 import (
@@ -74,7 +75,7 @@ func main() {
 	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(20))
 
 	// Node 1: Initialize request
-	if err := engine.Add("initialize", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	if err := engine.Add("initialize", graph.NodeFunc[ApprovalState](func(_ context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
 		fmt.Printf("📝 Initializing approval request: %s\n", state.RequestID)
 		fmt.Printf("   Type: %s | Amount: $%.2f\n", state.RequestType, state.Amount)
 		fmt.Printf("   Requester: %s\n", state.Requester)
@@ -140,7 +141,7 @@ func main() {
 	}
 
 	// Node 3: Await human decision (simulated)
-	if err := engine.Add("await_decision", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	if err := engine.Add("await_decision", graph.NodeFunc[ApprovalState](func(_ context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
 		fmt.Println("⏳ Waiting for human decision...")
 
 		// Simulate human review time
@@ -211,7 +212,7 @@ func main() {
 	}
 
 	// Node 6: Complete
-	if err := engine.Add("complete", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	if err := engine.Add("complete", graph.NodeFunc[ApprovalState](func(_ context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
 		fmt.Println()
 		fmt.Println("📊 Workflow Summary:")
 		fmt.Printf("   Request ID: %s\n", state.RequestID)

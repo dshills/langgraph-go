@@ -44,7 +44,7 @@ func reducer(prev, delta State) State {
 // Node implementations demonstrating metrics collection.
 
 // FastNode executes quickly (1-10ms).
-func FastNode(_ context.Context, s State) graph.NodeResult[State] {
+func FastNode(_ context.Context, _ State) graph.NodeResult[State] {
 	start := time.Now()
 	time.Sleep(time.Duration(1+rand.Intn(10)) * time.Millisecond) // #nosec G404 -- demo code, simulating variable processing time
 
@@ -59,7 +59,7 @@ func FastNode(_ context.Context, s State) graph.NodeResult[State] {
 }
 
 // MediumNode executes with medium latency (50-100ms).
-func MediumNode(_ context.Context, s State) graph.NodeResult[State] {
+func MediumNode(_ context.Context, _ State) graph.NodeResult[State] {
 	start := time.Now()
 	time.Sleep(time.Duration(50+rand.Intn(50)) * time.Millisecond) // #nosec G404 -- demo code, simulating variable processing time
 
@@ -74,7 +74,7 @@ func MediumNode(_ context.Context, s State) graph.NodeResult[State] {
 }
 
 // SlowNode executes slowly (500-1000ms).
-func SlowNode(_ context.Context, s State) graph.NodeResult[State] {
+func SlowNode(_ context.Context, _ State) graph.NodeResult[State] {
 	start := time.Now()
 	time.Sleep(time.Duration(500+rand.Intn(500)) * time.Millisecond) // #nosec G404 -- demo code, simulating variable processing time
 
@@ -89,7 +89,7 @@ func SlowNode(_ context.Context, s State) graph.NodeResult[State] {
 }
 
 // ParallelNode demonstrates fan-out (triggers parallel branches).
-func ParallelNode(_ context.Context, s State) graph.NodeResult[State] {
+func ParallelNode(_ context.Context, _ State) graph.NodeResult[State] {
 	start := time.Now()
 	time.Sleep(10 * time.Millisecond)
 
@@ -105,7 +105,7 @@ func ParallelNode(_ context.Context, s State) graph.NodeResult[State] {
 
 // BranchNode processes parallel branch.
 func BranchNode(name string) graph.NodeFunc[State] {
-	return func(ctx context.Context, s State) graph.NodeResult[State] {
+	return func(_ context.Context, _ State) graph.NodeResult[State] {
 		start := time.Now()
 		time.Sleep(time.Duration(100+rand.Intn(400)) * time.Millisecond) // #nosec G404 -- demo code, simulating variable processing time
 
@@ -123,7 +123,7 @@ func BranchNode(name string) graph.NodeFunc[State] {
 // FlakyNode demonstrates retry metrics (fails 30% of the time).
 type FlakyNode struct{}
 
-func (f *FlakyNode) Run(_ context.Context, s State) graph.NodeResult[State] {
+func (f *FlakyNode) Run(_ context.Context, _ State) graph.NodeResult[State] {
 	start := time.Now()
 	time.Sleep(50 * time.Millisecond)
 
@@ -155,7 +155,7 @@ func (f *FlakyNode) Policy() graph.NodePolicy {
 			MaxAttempts: 3,
 			BaseDelay:   100 * time.Millisecond,
 			MaxDelay:    1 * time.Second,
-			Retryable: func(err error) bool {
+			Retryable: func(_ error) bool {
 				return true // Retry all errors
 			},
 		},

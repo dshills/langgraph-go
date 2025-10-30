@@ -60,7 +60,7 @@ func main() {
 	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(10))
 
 	// 3-node workflow: start → process → finish.
-	if err := engine.Add("start", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	if err := engine.Add("start", graph.NodeFunc[State](func(_ context.Context, _ State) graph.NodeResult[State] {
 		return graph.NodeResult[State]{
 			Delta: State{Steps: 1, Data: map[string]interface{}{"step": "start"}},
 			Route: graph.Goto("process"),
@@ -69,7 +69,7 @@ func main() {
 		log.Fatalf("Failed to add start node: %v", err)
 	}
 
-	if err := engine.Add("process", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	if err := engine.Add("process", graph.NodeFunc[State](func(_ context.Context, _ State) graph.NodeResult[State] {
 		return graph.NodeResult[State]{
 			Delta: State{Steps: 2, Data: map[string]interface{}{"step": "process"}},
 			Route: graph.Goto("finish"),
@@ -78,7 +78,7 @@ func main() {
 		log.Fatalf("Failed to add process node: %v", err)
 	}
 
-	if err := engine.Add("finish", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	if err := engine.Add("finish", graph.NodeFunc[State](func(_ context.Context, _ State) graph.NodeResult[State] {
 		return graph.NodeResult[State]{
 			Delta: State{Steps: 3, Data: map[string]interface{}{"step": "finish"}},
 			Route: graph.Stop(),
@@ -133,7 +133,7 @@ func main() {
 		nextNodeID := fmt.Sprintf("node%d", i+1)
 		stepNum := i + 1
 
-		if err := engine2.Add(nodeID, graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+		if err := engine2.Add(nodeID, graph.NodeFunc[State](func(_ context.Context, _ State) graph.NodeResult[State] {
 			delta := State{
 				Steps: stepNum,
 				Data: map[string]interface{}{
@@ -196,7 +196,7 @@ func main() {
 	engine3 := graph.New(reducer, st3, emitter3, graph.WithMaxSteps(20))
 
 	// Fan-out node.
-	if err := engine3.Add("start", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	if err := engine3.Add("start", graph.NodeFunc[State](func(_ context.Context, _ State) graph.NodeResult[State] {
 		return graph.NodeResult[State]{
 			Delta: State{Steps: 1, Data: map[string]interface{}{"fanout": true}},
 			Route: graph.Next{Many: []string{"branch1", "branch2", "branch3", "branch4"}},
@@ -208,7 +208,7 @@ func main() {
 	// 4 parallel branches.
 	for i := 1; i <= 4; i++ {
 		branchID := fmt.Sprintf("branch%d", i)
-		if err := engine3.Add(branchID, graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+		if err := engine3.Add(branchID, graph.NodeFunc[State](func(_ context.Context, _ State) graph.NodeResult[State] {
 			// Simulate work.
 			time.Sleep(50 * time.Millisecond)
 
@@ -226,7 +226,7 @@ func main() {
 	}
 
 	// Join node.
-	if err := engine3.Add("join", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	if err := engine3.Add("join", graph.NodeFunc[State](func(_ context.Context, state State) graph.NodeResult[State] {
 		return graph.NodeResult[State]{
 			Delta: State{Steps: state.Steps + 1, Data: map[string]interface{}{"joined": true}},
 			Route: graph.Stop(),

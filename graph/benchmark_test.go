@@ -56,7 +56,7 @@ func BenchmarkLargeWorkflow(b *testing.B) {
 		nextNodeID := fmt.Sprintf("node%d", i+1)
 
 		currentStep := i + 1
-		if err := engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+		if err := engine.Add(nodeID, NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 			delta := BenchState{
 				Counter: currentStep,
 				Data: map[string]interface{}{
@@ -122,7 +122,7 @@ func BenchmarkSmallWorkflowHighFrequency(b *testing.B) {
 	opts := Options{MaxSteps: 10}
 	engine := New(benchReducer, st, emitter, opts)
 
-	if err := engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	if err := engine.Add("start", NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 		return NodeResult[BenchState]{
 			Delta: BenchState{Counter: 1, Data: map[string]interface{}{"step": "start"}},
 			Route: Goto("process"),
@@ -131,7 +131,7 @@ func BenchmarkSmallWorkflowHighFrequency(b *testing.B) {
 		b.Fatalf("Failed to add start node: %v", err)
 	}
 
-	if err := engine.Add("process", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	if err := engine.Add("process", NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 		return NodeResult[BenchState]{
 			Delta: BenchState{Counter: 2, Data: map[string]interface{}{"step": "process"}},
 			Route: Goto("finish"),
@@ -140,7 +140,7 @@ func BenchmarkSmallWorkflowHighFrequency(b *testing.B) {
 		b.Fatalf("Failed to add process node: %v", err)
 	}
 
-	if err := engine.Add("finish", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	if err := engine.Add("finish", NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 		return NodeResult[BenchState]{
 			Delta: BenchState{Counter: 3, Data: map[string]interface{}{"step": "finish"}},
 			Route: Stop(),
@@ -239,7 +239,7 @@ func BenchmarkParallelBranchCoordination(b *testing.B) {
 	engine := New(benchReducer, st, emitter, opts)
 
 	// Fan-out node
-	if err := engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	if err := engine.Add("start", NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 		return NodeResult[BenchState]{
 			Delta: BenchState{Counter: 1},
 			Route: Next{Many: []string{"branch1", "branch2", "branch3", "branch4"}},
@@ -251,7 +251,7 @@ func BenchmarkParallelBranchCoordination(b *testing.B) {
 	// 4 parallel branches
 	for i := 1; i <= 4; i++ {
 		branchID := fmt.Sprintf("branch%d", i)
-		if err := engine.Add(branchID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+		if err := engine.Add(branchID, NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 			return NodeResult[BenchState]{
 				Delta: BenchState{
 					Data: map[string]interface{}{
@@ -266,7 +266,7 @@ func BenchmarkParallelBranchCoordination(b *testing.B) {
 	}
 
 	// Join node
-	if err := engine.Add("join", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	if err := engine.Add("join", NodeFunc[BenchState](func(_ context.Context, state BenchState) NodeResult[BenchState] {
 		return NodeResult[BenchState]{
 			Delta: BenchState{Counter: state.Counter + 1},
 			Route: Stop(),
@@ -327,7 +327,7 @@ func BenchmarkStateAllocation(b *testing.B) {
 	opts := Options{MaxSteps: 10}
 	engine := New(benchReducer, st, emitter, opts)
 
-	if err := engine.Add("process", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	if err := engine.Add("process", NodeFunc[BenchState](func(_ context.Context, state BenchState) NodeResult[BenchState] {
 		// Create new data map (allocation test)
 		newData := make(map[string]interface{})
 		newData["key"] = "value"
@@ -400,7 +400,7 @@ func BenchmarkConcurrentExecution(b *testing.B) {
 				nodeID := fmt.Sprintf("node%d", i)
 				counter := i + 1
 
-				if err := engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+				if err := engine.Add(nodeID, NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 					// Minimal work - just return delta
 					return NodeResult[BenchState]{
 						Delta: BenchState{Counter: counter},
@@ -417,7 +417,7 @@ func BenchmarkConcurrentExecution(b *testing.B) {
 				nodeIDs[i] = fmt.Sprintf("node%d", i)
 			}
 
-			if err := engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+			if err := engine.Add("start", NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 				return NodeResult[BenchState]{
 					Route: Next{Many: nodeIDs},
 				}
@@ -485,7 +485,7 @@ func BenchmarkSequentialVsConcurrent(b *testing.B) {
 
 			isLast := (i == nodeCount-1)
 
-			if err := engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+			if err := engine.Add(nodeID, NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 				var route Next
 				if isLast {
 					route = Stop()
@@ -537,7 +537,7 @@ func BenchmarkSequentialVsConcurrent(b *testing.B) {
 			nodeIDs[i] = nodeID
 			counter := i + 1
 
-			if err := engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+			if err := engine.Add(nodeID, NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 				return NodeResult[BenchState]{
 					Delta: BenchState{Counter: counter},
 					Route: Stop(),
@@ -548,7 +548,7 @@ func BenchmarkSequentialVsConcurrent(b *testing.B) {
 		}
 
 		// Fan-out to all nodes
-		if err := engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+		if err := engine.Add("start", NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 			return NodeResult[BenchState]{
 				Route: Next{Many: nodeIDs},
 			}
@@ -608,7 +608,7 @@ func benchSchedulerOverheadWithNodes(b *testing.B, nodeCount int) {
 		nodeID := fmt.Sprintf("node%d", i)
 		nodeIDs[i] = nodeID
 
-		if err := engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+		if err := engine.Add(nodeID, NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 			return NodeResult[BenchState]{
 				Delta: BenchState{Counter: 1},
 				Route: Stop(),
@@ -618,7 +618,7 @@ func benchSchedulerOverheadWithNodes(b *testing.B, nodeCount int) {
 		}
 	}
 
-	if err := engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	if err := engine.Add("start", NodeFunc[BenchState](func(_ context.Context, _ BenchState) NodeResult[BenchState] {
 		return NodeResult[BenchState]{
 			Route: Next{Many: nodeIDs},
 		}

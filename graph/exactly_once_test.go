@@ -633,7 +633,7 @@ func TestNoDuplicatesUnderConcurrency(t *testing.T) {
 
 // Helper functions.
 
-func getTestDSN(t *testing.T) string {
+func getTestDSN(_ *testing.T) string {
 	// Read from environment variable.
 	dsn := os.Getenv("TEST_MYSQL_DSN")
 	return dsn

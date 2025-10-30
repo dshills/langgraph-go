@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+const (
+	httpMethodGET  = "GET"
+	httpMethodPOST = "POST"
+)
+
 // HTTPTool is a tool for making HTTP requests.
 //
 // It supports GET and POST methods and returns the HTTP response including
@@ -67,13 +72,13 @@ func (h *HTTPTool) Call(ctx context.Context, input map[string]interface{}) (map[
 	}
 
 	// Extract method (default to GET)
-	method := "GET"
+	method := httpMethodGET
 	if m, ok := input["method"].(string); ok && m != "" {
 		method = strings.ToUpper(m)
 	}
 
 	// Validate method
-	if method != "GET" && method != "POST" {
+	if method != httpMethodGET && method != httpMethodPOST {
 		return nil, fmt.Errorf("unsupported HTTP method: %s (supported: GET, POST)", method)
 	}
 

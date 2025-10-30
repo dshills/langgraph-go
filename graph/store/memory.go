@@ -60,7 +60,7 @@ func NewMemStore[S any]() *MemStore[S] {
 //
 // Steps are appended to the run's history in the order they are saved.
 // Thread-safe for concurrent writes.
-func (m *MemStore[S]) SaveStep(ctx context.Context, runID string, step int, nodeID string, state S) error {
+func (m *MemStore[S]) SaveStep(_ context.Context, runID string, step int, nodeID string, state S) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -78,7 +78,7 @@ func (m *MemStore[S]) SaveStep(ctx context.Context, runID string, step int, node
 //
 // Returns the step with the highest step number.
 // This handles out-of-order step saves correctly.
-func (m *MemStore[S]) LoadLatest(ctx context.Context, runID string) (state S, step int, err error) {
+func (m *MemStore[S]) LoadLatest(_ context.Context, runID string) (state S, step int, err error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -107,7 +107,7 @@ func (m *MemStore[S]) LoadLatest(ctx context.Context, runID string) (state S, st
 //   - Provide manual resumption points
 //
 // If a checkpoint with the same ID exists, it is overwritten.
-func (m *MemStore[S]) SaveCheckpoint(ctx context.Context, cpID string, state S, step int) error {
+func (m *MemStore[S]) SaveCheckpoint(_ context.Context, cpID string, state S, step int) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -123,7 +123,7 @@ func (m *MemStore[S]) SaveCheckpoint(ctx context.Context, cpID string, state S, 
 // LoadCheckpoint retrieves a named checkpoint (T042).
 //
 // Returns ErrNotFound if the checkpoint ID doesn't exist.
-func (m *MemStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (state S, step int, err error) {
+func (m *MemStore[S]) LoadCheckpoint(_ context.Context, cpID string) (state S, step int, err error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -254,7 +254,7 @@ func (m *MemStore[S]) UnmarshalJSON(data []byte) error {
 // Returns error if the idempotency key already exists (duplicate commit prevention).
 //
 // Thread-safe for concurrent access.
-func (m *MemStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint CheckpointV2[S]) error {
+func (m *MemStore[S]) SaveCheckpointV2(_ context.Context, checkpoint CheckpointV2[S]) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -283,7 +283,7 @@ func (m *MemStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint Checkpoin
 //
 // Returns ErrNotFound if the checkpoint doesn't exist.
 // Thread-safe for concurrent reads.
-func (m *MemStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (CheckpointV2[S], error) {
+func (m *MemStore[S]) LoadCheckpointV2(_ context.Context, runID string, stepID int) (CheckpointV2[S], error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -304,7 +304,7 @@ func (m *MemStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID
 // Only returns error on store access failure (never for this in-memory implementation).
 //
 // Thread-safe for concurrent access.
-func (m *MemStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, error) {
+func (m *MemStore[S]) CheckIdempotency(_ context.Context, key string) (bool, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -318,7 +318,7 @@ func (m *MemStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, e
 // Empty list is not an error - it means no events are pending.
 //
 // Thread-safe for concurrent access.
-func (m *MemStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error) {
+func (m *MemStore[S]) PendingEvents(_ context.Context, limit int) ([]emit.Event, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -342,7 +342,7 @@ func (m *MemStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Even
 // If an event ID is not found, it is silently ignored (idempotent operation).
 //
 // Thread-safe for concurrent access.
-func (m *MemStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string) error {
+func (m *MemStore[S]) MarkEventsEmitted(_ context.Context, eventIDs []string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

@@ -36,7 +36,7 @@ func TestEngine_Construction(t *testing.T) {
 	})
 
 	t.Run("engine with nil store", func(t *testing.T) {
-		reducer := func(prev, delta TestState) TestState { return prev }
+		reducer := func(prev, _ TestState) TestState { return prev }
 		emitter := &mockEmitter{}
 		opts := Options{MaxSteps: 10}
 
@@ -48,7 +48,7 @@ func TestEngine_Construction(t *testing.T) {
 	})
 
 	t.Run("engine with nil emitter", func(t *testing.T) {
-		reducer := func(prev, delta TestState) TestState { return prev }
+		reducer := func(prev, _ TestState) TestState { return prev }
 		st := store.NewMemStore[TestState]()
 		opts := Options{MaxSteps: 10}
 
@@ -139,7 +139,7 @@ func TestNew_Constructor_Validation(t *testing.T) {
 	})
 
 	t.Run("default options", func(t *testing.T) {
-		reducer := func(prev, delta TestState) TestState { return prev }
+		reducer := func(prev, _ TestState) TestState { return prev }
 		st := store.NewMemStore[TestState]()
 		emitter := &mockEmitter{}
 
@@ -152,7 +152,7 @@ func TestNew_Constructor_Validation(t *testing.T) {
 	})
 
 	t.Run("high MaxSteps value", func(t *testing.T) {
-		reducer := func(prev, delta TestState) TestState { return prev }
+		reducer := func(prev, _ TestState) TestState { return prev }
 		st := store.NewMemStore[TestState]()
 		emitter := &mockEmitter{}
 		opts := Options{MaxSteps: 10000}
@@ -181,7 +181,7 @@ func (m *mockEmitter) Emit(event emit.Event) {
 }
 
 // TODO: Implement in Phase 8
-func (m *mockEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+func (m *mockEmitter) EmitBatch(_ context.Context, events []emit.Event) error {
 	for _, event := range events {
 		m.Emit(event)
 	}
@@ -189,7 +189,7 @@ func (m *mockEmitter) EmitBatch(ctx context.Context, events []emit.Event) error 
 }
 
 // TODO: Implement in Phase 8
-func (m *mockEmitter) Flush(ctx context.Context) error {
+func (m *mockEmitter) Flush(_ context.Context) error {
 	return nil
 }
 
@@ -198,7 +198,7 @@ func TestEngine_Add(t *testing.T) {
 	t.Run("add single node", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -211,10 +211,10 @@ func TestEngine_Add(t *testing.T) {
 	t.Run("add multiple nodes", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -235,10 +235,10 @@ func TestEngine_Add(t *testing.T) {
 	t.Run("add duplicate node ID", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -254,7 +254,7 @@ func TestEngine_Add(t *testing.T) {
 	t.Run("add node with empty ID", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -283,7 +283,7 @@ func TestEngine_StartAt(t *testing.T) {
 	t.Run("set start node", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -309,10 +309,10 @@ func TestEngine_StartAt(t *testing.T) {
 	t.Run("change start node", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -346,10 +346,10 @@ func TestEngine_Connect(t *testing.T) {
 	t.Run("connect two nodes unconditionally", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Goto("node2")}
 		})
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -365,10 +365,10 @@ func TestEngine_Connect(t *testing.T) {
 	t.Run("connect with predicate", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Goto("node2")}
 		})
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -398,7 +398,7 @@ func TestEngine_Connect(t *testing.T) {
 	t.Run("connect with empty from ID", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 		_ = engine.Add("node1", node)
@@ -414,7 +414,7 @@ func TestEngine_Connect(t *testing.T) {
 	t.Run("connect with empty to ID", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 		_ = engine.Add("node1", node)
@@ -427,7 +427,7 @@ func TestEngine_Connect(t *testing.T) {
 		}
 	})
 
-	t.Run("multiple edges from same node", func(t *testing.T) {
+	t.Run("multiple edges from same node", func(_ *testing.T) {
 		engine := createTestEngine()
 
 		// Should allow multiple edges from the same node (for conditional routing)
@@ -444,7 +444,7 @@ func TestEngine_Run(t *testing.T) {
 		engine := createTestEngine()
 
 		// Create a simple node that increments counter and stops
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Stop(),
@@ -475,7 +475,7 @@ func TestEngine_Run(t *testing.T) {
 		engine := createTestEngine()
 
 		// Node 1: Set value and route to node2
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node1", Counter: 1},
 				Route: Goto("node2"),
@@ -483,7 +483,7 @@ func TestEngine_Run(t *testing.T) {
 		})
 
 		// Node 2: Increment counter and route to node3
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 10},
 				Route: Goto("node3"),
@@ -491,7 +491,7 @@ func TestEngine_Run(t *testing.T) {
 		})
 
 		// Node 3: Set final value and stop
-		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "complete"},
 				Route: Stop(),
@@ -523,7 +523,7 @@ func TestEngine_Run(t *testing.T) {
 	t.Run("run with no start node", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -570,21 +570,21 @@ func TestEngine_StatePersistence(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Create 3-node workflow
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node1", Counter: 1},
 				Route: Goto("node2"),
 			}
 		})
 
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node2", Counter: 10},
 				Route: Goto("node3"),
 			}
 		})
 
-		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node3", Counter: 100},
 				Route: Stop(),
@@ -636,7 +636,7 @@ func TestEngine_StatePersistence(t *testing.T) {
 		opts := Options{MaxSteps: 10}
 		engine := New(reducer, failingStore, emitter, opts)
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Stop(),
@@ -711,21 +711,21 @@ func TestEngine_MaxSteps(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Create 3-node workflow (will complete at step 3)
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Goto("node2"),
 			}
 		})
 
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Goto("node3"),
 			}
 		})
 
-		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Stop(),
@@ -794,7 +794,7 @@ func nodeID(i int) string {
 }
 
 func createCounterNode(value int, nextNode string) Node[TestState] {
-	return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	return NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 		route := Stop()
 		if nextNode != "" {
 			route = Goto(nextNode)
@@ -809,47 +809,47 @@ func createCounterNode(value int, nextNode string) Node[TestState] {
 // failingStore is a test store that always fails SaveStep.
 type failingStore[S any] struct{}
 
-func (f *failingStore[S]) SaveStep(ctx context.Context, runID string, step int, nodeID string, state S) error {
+func (f *failingStore[S]) SaveStep(_ context.Context, _ string, _ int, _ string, _ S) error {
 	return &EngineError{Message: "simulated store failure", Code: "STORE_FAIL"}
 }
 
-func (f *failingStore[S]) LoadLatest(ctx context.Context, runID string) (S, int, error) {
+func (f *failingStore[S]) LoadLatest(_ context.Context, _ string) (S, int, error) {
 	var zero S
 	return zero, 0, store.ErrNotFound
 }
 
-func (f *failingStore[S]) SaveCheckpoint(ctx context.Context, cpID string, state S, step int) error {
+func (f *failingStore[S]) SaveCheckpoint(_ context.Context, _ string, _ S, _ int) error {
 	return &EngineError{Message: "simulated store failure", Code: "STORE_FAIL"}
 }
 
-func (f *failingStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (S, int, error) {
+func (f *failingStore[S]) LoadCheckpoint(_ context.Context, _ string) (S, int, error) {
 	var zero S
 	return zero, 0, store.ErrNotFound
 }
 
 // TODO: Implement in Phase 8
-func (f *failingStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint store.CheckpointV2[S]) error {
+func (f *failingStore[S]) SaveCheckpointV2(_ context.Context, _ store.CheckpointV2[S]) error {
 	return &EngineError{Message: "simulated store failure", Code: "STORE_FAIL"}
 }
 
 // TODO: Implement in Phase 8
-func (f *failingStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (store.CheckpointV2[S], error) {
+func (f *failingStore[S]) LoadCheckpointV2(_ context.Context, _ string, _ int) (store.CheckpointV2[S], error) {
 	var zero store.CheckpointV2[S]
 	return zero, store.ErrNotFound
 }
 
 // TODO: Implement in Phase 8
-func (f *failingStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, error) {
+func (f *failingStore[S]) CheckIdempotency(_ context.Context, _ string) (bool, error) {
 	return false, nil
 }
 
 // TODO: Implement in Phase 8
-func (f *failingStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error) {
+func (f *failingStore[S]) PendingEvents(_ context.Context, _ int) ([]emit.Event, error) {
 	return nil, nil
 }
 
 // TODO: Implement in Phase 8
-func (f *failingStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string) error {
+func (f *failingStore[S]) MarkEventsEmitted(_ context.Context, _ []string) error {
 	return nil
 }
 
@@ -859,14 +859,14 @@ func TestEngine_SaveCheckpoint(t *testing.T) {
 		engine := createTestEngine()
 
 		// Create a simple workflow
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node1", Counter: 1},
 				Route: Goto("node2"),
 			}
 		})
 
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node2", Counter: 10},
 				Route: Stop(),
@@ -914,7 +914,7 @@ func TestEngine_SaveCheckpoint(t *testing.T) {
 	t.Run("save checkpoint with custom label", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 5},
 				Route: Stop(),
@@ -943,7 +943,7 @@ func TestEngine_SaveCheckpoint(t *testing.T) {
 	t.Run("save multiple checkpoints for same run", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Stop(),
@@ -991,21 +991,21 @@ func TestEngine_ResumeFromCheckpoint(t *testing.T) {
 		engine := createTestEngine()
 
 		// Create a 3-node workflow
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node1", Counter: 1},
 				Route: Goto("node2"),
 			}
 		})
 
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node2", Counter: 10},
 				Route: Goto("node3"),
 			}
 		})
 
-		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node3", Counter: 100},
 				Route: Stop(),
@@ -1046,14 +1046,14 @@ func TestEngine_ResumeFromCheckpoint(t *testing.T) {
 	t.Run("resume from checkpoint at workflow start", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 5},
 				Route: Goto("node2"),
 			}
 		})
 
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 10},
 				Route: Stop(),
@@ -1087,7 +1087,7 @@ func TestEngine_ResumeFromCheckpoint(t *testing.T) {
 	t.Run("resume preserves checkpoint state", func(t *testing.T) {
 		engine := createTestEngine()
 
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "executed"},
 				Route: Stop(),
@@ -1137,7 +1137,7 @@ func TestEngine_ContextCancellation(t *testing.T) {
 		engine := createTestEngine()
 
 		// Create a node that checks context
-		slowNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		slowNode := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			// Simulate work that respects cancellation
 			select {
 			case <-ctx.Done():
@@ -1178,7 +1178,7 @@ func TestEngine_ContextCancellation(t *testing.T) {
 		engine := createTestEngine()
 
 		// Node 1 completes quickly
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node1", Counter: 1},
 				Route: Goto("node2"),
@@ -1186,7 +1186,7 @@ func TestEngine_ContextCancellation(t *testing.T) {
 		})
 
 		// Node 2 should not be reached - context is cancelled
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node2", Counter: 10},
 				Route: Stop(),
@@ -1217,7 +1217,7 @@ func TestEngine_ContextCancellation(t *testing.T) {
 		engine := createTestEngine()
 
 		// Fast node that completes immediately
-		fastNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fastNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "done", Counter: 42},
 				Route: Stop(),
@@ -1250,7 +1250,7 @@ func TestEngine_ContextCancellation(t *testing.T) {
 		engine := createTestEngine()
 
 		// Very slow node
-		verySlowNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		verySlowNode := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			select {
 			case <-ctx.Done():
 				return NodeResult[TestState]{
@@ -1291,7 +1291,7 @@ func TestEngine_GracefulShutdown(t *testing.T) {
 		engine := createTestEngine()
 
 		// Node 1 executes successfully
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node1-complete", Counter: 10},
 				Route: Goto("node2"),
@@ -1299,7 +1299,7 @@ func TestEngine_GracefulShutdown(t *testing.T) {
 		})
 
 		// Node 2 will not execute due to cancellation
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node2-complete", Counter: 20},
 				Route: Stop(),
@@ -1340,7 +1340,7 @@ func TestEngine_GracefulShutdown(t *testing.T) {
 		engine := createTestEngine()
 
 		// Node 1 completes before timeout
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node1-done", Counter: 5},
 				Route: Goto("node2"),
@@ -1348,7 +1348,7 @@ func TestEngine_GracefulShutdown(t *testing.T) {
 		})
 
 		// Node 2 takes too long and will be cancelled
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			select {
 			case <-ctx.Done():
 				return NodeResult[TestState]{
@@ -1404,14 +1404,14 @@ func TestEngine_GracefulShutdown(t *testing.T) {
 		engine := createTestEngine()
 
 		// 3-node workflow
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node1", Counter: 1},
 				Route: Goto("node2"),
 			}
 		})
 
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			// This will be cancelled
 			select {
 			case <-ctx.Done():
@@ -1427,7 +1427,7 @@ func TestEngine_GracefulShutdown(t *testing.T) {
 			}
 		})
 
-		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "node3", Counter: 100},
 				Route: Stop(),
@@ -1474,14 +1474,14 @@ func TestEngine_PredicateEvaluation(t *testing.T) {
 		engine := createTestEngine()
 
 		// Node returns empty Route (no explicit routing decision)
-		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		sourceNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "from-source", Counter: 10},
 				Route: Next{}, // Empty route - should use edge predicates
 			}
 		})
 
-		targetNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		targetNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "reached-target", Counter: 20},
 				Route: Stop(),
@@ -1517,14 +1517,14 @@ func TestEngine_PredicateEvaluation(t *testing.T) {
 	t.Run("predicate returns false, no route taken", func(t *testing.T) {
 		engine := createTestEngine()
 
-		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		sourceNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "from-source", Counter: 5},
 				Route: Next{}, // No explicit route
 			}
 		})
 
-		targetNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		targetNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "should-not-reach", Counter: 20},
 				Route: Stop(),
@@ -1558,21 +1558,21 @@ func TestEngine_PredicateEvaluation(t *testing.T) {
 		engine := createTestEngine()
 
 		// Node explicitly routes to "explicit-target"
-		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		sourceNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "from-source", Counter: 10},
 				Route: Goto("explicit-target"), // Explicit route
 			}
 		})
 
-		explicitTarget := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		explicitTarget := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "explicit", Counter: 100},
 				Route: Stop(),
 			}
 		})
 
-		predicateTarget := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		predicateTarget := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "predicate", Counter: 200},
 				Route: Stop(),
@@ -1585,7 +1585,7 @@ func TestEngine_PredicateEvaluation(t *testing.T) {
 		_ = engine.StartAt("source")
 
 		// Add edge with predicate (should be ignored since node has explicit route)
-		predicate := func(s TestState) bool {
+		predicate := func(_ TestState) bool {
 			return true // Always true
 		}
 		_ = engine.Connect("source", "predicate-target", predicate)
@@ -1609,14 +1609,14 @@ func TestEngine_PredicateEvaluation(t *testing.T) {
 	t.Run("unconditional edge (nil predicate)", func(t *testing.T) {
 		engine := createTestEngine()
 
-		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		sourceNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "source", Counter: 1},
 				Route: Next{}, // No explicit route
 			}
 		})
 
-		targetNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		targetNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "target", Counter: 2},
 				Route: Stop(),
@@ -1650,7 +1650,7 @@ func TestEngine_PredicateEvaluation(t *testing.T) {
 		engine := createTestEngine()
 
 		// Node routes to a node that doesn't exist
-		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		sourceNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "source", Counter: 1},
 				Route: Goto("nonexistent-node"),
@@ -1689,21 +1689,21 @@ func TestEngine_MultiplePredicates(t *testing.T) {
 	t.Run("first matching predicate wins", func(t *testing.T) {
 		engine := createTestEngine()
 
-		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		sourceNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "source", Counter: 50},
 				Route: Next{}, // Use edge routing
 			}
 		})
 
-		target1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		target1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "target1", Counter: 100},
 				Route: Stop(),
 			}
 		})
 
-		target2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		target2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "target2", Counter: 200},
 				Route: Stop(),
@@ -1747,28 +1747,28 @@ func TestEngine_MultiplePredicates(t *testing.T) {
 	t.Run("skip non-matching predicates until match found", func(t *testing.T) {
 		engine := createTestEngine()
 
-		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		sourceNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "source", Counter: 15},
 				Route: Next{},
 			}
 		})
 
-		target1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		target1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "target1", Counter: 100},
 				Route: Stop(),
 			}
 		})
 
-		target2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		target2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "target2", Counter: 200},
 				Route: Stop(),
 			}
 		})
 
-		target3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		target3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "target3", Counter: 300},
 				Route: Stop(),
@@ -1818,21 +1818,21 @@ func TestEngine_MultiplePredicates(t *testing.T) {
 	t.Run("unconditional edge matches before conditional", func(t *testing.T) {
 		engine := createTestEngine()
 
-		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		sourceNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "source", Counter: 10},
 				Route: Next{},
 			}
 		})
 
-		target1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		target1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "unconditional", Counter: 100},
 				Route: Stop(),
 			}
 		})
 
-		target2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		target2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "conditional", Counter: 200},
 				Route: Stop(),
@@ -1886,7 +1886,7 @@ func TestEngine_WorkflowLoops(t *testing.T) {
 		engine := New(reducer, st, emitter, Options{MaxSteps: 10})
 
 		// Node A: Increment counter, conditionally route to B or stop
-		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeA := NodeFunc[TestState](func(_ context.Context, s TestState) NodeResult[TestState] {
 			// If counter < 5, continue loop; otherwise stop
 			if s.Counter < 5 {
 				return NodeResult[TestState]{
@@ -1901,7 +1901,7 @@ func TestEngine_WorkflowLoops(t *testing.T) {
 		})
 
 		// Node B: Increment counter, route to A
-		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeB := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "B", Counter: 1},
 				Route: Goto("A"), // Explicit loop back to A
@@ -1955,7 +1955,7 @@ func TestEngine_WorkflowLoops(t *testing.T) {
 		engine := New(reducer, st, emitter, Options{MaxSteps: 5}) // Low limit
 
 		// Node A: Always routes to B
-		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeA := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Goto("B"),
@@ -1963,7 +1963,7 @@ func TestEngine_WorkflowLoops(t *testing.T) {
 		})
 
 		// Node B: Always routes back to A (infinite loop)
-		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeB := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Goto("A"),
@@ -2012,7 +2012,7 @@ func TestEngine_WorkflowLoops(t *testing.T) {
 		engine := New(reducer, st, emitter, Options{MaxSteps: 10})
 
 		// Node A: Increment counter, use edge routing
-		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeA := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "A", Counter: 1},
 				Route: Next{}, // Use edge predicates
@@ -2020,7 +2020,7 @@ func TestEngine_WorkflowLoops(t *testing.T) {
 		})
 
 		// Node B: Increment counter, route back to A
-		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeB := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "B", Counter: 1},
 				Route: Goto("A"),
@@ -2028,7 +2028,7 @@ func TestEngine_WorkflowLoops(t *testing.T) {
 		})
 
 		// Exit node: Stops the workflow
-		exitNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		exitNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "exit", Counter: 100},
 				Route: Stop(),
@@ -2088,7 +2088,7 @@ func TestEngine_Termination(t *testing.T) {
 		engine := createTestEngine()
 
 		// Node A: Processes and stops
-		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeA := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "completed", Counter: 42},
 				Route: Stop(), // Explicit termination
@@ -2096,7 +2096,7 @@ func TestEngine_Termination(t *testing.T) {
 		})
 
 		// Node B: Should never be reached
-		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeB := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "should-not-reach", Counter: 999},
 				Route: Stop(),
@@ -2139,7 +2139,7 @@ func TestEngine_Termination(t *testing.T) {
 
 		// Node A: Returns empty Route, no matching edges
 		// Design: Engine returns NO_ROUTE error instead of implicit termination (safer, more explicit)
-		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeA := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "A", Counter: 1},
 				Route: Next{}, // Empty route, will check edges
@@ -2147,7 +2147,7 @@ func TestEngine_Termination(t *testing.T) {
 		})
 
 		// Node B: Should not be reached
-		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeB := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "B", Counter: 10},
 				Route: Stop(),
@@ -2165,7 +2165,7 @@ func TestEngine_Termination(t *testing.T) {
 		}
 
 		// Add edge A→B with predicate that will NOT match
-		falsePredicate := func(s TestState) bool {
+		falsePredicate := func(_ TestState) bool {
 			return false // Never matches
 		}
 		if err := engine.Connect("A", "B", falsePredicate); err != nil {
@@ -2195,7 +2195,7 @@ func TestEngine_Termination(t *testing.T) {
 
 		// Node A: Returns empty Route, has no outgoing edges
 		// Design: Engine returns NO_ROUTE error instead of implicit termination (safer, more explicit)
-		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeA := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "A", Counter: 1},
 				Route: Next{}, // Empty route, no edges defined
@@ -2250,7 +2250,7 @@ func TestEngine_StateIsolationPerBranch(t *testing.T) {
 		var mu sync.Mutex
 
 		// Node that fans out to multiple parallel branches
-		fanoutNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fanoutNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 10}, // Initial counter = 10
 				Route: Next{Many: []string{"branchA", "branchB", "branchC"}},
@@ -2258,7 +2258,7 @@ func TestEngine_StateIsolationPerBranch(t *testing.T) {
 		})
 
 		// Branch A: Modifies state and records what it sees
-		branchA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branchA := NodeFunc[TestState](func(_ context.Context, s TestState) NodeResult[TestState] {
 			mu.Lock()
 			branchExecutions["A"] = s.Counter
 			mu.Unlock()
@@ -2270,7 +2270,7 @@ func TestEngine_StateIsolationPerBranch(t *testing.T) {
 		})
 
 		// Branch B: Modifies state and records what it sees
-		branchB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branchB := NodeFunc[TestState](func(_ context.Context, s TestState) NodeResult[TestState] {
 			mu.Lock()
 			branchExecutions["B"] = s.Counter
 			mu.Unlock()
@@ -2282,7 +2282,7 @@ func TestEngine_StateIsolationPerBranch(t *testing.T) {
 		})
 
 		// Branch C: Modifies state and records what it sees
-		branchC := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branchC := NodeFunc[TestState](func(_ context.Context, s TestState) NodeResult[TestState] {
 			mu.Lock()
 			branchExecutions["C"] = s.Counter
 			mu.Unlock()
@@ -2356,7 +2356,7 @@ func TestEngine_NextManyFanOut(t *testing.T) {
 		engine := New(reducer, st, emitter, Options{MaxSteps: 10})
 
 		// Fanout node
-		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fanout := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Next{Many: []string{"branch1", "branch2", "branch3", "branch4"}},
@@ -2364,28 +2364,28 @@ func TestEngine_NextManyFanOut(t *testing.T) {
 		})
 
 		// 4 parallel branches, each adds a different amount
-		branch1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branch1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 10},
 				Route: Stop(),
 			}
 		})
 
-		branch2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branch2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 20},
 				Route: Stop(),
 			}
 		})
 
-		branch3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branch3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 30},
 				Route: Stop(),
 			}
 		})
 
-		branch4 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branch4 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 40},
 				Route: Stop(),
@@ -2439,15 +2439,15 @@ func TestEngine_ConcurrentTiming(t *testing.T) {
 		engine := New(reducer, st, emitter, Options{MaxSteps: 10})
 
 		// Fanout to 4 branches
-		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fanout := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Route: Next{Many: []string{"slow1", "slow2", "slow3", "slow4"}},
 			}
 		})
 
 		// Each branch sleeps 100ms (simulating slow operation)
-		slowBranch := func(id string) Node[TestState] {
-			return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		slowBranch := func(_ string) Node[TestState] {
+			return NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 				time.Sleep(100 * time.Millisecond)
 				return NodeResult[TestState]{
 					Delta: TestState{Counter: 1},
@@ -2520,7 +2520,7 @@ func TestEngine_ReducerBasedMerge(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Fanout node
-		fanout := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+		fanout := NodeFunc[StateWithSlice](func(_ context.Context, _ StateWithSlice) NodeResult[StateWithSlice] {
 			return NodeResult[StateWithSlice]{
 				Delta: StateWithSlice{Values: []string{"start"}},
 				Route: Next{Many: []string{"b1", "b2", "b3"}},
@@ -2528,21 +2528,21 @@ func TestEngine_ReducerBasedMerge(t *testing.T) {
 		})
 
 		// Three branches that each add a unique value
-		branch1 := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+		branch1 := NodeFunc[StateWithSlice](func(_ context.Context, _ StateWithSlice) NodeResult[StateWithSlice] {
 			return NodeResult[StateWithSlice]{
 				Delta: StateWithSlice{Values: []string{"b1-value"}},
 				Route: Stop(),
 			}
 		})
 
-		branch2 := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+		branch2 := NodeFunc[StateWithSlice](func(_ context.Context, _ StateWithSlice) NodeResult[StateWithSlice] {
 			return NodeResult[StateWithSlice]{
 				Delta: StateWithSlice{Values: []string{"b2-value"}},
 				Route: Stop(),
 			}
 		})
 
-		branch3 := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+		branch3 := NodeFunc[StateWithSlice](func(_ context.Context, _ StateWithSlice) NodeResult[StateWithSlice] {
 			return NodeResult[StateWithSlice]{
 				Delta: StateWithSlice{Values: []string{"b3-value"}},
 				Route: Stop(),
@@ -2625,7 +2625,7 @@ func TestEngine_DeterministicMergeOrder(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Fanout with intentionally non-alphabetic routing order
-		fanout := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+		fanout := NodeFunc[OrderedState](func(_ context.Context, _ OrderedState) NodeResult[OrderedState] {
 			return NodeResult[OrderedState]{
 				Route: Next{
 					// Non-alphabetic order to test sorting
@@ -2635,7 +2635,7 @@ func TestEngine_DeterministicMergeOrder(t *testing.T) {
 		})
 
 		// Branches with variable delays to ensure completion order != nodeID order
-		nodeA := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+		nodeA := NodeFunc[OrderedState](func(_ context.Context, _ OrderedState) NodeResult[OrderedState] {
 			time.Sleep(40 * time.Millisecond) // Slower
 			return NodeResult[OrderedState]{
 				Delta: OrderedState{Sequence: []string{"A"}},
@@ -2643,7 +2643,7 @@ func TestEngine_DeterministicMergeOrder(t *testing.T) {
 			}
 		})
 
-		nodeB := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+		nodeB := NodeFunc[OrderedState](func(_ context.Context, _ OrderedState) NodeResult[OrderedState] {
 			time.Sleep(10 * time.Millisecond) // Fastest
 			return NodeResult[OrderedState]{
 				Delta: OrderedState{Sequence: []string{"B"}},
@@ -2651,7 +2651,7 @@ func TestEngine_DeterministicMergeOrder(t *testing.T) {
 			}
 		})
 
-		nodeM := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+		nodeM := NodeFunc[OrderedState](func(_ context.Context, _ OrderedState) NodeResult[OrderedState] {
 			time.Sleep(30 * time.Millisecond) // Medium
 			return NodeResult[OrderedState]{
 				Delta: OrderedState{Sequence: []string{"M"}},
@@ -2659,7 +2659,7 @@ func TestEngine_DeterministicMergeOrder(t *testing.T) {
 			}
 		})
 
-		nodeZ := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+		nodeZ := NodeFunc[OrderedState](func(_ context.Context, _ OrderedState) NodeResult[OrderedState] {
 			time.Sleep(20 * time.Millisecond) // Medium-fast
 			return NodeResult[OrderedState]{
 				Delta: OrderedState{Sequence: []string{"Z"}},
@@ -2724,14 +2724,14 @@ func TestEngine_ParallelBranchError(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Fanout to 3 branches
-		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fanout := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Route: Next{Many: []string{"branch1", "branch2", "branch3"}},
 			}
 		})
 
 		// Branch 1: succeeds
-		branch1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branch1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 10},
 				Route: Stop(),
@@ -2739,7 +2739,7 @@ func TestEngine_ParallelBranchError(t *testing.T) {
 		})
 
 		// Branch 2: fails with error
-		branch2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branch2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Err: &EngineError{
 					Message: "branch2 processing failed",
@@ -2749,7 +2749,7 @@ func TestEngine_ParallelBranchError(t *testing.T) {
 		})
 
 		// Branch 3: succeeds
-		branch3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branch3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 30},
 				Route: Stop(),
@@ -2804,14 +2804,14 @@ func TestEngine_MultipleBranchErrors(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Fanout to 4 branches
-		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fanout := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Route: Next{Many: []string{"branchA", "branchB", "branchC", "branchD"}},
 			}
 		})
 
 		// Branch A: succeeds
-		branchA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branchA := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			time.Sleep(10 * time.Millisecond)
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
@@ -2820,7 +2820,7 @@ func TestEngine_MultipleBranchErrors(t *testing.T) {
 		})
 
 		// Branch B: fails
-		branchB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branchB := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			time.Sleep(20 * time.Millisecond)
 			return NodeResult[TestState]{
 				Err: &EngineError{Message: "branchB error", Code: "ERR_B"},
@@ -2828,7 +2828,7 @@ func TestEngine_MultipleBranchErrors(t *testing.T) {
 		})
 
 		// Branch C: fails
-		branchC := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branchC := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			time.Sleep(15 * time.Millisecond)
 			return NodeResult[TestState]{
 				Err: &EngineError{Message: "branchC error", Code: "ERR_C"},
@@ -2836,7 +2836,7 @@ func TestEngine_MultipleBranchErrors(t *testing.T) {
 		})
 
 		// Branch D: succeeds
-		branchD := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		branchD := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			time.Sleep(5 * time.Millisecond)
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 4},
@@ -2897,21 +2897,21 @@ func TestEngine_ParallelNodeNotFound(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Fanout that references a nonexistent node
-		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fanout := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Route: Next{Many: []string{"existing", "nonexistent", "another"}},
 			}
 		})
 
 		// Only add "existing" and "another", but not "nonexistent"
-		existing := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		existing := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Stop(),
 			}
 		})
 
-		another := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		another := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 2},
 				Route: Stop(),
@@ -2981,7 +2981,7 @@ func TestEngine_NodeStartEvent(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Add a simple node that increments counter
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Stop(),
@@ -3040,19 +3040,19 @@ func TestEngine_NodeStartEvent(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Add three nodes in sequence
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Goto("node2"),
 			}
 		})
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 2},
 				Route: Goto("node3"),
 			}
 		})
-		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 3},
 				Route: Stop(),
@@ -3121,7 +3121,7 @@ func TestEngine_NodeEndEvent(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Add a node that returns a delta
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 5, Value: "test"},
 				Route: Stop(),
@@ -3193,19 +3193,19 @@ func TestEngine_NodeEndEvent(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Add three nodes in sequence with different deltas
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Goto("node2"),
 			}
 		})
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 10},
 				Route: Goto("node3"),
 			}
 		})
-		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 100},
 				Route: Stop(),
@@ -3279,13 +3279,13 @@ func TestEngine_RoutingDecisionEvent(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Add two nodes with explicit routing
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Goto("node2"),
 			}
 		})
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 2},
 				Route: Stop(),
@@ -3359,7 +3359,7 @@ func TestEngine_RoutingDecisionEvent(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Add a single node that stops
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Stop(),
@@ -3420,7 +3420,7 @@ func TestEngine_ErrorEvent(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Add a node that returns an error
-		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Err: errors.New("test error"),
 			}
@@ -3490,13 +3490,13 @@ func TestEngine_ErrorEvent(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Add nodes where second one fails
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Goto("node2"),
 			}
 		})
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Err: errors.New("node2 failed"),
 			}
@@ -3570,7 +3570,7 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 		}
 
 		// Create node that calls the tool
-		toolNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		toolNode := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			// Call the tool
 			result, err := mockTool.Call(ctx, map[string]interface{}{
 				"operation": "add",
@@ -3645,7 +3645,7 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 			output: map[string]interface{}{"processed": true, "count": 5},
 		}
 
-		multiToolNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		multiToolNode := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			// Call first tool
 			data, err := tool1.Call(ctx, map[string]interface{}{"user_id": 123})
 			if err != nil {
@@ -3710,7 +3710,7 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 			err:  errors.New("tool execution failed"),
 		}
 
-		errorHandlingNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		errorHandlingNode := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			result, err := failingTool.Call(ctx, map[string]interface{}{"input": "test"})
 			if err != nil {
 				// Handle tool error by returning it in NodeResult
@@ -3766,7 +3766,7 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 		}
 
 		// First node calls tool
-		fetchNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		fetchNode := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			weather, err := weatherTool.Call(ctx, map[string]interface{}{
 				"location": "San Francisco",
 			})
@@ -3785,7 +3785,7 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 		})
 
 		// Second node uses tool results from state
-		processNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		processNode := NodeFunc[TestState](func(_ context.Context, state TestState) NodeResult[TestState] {
 			// Use weather data from previous node
 			summary := state.Value + " day"
 			if state.Counter > 70 {
@@ -3845,7 +3845,7 @@ func TestEngine_NodeWithToolInvocation(t *testing.T) {
 			delay: 2 * time.Second, // Simulates slow operation
 		}
 
-		slowNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		slowNode := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			result, err := slowTool.Call(ctx, nil)
 			if err != nil {
 				return NodeResult[TestState]{Err: err}
@@ -3963,7 +3963,7 @@ func TestConcurrentExecution(t *testing.T) {
 			nodeID := "node" + string(rune('0'+i))
 			counter := i
 
-			if err := engine.Add(nodeID, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			if err := engine.Add(nodeID, NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 				execMu.Lock()
 				execTimes[nodeID] = time.Now()
 				execMu.Unlock()
@@ -3981,7 +3981,7 @@ func TestConcurrentExecution(t *testing.T) {
 		}
 
 		// Start from all 3 nodes simultaneously (fan-out from start)
-		if err := engine.Add("start", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		if err := engine.Add("start", NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Route: Next{Many: []string{"node1", "node2", "node3"}},
 			}
@@ -4070,7 +4070,7 @@ func TestConcurrentExecution(t *testing.T) {
 			nodeID := "node" + string(rune('0'+i))
 			counter := i
 
-			if err := engine.Add(nodeID, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			if err := engine.Add(nodeID, NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 				execMu.Lock()
 				currentConcurrent++
 				if currentConcurrent > maxConcurrent {
@@ -4095,7 +4095,7 @@ func TestConcurrentExecution(t *testing.T) {
 		}
 
 		// Start all 5 nodes simultaneously
-		if err := engine.Add("start", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		if err := engine.Add("start", NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Route: Next{Many: []string{"node1", "node2", "node3", "node4", "node5"}},
 			}
@@ -4171,7 +4171,7 @@ func TestFanOutRouting(t *testing.T) {
 
 			// Create a closure with captured variables
 			func(bid string, cnt int) {
-				if err := engine.Add(bid, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+				if err := engine.Add(bid, NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 					execMu.Lock()
 					execOrder = append(execOrder, bid)
 					execTimes[bid] = time.Now()
@@ -4194,7 +4194,7 @@ func TestFanOutRouting(t *testing.T) {
 		}
 
 		// Join node that merges results
-		if err := engine.Add("join", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		if err := engine.Add("join", NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{}, // No delta, just observe merged state
 				Route: Stop(),
@@ -4204,7 +4204,7 @@ func TestFanOutRouting(t *testing.T) {
 		}
 
 		// Fan-out node
-		if err := engine.Add("fanout", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		if err := engine.Add("fanout", NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Route: Next{Many: []string{"branch1", "branch2", "branch3", "branch4", "branch5"}},
 			}
@@ -4315,7 +4315,7 @@ func TestConcurrencyLimit(t *testing.T) {
 
 		// Create slow nodes that track concurrency
 		createSlowNode := func(id string, sleepMs int) Node[TestState] {
-			return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 				// Increment active count
 				activeMu.Lock()
 				activeCount++
@@ -4343,7 +4343,7 @@ func TestConcurrencyLimit(t *testing.T) {
 		}
 
 		// Create fan-out node that spawns 10 parallel branches
-		fanOutNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fanOutNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 0},
 				Route: Many([]string{"slow1", "slow2", "slow3", "slow4", "slow5",
@@ -4411,7 +4411,7 @@ func TestConcurrencyLimit(t *testing.T) {
 
 		// Create nodes that track concurrency
 		createNode := func(id string) Node[TestState] {
-			return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 				// Increment active count
 				activeMu.Lock()
 				activeCount++
@@ -4433,7 +4433,7 @@ func TestConcurrencyLimit(t *testing.T) {
 
 				// Route to next node or stop
 				var route Next
-				if id == "node1" {
+				if id == "node1" { //nolint:staticcheck // if-else more readable than switch for simple routing
 					route = Goto("node2")
 				} else if id == "node2" {
 					route = Goto("node3")
@@ -4514,7 +4514,7 @@ func TestRunWallClockBudget(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Create slow node that would exceed budget
-		slowNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		slowNode := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			// This node takes 150ms
 			select {
 			case <-time.After(150 * time.Millisecond):
@@ -4532,7 +4532,7 @@ func TestRunWallClockBudget(t *testing.T) {
 		})
 
 		// Second slow node that should not complete due to timeout
-		slowNode2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		slowNode2 := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			select {
 			case <-time.After(150 * time.Millisecond):
 				return NodeResult[TestState]{
@@ -4592,7 +4592,7 @@ func TestRunWallClockBudget(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Create fast node
-		fastNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fastNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Stop(),
@@ -4631,7 +4631,7 @@ func TestRunWallClockBudget(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Create moderately slow node
-		slowNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		slowNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			time.Sleep(100 * time.Millisecond)
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
@@ -4692,7 +4692,7 @@ func TestCancellationPropagation(t *testing.T) {
 
 		// Create long-running nodes that respect cancellation
 		createCancellableNode := func(id string) Node[TestState] {
-			return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			return NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 				// Simulate long-running work that respects ctx.Done()
 				select {
 				case <-time.After(10 * time.Second): // Would take 10s without cancellation
@@ -4715,7 +4715,7 @@ func TestCancellationPropagation(t *testing.T) {
 		}
 
 		// Create fan-out node that spawns multiple parallel branches
-		fanOutNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fanOutNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 0},
 				Route: Many([]string{"node1", "node2", "node3", "node4", "node5"}),
@@ -4802,7 +4802,7 @@ func TestCancellationPropagation(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Create node that respects cancellation
-		cancellableNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		cancellableNode := NodeFunc[TestState](func(ctx context.Context, _ TestState) NodeResult[TestState] {
 			select {
 			case <-time.After(5 * time.Second):
 				return NodeResult[TestState]{
@@ -4885,7 +4885,7 @@ func TestDeadlockDetection(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Create node that doesn't route anywhere (no Goto, no Stop, no edges)
-		deadEndNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		deadEndNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Next{}, // Empty route - no next node, not terminal
@@ -4932,7 +4932,7 @@ func TestDeadlockDetection(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Create nodes that route to each other conditionally but never satisfy exit condition
-		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeA := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			// Always route to B, never satisfy exit condition
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
@@ -4940,7 +4940,7 @@ func TestDeadlockDetection(t *testing.T) {
 			}
 		})
 
-		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		nodeB := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			// Always route back to A
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},

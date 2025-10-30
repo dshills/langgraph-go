@@ -7,7 +7,7 @@ import (
 )
 
 // TestEmitter_InterfaceContract verifies Emitter interface can be implemented (T031).
-func TestEmitter_InterfaceContract(t *testing.T) {
+func TestEmitter_InterfaceContract(_ *testing.T) {
 	// Verify interface can be declared.
 	var _ Emitter = (*mockEmitter)(nil)
 }

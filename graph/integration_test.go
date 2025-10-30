@@ -38,7 +38,7 @@ func TestIntegration_CheckpointResumeWorkflow(t *testing.T) {
 
 		// Define multi-step workflow simulating real LLM agent workflow.
 		// Step 1: Receive user query.
-		receiveNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		receiveNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "received", Counter: 1},
 				Route: Goto("analyze"),
@@ -46,7 +46,7 @@ func TestIntegration_CheckpointResumeWorkflow(t *testing.T) {
 		})
 
 		// Step 2: Analyze query.
-		analyzeNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		analyzeNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "analyzed", Counter: 10},
 				Route: Goto("generate"),
@@ -54,7 +54,7 @@ func TestIntegration_CheckpointResumeWorkflow(t *testing.T) {
 		})
 
 		// Step 3: Generate response.
-		generateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		generateNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "generated", Counter: 100},
 				Route: Goto("validate"),
@@ -62,7 +62,7 @@ func TestIntegration_CheckpointResumeWorkflow(t *testing.T) {
 		})
 
 		// Step 4: Validate output.
-		validateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		validateNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "validated", Counter: 1000},
 				Route: Stop(),
@@ -118,7 +118,7 @@ func TestIntegration_CheckpointResumeWorkflow(t *testing.T) {
 		t.Log("Phase 3: Resuming from checkpoint...")
 
 		// Add a new continuation node for resumed workflow.
-		continueNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		continueNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "continued", Counter: 10000},
 				Route: Stop(),
@@ -190,7 +190,7 @@ func TestIntegration_WorkflowCrashRecovery(t *testing.T) {
 
 		// Simulate a long-running workflow that crashes mid-execution.
 		// Node 1: Initialize.
-		initNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		initNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			t.Log("  Node 1: Initialize")
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "initialized", Counter: 1},
@@ -199,7 +199,7 @@ func TestIntegration_WorkflowCrashRecovery(t *testing.T) {
 		})
 
 		// Node 2: Fetch data (succeeds).
-		fetchNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fetchNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			t.Log("  Node 2: Fetch data")
 			time.Sleep(10 * time.Millisecond) // Simulate I/O
 			return NodeResult[TestState]{
@@ -210,7 +210,7 @@ func TestIntegration_WorkflowCrashRecovery(t *testing.T) {
 
 		// Node 3: Process (will fail on first attempt).
 		processAttempts := 0
-		processNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		processNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			processAttempts++
 			t.Logf("  Node 3: Process (attempt %d)", processAttempts)
 
@@ -231,7 +231,7 @@ func TestIntegration_WorkflowCrashRecovery(t *testing.T) {
 		})
 
 		// Node 4: Validate.
-		validateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		validateNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			t.Log("  Node 4: Validate")
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "validated", Counter: 1000},
@@ -240,7 +240,7 @@ func TestIntegration_WorkflowCrashRecovery(t *testing.T) {
 		})
 
 		// Node 5: Finalize.
-		finalizeNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		finalizeNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			t.Log("  Node 5: Finalize")
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "finalized", Counter: 10000},
@@ -378,7 +378,7 @@ func TestIntegration_ConfidenceBasedRouting(t *testing.T) {
 
 		// Simulate LLM agent workflow with confidence-based routing.
 		// Node: generate - Creates response with confidence score.
-		generateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		generateNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			// Simulate low confidence (Counter will represent confidence * 100).
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "generated", Counter: 65}, // 0.65 confidence
@@ -387,7 +387,7 @@ func TestIntegration_ConfidenceBasedRouting(t *testing.T) {
 		})
 
 		// Node: refine - Improves response.
-		refineNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		refineNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			// Improve confidence.
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "refined", Counter: 20}, // +0.20 confidence
@@ -396,7 +396,7 @@ func TestIntegration_ConfidenceBasedRouting(t *testing.T) {
 		})
 
 		// Node: validate - Final validation for high confidence.
-		validateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		validateNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "validated", Counter: 1},
 				Route: Stop(),
@@ -404,7 +404,7 @@ func TestIntegration_ConfidenceBasedRouting(t *testing.T) {
 		})
 
 		// Node: fallback - Handles very low confidence.
-		fallbackNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		fallbackNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "fallback", Counter: 100},
 				Route: Stop(),
@@ -484,7 +484,7 @@ func TestIntegration_LoopWithExitCondition(t *testing.T) {
 
 		// Simulate iterative refinement loop.
 		// Node: process - Incremental processing.
-		processNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		processNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "processing", Counter: 1},
 				Route: Next{}, // Use edge routing to decide continue or exit
@@ -492,7 +492,7 @@ func TestIntegration_LoopWithExitCondition(t *testing.T) {
 		})
 
 		// Node: validate - Check if done.
-		validateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		validateNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "checking", Counter: 0},
 				Route: Next{}, // Use edge routing
@@ -500,7 +500,7 @@ func TestIntegration_LoopWithExitCondition(t *testing.T) {
 		})
 
 		// Node: complete - Success exit.
-		completeNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		completeNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Value: "completed", Counter: 100},
 				Route: Stop(),
@@ -590,14 +590,14 @@ func TestIntegration_ParallelExecution(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Fanout node routes to 4 parallel branches.
-		fanout := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		fanout := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			return NodeResult[ParallelState]{
 				Route: Next{Many: []string{"branch1", "branch2", "branch3", "branch4"}},
 			}
 		})
 
 		// Branch 1: Fast processing (50ms).
-		branch1 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		branch1 := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(50 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Delta: ParallelState{
@@ -609,7 +609,7 @@ func TestIntegration_ParallelExecution(t *testing.T) {
 		})
 
 		// Branch 2: Medium processing (75ms).
-		branch2 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		branch2 := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(75 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Delta: ParallelState{
@@ -621,7 +621,7 @@ func TestIntegration_ParallelExecution(t *testing.T) {
 		})
 
 		// Branch 3: Slow processing (100ms).
-		branch3 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		branch3 := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(100 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Delta: ParallelState{
@@ -633,7 +633,7 @@ func TestIntegration_ParallelExecution(t *testing.T) {
 		})
 
 		// Branch 4: Very fast processing (25ms).
-		branch4 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		branch4 := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(25 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Delta: ParallelState{
@@ -726,14 +726,14 @@ func TestIntegration_ParallelErrorHandling(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Fanout to 3 branches.
-		fanout := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		fanout := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			return NodeResult[ParallelState]{
 				Route: Next{Many: []string{"success1", "failing", "success2"}},
 			}
 		})
 
 		// Success branch 1.
-		success1 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		success1 := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(30 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Delta: ParallelState{Results: []string{"success1"}, Count: 1},
@@ -742,7 +742,7 @@ func TestIntegration_ParallelErrorHandling(t *testing.T) {
 		})
 
 		// Failing branch.
-		failing := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		failing := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(50 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Err: &EngineError{
@@ -753,7 +753,7 @@ func TestIntegration_ParallelErrorHandling(t *testing.T) {
 		})
 
 		// Success branch 2.
-		success2 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		success2 := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(40 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Delta: ParallelState{Results: []string{"success2"}, Count: 1},
@@ -811,14 +811,14 @@ func TestIntegration_ParallelErrorHandling(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Fanout to 4 branches.
-		fanout := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		fanout := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			return NodeResult[ParallelState]{
 				Route: Next{Many: []string{"fail1", "success", "fail2", "fail3"}},
 			}
 		})
 
 		// Failing branch 1.
-		fail1 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		fail1 := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(20 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Err: &EngineError{Message: "error1", Code: "ERR1"},
@@ -826,7 +826,7 @@ func TestIntegration_ParallelErrorHandling(t *testing.T) {
 		})
 
 		// Success branch.
-		success := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		success := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(30 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Delta: ParallelState{Count: 1},
@@ -835,7 +835,7 @@ func TestIntegration_ParallelErrorHandling(t *testing.T) {
 		})
 
 		// Failing branch 2.
-		fail2 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		fail2 := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(40 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Err: &EngineError{Message: "error2", Code: "ERR2"},
@@ -843,7 +843,7 @@ func TestIntegration_ParallelErrorHandling(t *testing.T) {
 		})
 
 		// Failing branch 3.
-		fail3 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		fail3 := NodeFunc[ParallelState](func(_ context.Context, _ ParallelState) NodeResult[ParallelState] {
 			time.Sleep(10 * time.Millisecond)
 			return NodeResult[ParallelState]{
 				Err: &EngineError{Message: "error3", Code: "ERR3"},
@@ -1362,7 +1362,7 @@ func TestIntegration_EventTracingCapture(t *testing.T) {
 			currentNodeID := nodeID
 			currentNextNode := nextNode
 
-			node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			node := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 				// Each node sets its value in the state.
 				result := NodeResult[TestState]{
 					Delta: TestState{Value: fmt.Sprintf("value%d", currentValue), Counter: 1},

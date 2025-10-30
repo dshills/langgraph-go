@@ -11,15 +11,15 @@ import (
 // testEmitter is a minimal emitter for testing that satisfies the emit.Emitter interface
 type testEmitter struct{}
 
-func (e *testEmitter) Emit(event emit.Event) {
+func (e *testEmitter) Emit(_ emit.Event) {
 	// No-op for testing
 }
 
-func (e *testEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+func (e *testEmitter) EmitBatch(_ context.Context, _ []emit.Event) error {
 	return nil
 }
 
-func (e *testEmitter) Flush(ctx context.Context) error {
+func (e *testEmitter) Flush(_ context.Context) error {
 	return nil
 }
 
@@ -51,7 +51,7 @@ func TestEngine_ZeroMaxConcurrentNodes(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Create simple node
-		testNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		testNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1, Value: "done"},
 				Route: Stop(),
@@ -90,19 +90,19 @@ func TestEngine_ZeroMaxConcurrentNodes(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Create a chain of nodes
-		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node1 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Goto("node2"),
 			}
 		})
-		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node2 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Goto("node3"),
 			}
 		})
-		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		node3 := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Stop(),
@@ -154,7 +154,7 @@ func TestEngine_NilReceiver(t *testing.T) {
 	t.Run("nil engine Add should not panic", func(t *testing.T) {
 		var engine *Engine[TestState]
 
-		testNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		testNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -208,7 +208,7 @@ func TestEngine_NilState(t *testing.T) {
 		opts := Options{MaxSteps: 10}
 		engine := New(reducer, st, emitter, opts)
 
-		testNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		testNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			// Node should receive zero-value state without panic
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1, Value: "initialized"},
@@ -250,7 +250,7 @@ func TestEngine_NilState(t *testing.T) {
 		engine := New(reducer, st, emitter, opts)
 
 		// Node that returns zero-value delta
-		testNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		testNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			// Return zero-value delta (effectively no change)
 			return NodeResult[TestState]{
 				Delta: TestState{}, // Zero value
@@ -280,14 +280,14 @@ func TestEngine_NilState(t *testing.T) {
 // This ensures the engine validates required dependencies before execution.
 func TestEngine_NilStore(t *testing.T) {
 	t.Run("engine with nil store returns error on Run", func(t *testing.T) {
-		reducer := func(prev, delta TestState) TestState { return prev }
+		reducer := func(prev, _ TestState) TestState { return prev }
 		emitter := &testEmitter{}
 		opts := Options{MaxSteps: 10}
 
 		// Create engine with nil store
 		engine := New(reducer, nil, emitter, opts)
 
-		testNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		testNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})
 
@@ -319,7 +319,7 @@ func TestEngine_NilEmitter(t *testing.T) {
 		// Create engine with nil emitter
 		engine := New(reducer, st, nil, opts)
 
-		testNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		testNode := NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{
 				Delta: TestState{Counter: 1},
 				Route: Stop(),
