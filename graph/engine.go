@@ -924,19 +924,9 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 		go func(workerID int) {
 			defer wg.Done()
 
-			// Create per-worker RNG derived from base seed (BUG-002 fix)
-			// Each worker gets a unique RNG instance to prevent concurrent access
-			// to shared RNG state while maintaining deterministic replay.
-			// Worker seed = baseSeed + workerID ensures unique but deterministic seeds.
-			workerSeed := baseSeed + int64(workerID)
-			workerRNG := rand.New(rand.NewSource(workerSeed)) // #nosec G404 -- deterministic RNG for replay, not security
-
-			// Create worker-specific context with its own RNG instance
-			workerRNGCtx := context.WithValue(workerCtx, RNGKey, workerRNG)
-
 			for {
 				// Dequeue next work item with worker context for proper cancellation
-				item, err := e.frontier.Dequeue(workerRNGCtx)
+				item, err := e.frontier.Dequeue(workerCtx)
 				if err != nil {
 					// BUG-004 fix (T027): Check for completion after dequeue failure
 					// This handles the case where the frontier is empty and no work is inflight
@@ -990,9 +980,16 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 						policy = &p
 					}
 
-					// Add attempt number to context (T088)
-					// Use workerRNGCtx which contains the worker-specific RNG (BUG-002 fix)
-					nodeCtx := context.WithValue(workerRNGCtx, AttemptKey, item.Attempt)
+					// Create work-item-specific RNG seeded from OrderKey for deterministic replay
+					// This ensures the same logical work item (same OrderKey) always uses the same RNG,
+					// regardless of which physical worker goroutine executes it.
+					// Seed = baseSeed XOR OrderKey for deterministic but unique per-item RNG.
+					itemSeed := baseSeed ^ int64(item.OrderKey)   // #nosec G115 -- XOR for deterministic seeding
+					itemRNG := rand.New(rand.NewSource(itemSeed)) // #nosec G404 -- deterministic RNG for replay, not security
+
+					// Create node context with work-item-specific RNG and attempt number
+					nodeCtx := context.WithValue(workerCtx, RNGKey, itemRNG)
+					nodeCtx = context.WithValue(nodeCtx, AttemptKey, item.Attempt)
 
 					// T046: Track node execution start time for latency metrics
 					startTime := time.Now()
@@ -1063,9 +1060,9 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 								}
 
 								// Compute backoff delay (T086, T090)
-								// Use workerRNG for retry backoff calculation (BUG-002 fix)
+								// Use item-specific RNG for retry backoff calculation for deterministic replay
 								var rng *rand.Rand
-								if rngVal := workerRNGCtx.Value(RNGKey); rngVal != nil {
+								if rngVal := nodeCtx.Value(RNGKey); rngVal != nil {
 									rng = rngVal.(*rand.Rand)
 								}
 								delay := computeBackoff(item.Attempt, retryPol.BaseDelay, retryPol.MaxDelay, rng)
