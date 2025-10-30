@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -513,7 +514,10 @@ func (m *MySQLStore[S]) WithTransaction(ctx context.Context, fn func(context.Con
 	if err != nil {
 		// Rollback on error
 		if rbErr := tx.Rollback(); rbErr != nil {
-			return fmt.Errorf("transaction error: %w, rollback error: %w", err, rbErr)
+			return errors.Join(
+				fmt.Errorf("transaction failed: %w", err),
+				fmt.Errorf("rollback failed: %w", rbErr),
+			)
 		}
 		return err
 	}
