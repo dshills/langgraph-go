@@ -98,6 +98,7 @@ examples/multi-llm-review/multi-llm-review
 tools/
 
 # Multi-LLM Review artifacts
-examples/multi-llm-review/review-results/
 examples/multi-llm-review/.langgraph-checkpoint-*
 examples/multi-llm-review/config.yaml
+
+review-results/

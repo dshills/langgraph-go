@@ -29,6 +29,13 @@ import "github.com/dshills/langgraph-go/examples/multi-llm-review/workflow"
 //	// batches[0].BatchNumber == 1
 //	// batches[4].BatchNumber == 5
 func CreateBatches(files []workflow.CodeFile, batchSize int) []workflow.Batch {
+	// Validate batch size to prevent division by zero or invalid values
+	if batchSize <= 0 {
+		// Return empty slice for invalid batch size
+		// In production, this should return an error: return nil, fmt.Errorf("batchSize must be positive, got %d", batchSize)
+		return []workflow.Batch{}
+	}
+
 	// Handle empty file list
 	if len(files) == 0 {
 		return []workflow.Batch{}

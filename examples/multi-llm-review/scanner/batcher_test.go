@@ -165,6 +165,26 @@ func TestCreateBatches(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:        "zero batch size should cause panic or error",
+			files:       generateTestFiles(10, 10),
+			batchSize:   0,
+			wantBatches: 0, // Should not create batches or should panic
+			validateFirst: func(t *testing.T, batch workflow.Batch) {
+				t.Error("Expected no batches with zero batchSize but got at least one")
+			},
+			validateLast: nil,
+		},
+		{
+			name:        "negative batch size should cause panic or error",
+			files:       generateTestFiles(10, 10),
+			batchSize:   -5,
+			wantBatches: 0, // Should not create batches or should panic
+			validateFirst: func(t *testing.T, batch workflow.Batch) {
+				t.Error("Expected no batches with negative batchSize but got at least one")
+			},
+			validateLast: nil,
+		},
 	}
 
 	for _, tt := range tests {

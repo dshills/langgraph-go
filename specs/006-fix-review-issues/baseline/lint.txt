@@ -1,0 +1,1616 @@
+graph/concurrency_test.go:1007:4: The copy of the 'for' variable "i" can be deleted (Go 1.22+) (copyloopvar)
+			i := i // Capture
+			^
+graph/concurrency_test.go:174:12: Error return value of `engine.Add` is not checked (errcheck)
+	engine.Add("start", node1)
+	          ^
+graph/concurrency_test.go:175:12: Error return value of `engine.Add` is not checked (errcheck)
+	engine.Add("node2", node2)
+	          ^
+graph/concurrency_test.go:176:12: Error return value of `engine.Add` is not checked (errcheck)
+	engine.Add("node3", node3)
+	          ^
+graph/concurrency_test.go:180:16: Error return value of `engine.Connect` is not checked (errcheck)
+	engine.Connect("start", "node2", nil)
+	              ^
+graph/concurrency_test.go:181:16: Error return value of `engine.Connect` is not checked (errcheck)
+	engine.Connect("node2", "node3", nil)
+	              ^
+graph/concurrency_test.go:183:16: Error return value of `engine.StartAt` is not checked (errcheck)
+	engine.StartAt("start")
+	              ^
+graph/concurrency_test.go:266:13: Error return value of `engine.Add` is not checked (errcheck)
+		engine.Add("random", randomNode)
+		          ^
+graph/concurrency_test.go:267:17: Error return value of `engine.StartAt` is not checked (errcheck)
+		engine.StartAt("random")
+		              ^
+graph/concurrency_test.go:353:14: Error return value of `engine.Add` is not checked (errcheck)
+			engine.Add("rng-node", node)
+			          ^
+graph/concurrency_test.go:354:18: Error return value of `engine.StartAt` is not checked (errcheck)
+			engine.StartAt("rng-node")
+			              ^
+graph/observability_test.go:64:9: Error return value of `eng.Add` is not checked (errcheck)
+	eng.Add("start", NodeFunc[simpleState](func(ctx context.Context, state simpleState) NodeResult[simpleState] {
+	       ^
+graph/observability_test.go:71:9: Error return value of `eng.Add` is not checked (errcheck)
+	eng.Add("process", NodeFunc[simpleState](func(ctx context.Context, state simpleState) NodeResult[simpleState] {
+	       ^
+graph/observability_test.go:79:9: Error return value of `eng.Add` is not checked (errcheck)
+	eng.Add("end", NodeFunc[simpleState](func(ctx context.Context, state simpleState) NodeResult[simpleState] {
+	       ^
+graph/observability_test.go:86:13: Error return value of `eng.StartAt` is not checked (errcheck)
+	eng.StartAt("start")
+	           ^
+graph/observability_test.go:87:13: Error return value of `eng.Connect` is not checked (errcheck)
+	eng.Connect("start", "process", nil)
+	           ^
+graph/observability_test.go:88:13: Error return value of `eng.Connect` is not checked (errcheck)
+	eng.Connect("process", "end", nil)
+	           ^
+graph/observability_test.go:234:9: Error return value of `eng.Add` is not checked (errcheck)
+	eng.Add("start", NodeFunc[testState](func(ctx context.Context, state testState) NodeResult[testState] {
+	       ^
+graph/observability_test.go:241:9: Error return value of `eng.Add` is not checked (errcheck)
+	eng.Add("llm_node", NodeFunc[testState](func(ctx context.Context, state testState) NodeResult[testState] {
+	       ^
+graph/observability_test.go:250:13: Error return value of `eng.StartAt` is not checked (errcheck)
+	eng.StartAt("start")
+	           ^
+graph/observability_test.go:251:13: Error return value of `eng.Connect` is not checked (errcheck)
+	eng.Connect("start", "llm_node", nil)
+	           ^
+graph/replay_test.go:272:6: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err != graph.ErrReplayMismatch {
+		   ^
+graph/scheduler_standalone_test.go:107:6: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err != context.DeadlineExceeded {
+		   ^
+graph/scheduler_test.go:182:6: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err != context.DeadlineExceeded {
+		   ^
+graph/scheduler_test.go:345:7: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+			if err != context.Canceled {
+			   ^
+graph/scheduler_test.go:831:7: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+			if err != context.Canceled {
+			   ^
+graph/store/mysql.go:516:72: non-wrapping format verb for fmt.Errorf. Use `%w` to format errors (errorlint)
+			return fmt.Errorf("transaction error: %w, rollback error: %v", err, rbErr)
+			                                                                    ^
+graph/store/mysql_test.go:686:6: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err != ErrNotFound {
+		   ^
+graph/store/mysql_test.go:976:6: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err != ErrNotFound {
+		   ^
+graph/store/sqlite.go:534:5: comparing with == will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+	if err == sql.ErrNoRows {
+	   ^
+graph/tool/tool_test.go:158:43: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if !errors.Is(err, context.Canceled) && err != context.Canceled {
+		                                        ^
+graph/tool/tool_test.go:179:6: comparing with != will fail on wrapped errors. Use errors.Is to check for a specific error (errorlint)
+		if err != expectedErr {
+		   ^
+graph/checkpoint_test.go:349:17: string `sha256:` has 3 occurrences, make it a constant (goconst)
+		if key[:7] != "sha256:" {
+		              ^
+graph/concurrency_test.go:734:17: string `error` has 4 occurrences, make it a constant (goconst)
+		if evt.Msg == "error" {
+		              ^
+graph/edge_test.go:15:19: string `node1` has 3 occurrences, make it a constant (goconst)
+		if edge.From != "node1" {
+		                ^
+graph/edge_test.go:18:17: string `node2` has 5 occurrences, make it a constant (goconst)
+		if edge.To != "node2" {
+		              ^
+graph/emit/buffered_test.go:27:27: string `node1` has 3 occurrences, make it a constant (goconst)
+		if history[0].NodeID != "node1" {
+		                        ^
+graph/emit/otel_test.go:50:18: string `node_start` has 3 occurrences, make it a constant (goconst)
+	if span.Name != "node_start" {
+	                ^
+graph/emit/otel_test.go:56:46: string `run-001` has 3 occurrences, make it a constant (goconst)
+	if got := attrs["langgraph.run_id"]; got != "run-001" {
+	                                            ^
+graph/emit/otel_test.go:67:39: string `llm` has 3 occurrences, make it a constant (goconst)
+	if got := attrs["node_type"]; got != "llm" {
+	                                     ^
+graph/engine_test.go:697:24: string `MAX_STEPS_EXCEEDED` has 3 occurrences, make it a constant (goconst)
+		if engineErr.Code != "MAX_STEPS_EXCEEDED" {
+		                     ^
+graph/engine_test.go:3007:32: string `node_start` has 5 occurrences, make it a constant (goconst)
+			if emitter.events[i].Msg == "node_start" {
+			                            ^
+graph/engine_test.go:3155:32: string `node_end` has 4 occurrences, make it a constant (goconst)
+			if emitter.events[i].Msg == "node_end" {
+			                            ^
+graph/engine_test.go:3314:16: string `routing_decision` has 3 occurrences, make it a constant (goconst)
+			if e.Msg == "routing_decision" {
+			            ^
+graph/engine_test.go:3443:21: string `test error` has 4 occurrences, make it a constant (goconst)
+		if err.Error() != "test error" {
+		                  ^
+graph/model/mock_test.go:96:19: string `First` has 4 occurrences, make it a constant (goconst)
+		if out1.Text != "First" {
+		                ^
+graph/state_test.go:41:17: string `modified` has 4 occurrences, make it a constant (goconst)
+		copied.Name = "modified"
+		              ^
+graph/store/store_test.go:142:20: string `step3` has 3 occurrences, make it a constant (goconst)
+	if state.Value != "step3" {
+	                  ^
+graph/store/store_test.go:173:23: string `checkpoint` has 3 occurrences, make it a constant (goconst)
+	if cp.State.Value != "checkpoint" {
+	                     ^
+graph/tool/http.go:70:12: string `GET` has 4 occurrences, make it a constant (goconst)
+	method := "GET"
+	          ^
+graph/tool/mock_test.go:213:38: string `first` has 3 occurrences, make it a constant (goconst)
+		if mock.Calls[0].Input["query"] != "first" {
+		                                   ^
+examples/ai_research_assistant/main.go:135:1: commentFormatting: put a space between `//` and comment text (gocritic)
+//==============================================================================
+^
+examples/ai_research_assistant/main.go:721:1: commentFormatting: put a space between `//` and comment text (gocritic)
+//==============================================================================
+^
+examples/ai_research_assistant/main.go:774:1: commentFormatting: put a space between `//` and comment text (gocritic)
+//==============================================================================
+^
+examples/chatbot/main.go:81:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if strings.Contains(msg, "refund") || strings.Contains(msg, "money back") {
+		^
+examples/concurrent_workflow/main.go:337:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if parallelSpeedup > 2.0 {
+	^
+examples/data-pipeline/main.go:212:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if len(state.LoadErrors) > 0 {
+		^
+examples/human_in_the_loop/main.go:241:2: ifElseChain: rewrite if-else to switch statement (gocritic)
+	if final.Approved != nil && *final.Approved {
+	^
+examples/interactive-workflow/main.go:84:3: ifElseChain: rewrite if-else to switch statement (gocritic)
+		if state.Amount < 1000 {
+		^
+examples/sqlite_quickstart/main.go:94:3: exitAfterDefer: log.Fatalf will exit, and `defer func(){...}(...)` will not run (gocritic)
+		log.Fatalf("Failed to add start node: %v", err)
+		^
+graph/engine_test.go:4436:5: ifElseChain: rewrite if-else to switch statement (gocritic)
+				if id == "node1" {
+				^
+graph/engine.go:809:1: cyclomatic complexity 46 of func `(*Engine).runConcurrent` is high (> 30) (gocyclo)
+func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) (S, error) {
+^
+graph/engine_test.go:3562:1: cyclomatic complexity 40 of func `TestEngine_NodeWithToolInvocation` is high (> 30) (gocyclo)
+func TestEngine_NodeWithToolInvocation(t *testing.T) {
+^
+graph/integration_test.go:897:1: cyclomatic complexity 43 of func `TestIntegration_MultiProviderWorkflow` is high (> 30) (gocyclo)
+func TestIntegration_MultiProviderWorkflow(t *testing.T) {
+^
+graph/integration_test.go:1330:1: cyclomatic complexity 42 of func `TestIntegration_EventTracingCapture` is high (> 30) (gocyclo)
+func TestIntegration_EventTracingCapture(t *testing.T) {
+^
+graph/store/mysql_integration_test.go:37:1: cyclomatic complexity 50 of func `TestMySQLIntegration` is high (> 30) (gocyclo)
+func TestMySQLIntegration(t *testing.T) {
+^
+graph/concurrency_test.go:21:2: Line contains TODO/BUG/FIXME: "BUG-002: RNG Thread Safety Violation Tes..." (godox)
+// BUG-002: RNG Thread Safety Violation Tests (T007-T011)
+ ^
+graph/concurrency_test.go:59:2: Line contains TODO/BUG/FIXME: "Bug: BUG-002 - Shared math/rand.Rand acc..." (godox)
+// Bug: BUG-002 - Shared math/rand.Rand accessed by multiple workers without sync
+ ^
+graph/concurrency_test.go:376:2: Line contains TODO/BUG/FIXME: "BUG-001: Results Channel Deadlock Risk T..." (godox)
+// BUG-001: Results Channel Deadlock Risk Tests (T012-T016)
+ ^
+graph/concurrency_test.go:758:2: Line contains TODO/BUG/FIXME: "BUG-004: Completion Detection Race Condi..." (godox)
+// BUG-004: Completion Detection Race Condition Tests (T024-T030)
+ ^
+graph/concurrency_test.go:769:2: Line contains TODO/BUG/FIXME: "Bug: BUG-004 - Polling goroutine checks ..." (godox)
+// Bug: BUG-004 - Polling goroutine checks frontier.Len() and inflightCounter with races
+ ^
+graph/emit/emitter_test.go:27:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/emit/emitter_test.go:35:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/engine.go:860:3: Line contains TODO/BUG/FIXME: "BUG-004 fix (T025): Atomic completion fl..." (godox)
+	// BUG-004 fix (T025): Atomic completion flag for race-free workflow termination
+	 ^
+graph/engine.go:864:3: Line contains TODO/BUG/FIXME: "BUG-004 fix (T026): Helper function to c..." (godox)
+	// BUG-004 fix (T026): Helper function to check and signal completion atomically
+	 ^
+graph/engine.go:920:7: Line contains TODO/BUG/FIXME: "BUG-004 fix (T027): Check for completion..." (godox)
+					// BUG-004 fix (T027): Check for completion after dequeue failure
+					 ^
+graph/engine.go:1209:6: Line contains TODO/BUG/FIXME: "BUG-004 fix (T028): Check for completion..." (godox)
+				// BUG-004 fix (T028): Check for completion after node execution completes
+				 ^
+graph/engine.go:1225:3: Line contains TODO/BUG/FIXME: "BUG-004 fix (T025): Removed polling goro..." (godox)
+	// BUG-004 fix (T025): Removed polling goroutine
+	 ^
+graph/engine.go:1243:36: Line contains TODO/BUG/FIXME: "TODO: Track recorded IOs in later phases" (godox)
+	noRecordedIOs := []RecordedIO{}  // TODO: Track recorded IOs in later phases
+	                                  ^
+graph/engine.go:1778:33: Line contains TODO/BUG/FIXME: "TODO: Will be populated in T054" (godox)
+		RNGSeed:        0,           // TODO: Will be populated in T054
+		                              ^
+graph/engine_test.go:183:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/engine_test.go:191:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/engine_test.go:830:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/engine_test.go:835:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/engine_test.go:841:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/engine_test.go:846:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/engine_test.go:851:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/integration_test.go:348:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/integration_test.go:356:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/model/openai/openai.go:295:3: Line contains TODO/BUG/FIXME: "TODO: Implement proper JSON parsing" (godox)
+	// TODO: Implement proper JSON parsing
+	 ^
+graph/node.go:81:3: Line contains TODO/BUG/FIXME: "TODO: Add Events []Event field after T02..." (godox)
+	// TODO: Add Events []Event field after T029-T030 (Event type definition)
+	 ^
+graph/policy_test.go:67:4: Line contains TODO/BUG/FIXME: "TODO: Create node with explicit timeout ..." (godox)
+		// TODO: Create node with explicit timeout policy
+		 ^
+graph/policy_test.go:108:4: Line contains TODO/BUG/FIXME: "TODO: Implement when T076 is complete" (godox)
+		// TODO: Implement when T076 is complete
+		 ^
+graph/policy_test.go:123:4: Line contains TODO/BUG/FIXME: "TODO: Implement when T076 is complete" (godox)
+		// TODO: Implement when T076 is complete
+		 ^
+graph/policy_test.go:135:4: Line contains TODO/BUG/FIXME: "TODO: Implement when T076 is complete" (godox)
+		// TODO: Implement when T076 is complete
+		 ^
+graph/scheduler.go:152:2: Line contains TODO/BUG/FIXME: "BUG-003 fix (T019): Channel is notificat..." (godox)
+// BUG-003 fix (T019): Channel is notification-only (empty struct), not data carrier.
+ ^
+graph/scheduler.go:213:3: Line contains TODO/BUG/FIXME: "BUG-003 fix (T020): Send empty struct no..." (godox)
+	// BUG-003 fix (T020): Send empty struct notification, not data
+	 ^
+graph/scheduler.go:232:2: Line contains TODO/BUG/FIXME: "BUG-003 fix (T021): Dequeue waits for no..." (godox)
+// BUG-003 fix (T021): Dequeue waits for notification, then pops from heap.
+ ^
+graph/scheduler_test.go:484:2: Line contains TODO/BUG/FIXME: "BUG-003: Dual data structure (heap + cha..." (godox)
+// BUG-003: Dual data structure (heap + channel) in Frontier can desynchronize, causing
+ ^
+graph/store/mysql.go:462:3: Line contains TODO/BUG/FIXME: "TODO: Implement reflection-based batch e..." (godox)
+	// TODO: Implement reflection-based batch execution if needed:
+	 ^
+graph/store/store_test.go:71:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/store/store_test.go:76:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/store/store_test.go:82:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/store/store_test.go:87:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/store/store_test.go:92:2: Line contains TODO/BUG/FIXME: "TODO: Implement in Phase 8" (godox)
+// TODO: Implement in Phase 8
+ ^
+graph/concurrency_test.go:29:9: G404: Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand) (gosec)
+	rng := rand.New(rand.NewSource(12345))
+	       ^
+graph/scheduler_test.go:569:22: G115: integer overflow conversion int -> uint64 (gosec)
+				orderKey = uint64(i*100 + (i%7)*13) // Deterministic but non-sequential
+				                 ^
+graph/emit/buffered.go:186:2: Consider pre-allocating `result` (prealloc)
+	var result []Event
+	^
+graph/engine.go:837:2: Consider pre-allocating `collectedResults` (prealloc)
+	var collectedResults []nodeResult[S]
+	^
+graph/engine.go:1364:2: Consider pre-allocating `branchResults` (prealloc)
+	var branchResults []branchResult
+	^
+graph/engine.go:2068:2: Consider pre-allocating `collectedResults` (prealloc)
+	var collectedResults []nodeResult[S]
+	^
+examples/ai_research_assistant/main.go:1:1: package-comments: should have a package comment (revive)
+package main
+^
+examples/ai_research_assistant/main.go:509:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (n *FetchGitHubProjectsNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+                                      ^
+examples/ai_research_assistant/main.go:559:34: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (n *FetchWikipediaNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+                                 ^
+examples/ai_research_assistant/main.go:609:30: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (n *SynthesizeNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+                             ^
+examples/ai_research_assistant/main.go:924:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	fanout := graph.NodeFunc[ResearchState](func(ctx context.Context, s ResearchState) graph.NodeResult[ResearchState] {
+	                                             ^
+examples/ai_research_assistant/main.go:991:20: unused-parameter: parameter 'topic' seems to be unused, consider removing or renaming it as _ (revive)
+func runReplayDemo(topic, depth string, maxSources int) {
+                   ^
+examples/ai_research_assistant/main.go:1105:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *detailedEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+                                    ^
+examples/ai_research_assistant/main.go:1112:33: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *detailedEmitter) Flush(ctx context.Context) error {
+                                ^
+examples/benchmarks/main.go:63:59: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("start", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	                                                         ^
+examples/benchmarks/main.go:72:61: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("process", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	                                                           ^
+examples/benchmarks/main.go:81:60: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("finish", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	                                                          ^
+examples/benchmarks/main.go:136:60: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		if err := engine2.Add(nodeID, graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+		                                                         ^
+examples/benchmarks/main.go:199:60: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine3.Add("start", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	                                                          ^
+examples/benchmarks/main.go:211:62: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		if err := engine3.Add(branchID, graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+		                                                           ^
+examples/benchmarks/main.go:229:59: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine3.Add("join", graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	                                                         ^
+examples/chatbot/main.go:1:1: package-comments: should have a package comment (revive)
+package main
+^
+examples/chatbot/main.go:115:70: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("route_intent", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	                                                                    ^
+examples/chatbot/main.go:136:71: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("handle_refund", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	                                                                     ^
+examples/chatbot/main.go:159:73: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("handle_shipping", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	                                                                       ^
+examples/chatbot/main.go:181:74: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("handle_technical", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	                                                                        ^
+examples/chatbot/main.go:217:77: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("handle_cancellation", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	                                                                           ^
+examples/chatbot/main.go:240:72: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("handle_general", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	                                                                      ^
+examples/checkpoint/main.go:56:50: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	parseNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	                                                ^
+examples/checkpoint/main.go:68:52: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	processNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	                                                  ^
+examples/checkpoint/main.go:80:53: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	finalizeNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	                                                   ^
+examples/concurrent_workflow/main.go:205:54: unused-parameter: parameter 'state' seems to be unused, consider removing or renaming it as _ (revive)
+func (n *FetchMarketDataNode) Run(_ context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+                                                     ^
+examples/concurrent_workflow/main.go:269:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	fanout := graph.NodeFunc[ResearchState](func(ctx context.Context, s ResearchState) graph.NodeResult[ResearchState] {
+	                                             ^
+examples/data-pipeline/main.go:1:1: package-comments: should have a package comment (revive)
+package main
+^
+examples/data-pipeline/main.go:73:69: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("extract", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	                                                                   ^
+examples/data-pipeline/main.go:96:70: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("validate", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	                                                                    ^
+examples/data-pipeline/main.go:131:71: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("transform", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	                                                                     ^
+examples/data-pipeline/main.go:167:66: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("load", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	                                                                ^
+examples/data-pipeline/main.go:195:74: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("handle_error", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	                                                                        ^
+examples/data-pipeline/main.go:231:70: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("complete", graph.NodeFunc[PipelineState](func(ctx context.Context, state PipelineState) graph.NodeResult[PipelineState] {
+	                                                                    ^
+examples/human_in_the_loop/main.go:96:9: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+	} else {
+		fmt.Printf("\n❌ Rejected by human reviewer\n")
+		if s.ApprovalComment != "" {
+			fmt.Printf("Reason: %s\n", s.ApprovalComment)
+		}
+
+		// Check if we should retry.
+		if s.Attempts < 3 {
+			fmt.Printf("Regenerating output (attempt %d/3)...\n", s.Attempts+1)
+			// Reset approval state and regenerate.
+			return graph.NodeResult[ApprovalState]{
+				Delta: ApprovalState{
+					Approved: nil, // Reset approval status
+				},
+				Route: graph.Goto("generate"),
+			}
+		} else {
+			fmt.Printf("Max attempts reached. Workflow cancelled.\n")
+			return graph.NodeResult[ApprovalState]{
+				Route: graph.Stop(),
+			}
+		}
+	}
+examples/human_in_the_loop/main.go:112:10: indent-error-flow: if block ends with a return statement, so drop this else and outdent its block (revive)
+		} else {
+			fmt.Printf("Max attempts reached. Workflow cancelled.\n")
+			return graph.NodeResult[ApprovalState]{
+				Route: graph.Stop(),
+			}
+		}
+examples/interactive-workflow/main.go:1:1: package-comments: should have a package comment (revive)
+package main
+^
+examples/interactive-workflow/main.go:77:72: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("initialize", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	                                                                      ^
+examples/interactive-workflow/main.go:143:76: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("await_decision", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	                                                                          ^
+examples/interactive-workflow/main.go:214:70: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("complete", graph.NodeFunc[ApprovalState](func(ctx context.Context, state ApprovalState) graph.NodeResult[ApprovalState] {
+	                                                                    ^
+examples/llm/main.go:1:1: package-comments: should have a package comment (revive)
+package main
+^
+examples/parallel/main.go:18:30: unused-parameter: parameter 'event' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *simpleEmitter) Emit(event emit.Event) {
+                             ^
+examples/parallel/main.go:60:49: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	fanout := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
+	                                               ^
+examples/parallel/main.go:70:52: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	uppercase := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
+	                                                  ^
+examples/parallel/main.go:81:52: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	lowercase := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
+	                                                  ^
+examples/parallel/main.go:92:50: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	reverse := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
+	                                                ^
+examples/parallel/main.go:107:48: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	count := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
+	                                              ^
+examples/prometheus_monitoring/main.go:47:34: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+func FastNode(_ context.Context, s State) graph.NodeResult[State] {
+                                 ^
+examples/prometheus_monitoring/main.go:62:36: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+func MediumNode(_ context.Context, s State) graph.NodeResult[State] {
+                                   ^
+examples/prometheus_monitoring/main.go:77:34: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+func SlowNode(_ context.Context, s State) graph.NodeResult[State] {
+                                 ^
+examples/prometheus_monitoring/main.go:92:38: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+func ParallelNode(_ context.Context, s State) graph.NodeResult[State] {
+                                     ^
+examples/prometheus_monitoring/main.go:108:14: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	return func(ctx context.Context, s State) graph.NodeResult[State] {
+	            ^
+examples/prometheus_monitoring/main.go:126:44: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *FlakyNode) Run(_ context.Context, s State) graph.NodeResult[State] {
+                                           ^
+examples/prometheus_monitoring/main.go:158:20: unused-parameter: parameter 'err' seems to be unused, consider removing or renaming it as _ (revive)
+			Retryable: func(err error) bool {
+			                ^
+examples/replay_demo/main.go:1:1: package-comments: should have a package comment (revive)
+package main
+^
+examples/replay_demo/main.go:26:2: var-naming: struct field ApiCallsMade should be APICallsMade (revive)
+	ApiCallsMade int      `json:"api_calls"`  // Track actual external calls
+	^
+examples/replay_demo/main.go:63:28: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (n *InitGameNode) Run(ctx context.Context, state GameState) graph.NodeResult[GameState] {
+                           ^
+examples/replay_demo/main.go:187:28: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (n *FinalizeNode) Run(ctx context.Context, state GameState) graph.NodeResult[GameState] {
+                           ^
+examples/replay_demo/main.go:518:30: unused-parameter: parameter 'event' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *simpleEmitter) Emit(event emit.Event) {
+                             ^
+examples/replay_demo/main.go:522:35: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *simpleEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+                                  ^
+examples/replay_demo/main.go:529:31: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *simpleEmitter) Flush(ctx context.Context) error {
+                              ^
+examples/research-pipeline/main.go:127:72: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("initialize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	                                                                      ^
+examples/research-pipeline/main.go:287:72: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("synthesize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	                                                                      ^
+examples/research-pipeline/main.go:369:68: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("report", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	                                                                  ^
+examples/routing/main.go:1:1: package-comments: should have a package comment (revive)
+package main
+^
+examples/routing/main.go:55:49: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	analyzeNode := graph.NodeFunc[AgentState](func(ctx context.Context, s AgentState) graph.NodeResult[AgentState] {
+	                                               ^
+examples/routing/main.go:75:48: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	refineNode := graph.NodeFunc[AgentState](func(ctx context.Context, s AgentState) graph.NodeResult[AgentState] {
+	                                              ^
+examples/routing/main.go:98:50: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	validateNode := graph.NodeFunc[AgentState](func(ctx context.Context, s AgentState) graph.NodeResult[AgentState] {
+	                                                ^
+examples/routing/main.go:209:35: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *simpleEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+                                  ^
+examples/routing/main.go:216:31: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (e *simpleEmitter) Flush(ctx context.Context) error {
+                              ^
+examples/sqlite_quickstart/main.go:58:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	startNode := graph.NodeFunc[State](func(ctx context.Context, s State) graph.NodeResult[State] {
+	                                        ^
+examples/sqlite_quickstart/main.go:69:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	processNode := graph.NodeFunc[State](func(ctx context.Context, s State) graph.NodeResult[State] {
+	                                          ^
+examples/sqlite_quickstart/main.go:80:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	finishNode := graph.NodeFunc[State](func(ctx context.Context, s State) graph.NodeResult[State] {
+	                                         ^
+examples/tools/main.go:105:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	parseNode := graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	                                        ^
+examples/tools/main.go:177:46: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	summarizeNode := graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	                                            ^
+examples/tracing/main.go:1:1: package-comments: should have a package comment (revive)
+package main
+^
+examples/tracing/main.go:53:50: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	startNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	                                                ^
+examples/tracing/main.go:63:52: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	processNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	                                                  ^
+examples/tracing/main.go:74:53: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	validateNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	                                                   ^
+examples/tracing/main.go:92:57: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	errorHandlerNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	                                                       ^
+examples/tracing/main.go:100:51: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	finishNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	                                                 ^
+graph/benchmark_test.go:59:58: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		if err := engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+		                                                       ^
+graph/benchmark_test.go:125:58: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	                                                        ^
+graph/benchmark_test.go:134:60: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("process", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	                                                          ^
+graph/benchmark_test.go:143:59: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("finish", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	                                                         ^
+graph/benchmark_test.go:242:58: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	                                                        ^
+graph/benchmark_test.go:254:60: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		if err := engine.Add(branchID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+		                                                         ^
+graph/benchmark_test.go:269:57: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("join", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	                                                       ^
+graph/benchmark_test.go:330:60: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("process", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	                                                          ^
+graph/benchmark_test.go:403:60: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				if err := engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+				                                                       ^
+graph/benchmark_test.go:420:60: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			if err := engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+			                                                        ^
+graph/benchmark_test.go:488:59: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			if err := engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+			                                                       ^
+graph/benchmark_test.go:540:59: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			if err := engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+			                                                       ^
+graph/benchmark_test.go:551:59: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		if err := engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+		                                                        ^
+graph/benchmark_test.go:611:58: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		if err := engine.Add(nodeID, NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+		                                                       ^
+graph/benchmark_test.go:621:58: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	if err := engine.Add("start", NodeFunc[BenchState](func(ctx context.Context, state BenchState) NodeResult[BenchState] {
+	                                                        ^
+graph/concurrency_test.go:27:35: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+func TestRNGDataRace_DirectAccess(t *testing.T) {
+                                  ^
+graph/concurrency_test.go:39:11: unused-parameter: parameter 'workerID' seems to be unused, consider removing or renaming it as _ (revive)
+		go func(workerID int) {
+		        ^
+graph/concurrency_test.go:212:62: unused-parameter: parameter 'state' seems to be unused, consider removing or renaming it as _ (revive)
+	randomNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+	                                                            ^
+graph/concurrency_test.go:242:18: unused-parameter: parameter 'prev' seems to be unused, consider removing or renaming it as _ (revive)
+	reducer := func(prev, delta TestState) TestState {
+	                ^
+graph/concurrency_test.go:311:56: unused-parameter: parameter 'state' seems to be unused, consider removing or renaming it as _ (revive)
+	node := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+	                                                      ^
+graph/concurrency_test.go:328:18: unused-parameter: parameter 'prev' seems to be unused, consider removing or renaming it as _ (revive)
+	reducer := func(prev, delta TestState) TestState {
+	                ^
+graph/concurrency_test.go:411:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	failingNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	                                        ^
+graph/concurrency_test.go:426:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	                                      ^
+graph/concurrency_test.go:500:46: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	slowSuccessNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	                                            ^
+graph/concurrency_test.go:510:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	failingNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	                                        ^
+graph/concurrency_test.go:529:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	                                      ^
+graph/concurrency_test.go:603:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			failingNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			                                        ^
+graph/concurrency_test.go:616:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			                                      ^
+graph/concurrency_test.go:683:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		failNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                     ^
+graph/concurrency_test.go:694:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	                                      ^
+graph/concurrency_test.go:721:24: unused-parameter: parameter 'key' seems to be unused, consider removing or renaming it as _ (revive)
+	errorCount.Range(func(key, value interface{}) bool {
+	                      ^
+graph/concurrency_test.go:802:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			                                 ^
+graph/concurrency_test.go:825:41: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                      ^
+graph/concurrency_test.go:914:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/concurrency_test.go:1024:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+					node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+					                                 ^
+graph/concurrency_test.go:1041:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				startNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+				                                      ^
+graph/emit/buffered.go:252:1: exported: comment on exported method BufferedEmitter.EmitBatch should be of the form "EmitBatch ..." (revive)
+// TODO: Implement in Phase 8
+^
+graph/emit/buffered.go:261:1: exported: comment on exported method BufferedEmitter.Flush should be of the form "Flush ..." (revive)
+// TODO: Implement in Phase 8
+^
+graph/emit/buffered_test.go:262:12: unused-parameter: parameter 'id' seems to be unused, consider removing or renaming it as _ (revive)
+			go func(id int) {
+			        ^
+graph/emit/buffered_test.go:298:44: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+func TestBufferedEmitter_InterfaceContract(t *testing.T) {
+                                           ^
+graph/emit/emitter_test.go:10:36: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+func TestEmitter_InterfaceContract(t *testing.T) {
+                                   ^
+graph/emit/log_test.go:165:39: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+func TestLogEmitter_InterfaceContract(t *testing.T) {
+                                      ^
+graph/emit/null.go:36:28: unused-parameter: parameter 'event' seems to be unused, consider removing or renaming it as _ (revive)
+func (n *NullEmitter) Emit(event Event) {
+                           ^
+graph/emit/null.go:40:1: exported: comment on exported method NullEmitter.EmitBatch should be of the form "EmitBatch ..." (revive)
+// TODO: Implement in Phase 8
+^
+graph/emit/null.go:42:52: unused-parameter: parameter 'events' seems to be unused, consider removing or renaming it as _ (revive)
+func (n *NullEmitter) EmitBatch(_ context.Context, events []Event) error {
+                                                   ^
+graph/emit/null.go:47:1: exported: comment on exported method NullEmitter.Flush should be of the form "Flush ..." (revive)
+// TODO: Implement in Phase 8
+^
+graph/emit/null_test.go:47:40: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+func TestNullEmitter_InterfaceContract(t *testing.T) {
+                                       ^
+graph/emit/otel_test.go:243:36: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+func TestOTelEmitter_Flush_Timeout(t *testing.T) {
+                                   ^
+graph/engine.go:2333:17: var-declaration: should omit type int from declaration of var latestStep; it will be inferred from the right-hand side (revive)
+	var latestStep int = -1
+	               ^
+graph/engine.go:2384:8: context-keys-type: should not use basic type string as key in context.WithValue (revive)
+	ctx = context.WithValue(ctx, "recordedIOs", recordedIOs)
+	      ^
+graph/engine_test.go:39:25: unused-parameter: parameter 'delta' seems to be unused, consider removing or renaming it as _ (revive)
+		reducer := func(prev, delta TestState) TestState { return prev }
+		                      ^
+graph/engine_test.go:51:25: unused-parameter: parameter 'delta' seems to be unused, consider removing or renaming it as _ (revive)
+		reducer := func(prev, delta TestState) TestState { return prev }
+		                      ^
+graph/engine_test.go:142:25: unused-parameter: parameter 'delta' seems to be unused, consider removing or renaming it as _ (revive)
+		reducer := func(prev, delta TestState) TestState { return prev }
+		                      ^
+graph/engine_test.go:155:25: unused-parameter: parameter 'delta' seems to be unused, consider removing or renaming it as _ (revive)
+		reducer := func(prev, delta TestState) TestState { return prev }
+		                      ^
+graph/engine_test.go:184:33: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *mockEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+                                ^
+graph/engine_test.go:192:29: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *mockEmitter) Flush(ctx context.Context) error {
+                            ^
+graph/engine_test.go:201:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:214:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:217:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:238:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:241:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:257:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:286:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:312:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:315:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:349:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:352:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:368:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:371:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:401:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:417:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:430:46: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+	t.Run("multiple edges from same node", func(t *testing.T) {
+	                                            ^
+graph/engine_test.go:447:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:478:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:486:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:494:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:526:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:573:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:580:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:587:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:639:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:714:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:721:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:728:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:797:34: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	                                ^
+graph/engine_test.go:812:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *failingStore[S]) SaveStep(ctx context.Context, runID string, step int, nodeID string, state S) error {
+                                   ^
+graph/engine_test.go:816:38: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *failingStore[S]) LoadLatest(ctx context.Context, runID string) (S, int, error) {
+                                     ^
+graph/engine_test.go:821:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *failingStore[S]) SaveCheckpoint(ctx context.Context, cpID string, state S, step int) error {
+                                         ^
+graph/engine_test.go:825:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *failingStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (S, int, error) {
+                                         ^
+graph/engine_test.go:831:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *failingStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint store.CheckpointV2[S]) error {
+                                           ^
+graph/engine_test.go:836:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *failingStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (store.CheckpointV2[S], error) {
+                                           ^
+graph/engine_test.go:842:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *failingStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, error) {
+                                           ^
+graph/engine_test.go:847:41: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *failingStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error) {
+                                        ^
+graph/engine_test.go:852:45: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *failingStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string) error {
+                                            ^
+graph/engine_test.go:862:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:869:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:917:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:946:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:994:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1001:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1008:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1049:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1056:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1090:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:1140:61: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+		slowNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                                          ^
+graph/engine_test.go:1181:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1189:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1220:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fastNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                     ^
+graph/engine_test.go:1253:65: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+		verySlowNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                                              ^
+graph/engine_test.go:1294:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1302:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1343:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1351:58: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                                       ^
+graph/engine_test.go:1407:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1414:58: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                                       ^
+graph/engine_test.go:1430:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1477:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1484:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		targetNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1520:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1527:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		targetNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1561:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1568:46: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		explicitTarget := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                           ^
+graph/engine_test.go:1575:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		predicateTarget := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                            ^
+graph/engine_test.go:1588:21: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+		predicate := func(s TestState) bool {
+		                  ^
+graph/engine_test.go:1612:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1619:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		targetNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1653:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1692:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1699:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		target1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:1706:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		target2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:1750:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1757:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		target1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:1764:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		target2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:1771:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		target3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:1821:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		sourceNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:1828:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		target1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:1835:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		target2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:1889:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1904:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1958:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:1966:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:2015:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:2023:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:2031:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		exitNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                     ^
+graph/engine_test.go:2091:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:2099:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:2142:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:2150:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:2168:26: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+		falsePredicate := func(s TestState) bool {
+		                       ^
+graph/engine_test.go:2198:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:2253:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanoutNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:2261:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branchA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2273:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branchB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2285:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branchC := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2359:38: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                   ^
+graph/engine_test.go:2367:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2374:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2381:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2388:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch4 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2442:38: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                   ^
+graph/engine_test.go:2449:22: unused-parameter: parameter 'id' seems to be unused, consider removing or renaming it as _ (revive)
+		slowBranch := func(id string) Node[TestState] {
+		                   ^
+graph/engine_test.go:2450:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			                                ^
+graph/engine_test.go:2523:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanout := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+		                                        ^
+graph/engine_test.go:2531:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch1 := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+		                                         ^
+graph/engine_test.go:2538:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch2 := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+		                                         ^
+graph/engine_test.go:2545:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch3 := NodeFunc[StateWithSlice](func(ctx context.Context, s StateWithSlice) NodeResult[StateWithSlice] {
+		                                         ^
+graph/engine_test.go:2628:41: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanout := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+		                                      ^
+graph/engine_test.go:2638:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeA := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+		                                     ^
+graph/engine_test.go:2646:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeB := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+		                                     ^
+graph/engine_test.go:2654:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeM := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+		                                     ^
+graph/engine_test.go:2662:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeZ := NodeFunc[OrderedState](func(ctx context.Context, s OrderedState) NodeResult[OrderedState] {
+		                                     ^
+graph/engine_test.go:2727:38: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                   ^
+graph/engine_test.go:2734:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2742:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2752:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2807:38: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                   ^
+graph/engine_test.go:2814:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branchA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2823:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branchB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2831:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branchC := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2839:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branchD := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2900:38: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanout := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                   ^
+graph/engine_test.go:2907:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		existing := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                     ^
+graph/engine_test.go:2914:39: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		another := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                    ^
+graph/engine_test.go:2984:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:3043:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:3049:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:3055:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:3124:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:3196:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:3202:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:3208:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node3 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:3282:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:3288:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:3362:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:3423:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/engine_test.go:3493:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node1 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:3499:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:3573:61: unused-parameter: parameter 'state' seems to be unused, consider removing or renaming it as _ (revive)
+		toolNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		                                                          ^
+graph/engine_test.go:3648:66: unused-parameter: parameter 'state' seems to be unused, consider removing or renaming it as _ (revive)
+		multiToolNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		                                                               ^
+graph/engine_test.go:3713:70: unused-parameter: parameter 'state' seems to be unused, consider removing or renaming it as _ (revive)
+		errorHandlingNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		                                                                   ^
+graph/engine_test.go:3769:62: unused-parameter: parameter 'state' seems to be unused, consider removing or renaming it as _ (revive)
+		fetchNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		                                                           ^
+graph/engine_test.go:3788:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		processNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		                                        ^
+graph/engine_test.go:3848:61: unused-parameter: parameter 'state' seems to be unused, consider removing or renaming it as _ (revive)
+		slowNode := NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		                                                          ^
+graph/engine_test.go:3966:58: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			if err := engine.Add(nodeID, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			                                                      ^
+graph/engine_test.go:3984:58: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		if err := engine.Add("start", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		                                                       ^
+graph/engine_test.go:4073:58: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			if err := engine.Add(nodeID, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+			                                                      ^
+graph/engine_test.go:4098:58: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		if err := engine.Add("start", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		                                                       ^
+graph/engine_test.go:4174:56: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				if err := engine.Add(bid, NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+				                                                   ^
+graph/engine_test.go:4197:57: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		if err := engine.Add("join", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		                                                      ^
+graph/engine_test.go:4207:59: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		if err := engine.Add("fanout", NodeFunc[TestState](func(ctx context.Context, state TestState) NodeResult[TestState] {
+		                                                        ^
+graph/engine_test.go:4318:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			                                ^
+graph/engine_test.go:4346:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanOutNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:4414:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			                                ^
+graph/engine_test.go:4517:61: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+		slowNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                                          ^
+graph/engine_test.go:4535:62: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+		slowNode2 := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                                           ^
+graph/engine_test.go:4595:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fastNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                     ^
+graph/engine_test.go:4634:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		slowNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                     ^
+graph/engine_test.go:4695:57: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+			return NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			                                                     ^
+graph/engine_test.go:4718:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanOutNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/engine_test.go:4805:68: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+		cancellableNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                                                 ^
+graph/engine_test.go:4888:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		deadEndNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                        ^
+graph/engine_test.go:4935:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeA := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/engine_test.go:4943:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		nodeB := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                  ^
+graph/error_test.go:39:27: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (f *FailingNode) Run(ctx context.Context, state ErrorTestState) NodeResult[ErrorTestState] {
+                          ^
+graph/error_test.go:72:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanoutNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		                                            ^
+graph/error_test.go:162:45: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		failNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		                                          ^
+graph/error_test.go:216:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				return NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+				                                     ^
+graph/error_test.go:225:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				return NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+				                                     ^
+graph/error_test.go:238:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				return NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+				                                     ^
+graph/error_test.go:327:49: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		slowFailNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		                                              ^
+graph/error_test.go:395:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanoutNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		                                            ^
+graph/error_test.go:410:46: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			failNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+			                                          ^
+graph/error_test.go:482:46: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			failNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+			                                          ^
+graph/error_test.go:492:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanoutNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		                                            ^
+graph/error_test.go:567:46: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		errorNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		                                           ^
+graph/error_test.go:654:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				failNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+				                                          ^
+graph/error_test.go:662:50: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+				successNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+				                                             ^
+graph/error_test.go:681:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanoutNode := NodeFunc[ErrorTestState](func(ctx context.Context, s ErrorTestState) NodeResult[ErrorTestState] {
+		                                            ^
+graph/exactly_once_test.go:636:17: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+func getTestDSN(t *testing.T) string {
+                ^
+graph/integration_test.go:41:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		receiveNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                        ^
+graph/integration_test.go:49:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		analyzeNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                        ^
+graph/integration_test.go:57:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		generateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                         ^
+graph/integration_test.go:65:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		validateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                         ^
+graph/integration_test.go:121:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		continueNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                         ^
+graph/integration_test.go:193:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		initNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                     ^
+graph/integration_test.go:202:41: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fetchNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                      ^
+graph/integration_test.go:213:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		processNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                        ^
+graph/integration_test.go:234:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		validateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                         ^
+graph/integration_test.go:243:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		finalizeNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                         ^
+graph/integration_test.go:381:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		generateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                         ^
+graph/integration_test.go:390:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		refineNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                       ^
+graph/integration_test.go:399:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		validateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                         ^
+graph/integration_test.go:407:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fallbackNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                         ^
+graph/integration_test.go:487:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		processNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                        ^
+graph/integration_test.go:495:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		validateNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                         ^
+graph/integration_test.go:503:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		completeNode := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                         ^
+graph/integration_test.go:593:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanout := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                       ^
+graph/integration_test.go:600:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch1 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                        ^
+graph/integration_test.go:612:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch2 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                        ^
+graph/integration_test.go:624:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch3 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                        ^
+graph/integration_test.go:636:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		branch4 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                        ^
+graph/integration_test.go:729:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanout := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                       ^
+graph/integration_test.go:736:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		success1 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                         ^
+graph/integration_test.go:745:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		failing := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                        ^
+graph/integration_test.go:756:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		success2 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                         ^
+graph/integration_test.go:814:42: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fanout := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                       ^
+graph/integration_test.go:821:41: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fail1 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                      ^
+graph/integration_test.go:829:43: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		success := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                        ^
+graph/integration_test.go:838:41: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fail2 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                      ^
+graph/integration_test.go:846:41: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		fail3 := NodeFunc[ParallelState](func(ctx context.Context, s ParallelState) NodeResult[ParallelState] {
+		                                      ^
+graph/integration_test.go:1365:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+			                                 ^
+graph/model/anthropic/anthropic.go:1:1: package-comments: should have a package comment (revive)
+package anthropic
+^
+graph/model/anthropic/anthropic_test.go:349:45: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *mockAnthropicClient) createMessage(ctx context.Context, systemPrompt string, messages []model.Message, tools []model.ToolSpec) (model.ChatOut, error) {
+                                            ^
+graph/model/chat_test.go:165:25: empty-block: this block is empty, you can remove it (revive)
+		if spec.Schema == nil {
+			// Schema being nil is acceptable for simple tools.
+		}
+graph/model/chat_test.go:305:45: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+	t.Run("interface can be implemented", func(t *testing.T) {
+	                                           ^
+graph/model/chat_test.go:426:51: unused-parameter: parameter 'messages' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *testChatModel) Chat(ctx context.Context, messages []Message, tools []ToolSpec) (ChatOut, error) {
+                                                  ^
+graph/model/google/google.go:1:1: package-comments: should have a package comment (revive)
+package google
+^
+graph/model/google/google_test.go:351:44: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *mockGoogleClient) generateContent(ctx context.Context, messages []model.Message, tools []model.ToolSpec) (model.ChatOut, error) {
+                                           ^
+graph/model/openai/openai.go:1:1: package-comments: should have a package comment (revive)
+package openai
+^
+graph/model/openai/openai_test.go:314:49: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *mockOpenAIClient) createChatCompletion(ctx context.Context, messages []model.Message, tools []model.ToolSpec) (model.ChatOut, error) {
+                                                ^
+graph/node_test.go:22:35: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	                                 ^
+graph/node_test.go:55:56: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+	node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	                                                      ^
+graph/node_test.go:81:35: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+	                                 ^
+graph/node_test.go:231:51: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+	t.Run("NodeFunc implements Node interface", func(t *testing.T) {
+	                                                 ^
+graph/node_test.go:232:52: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		var _ Node[TestState] = NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                                 ^
+graph/node_test.go:239:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/node_test.go:259:36: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                 ^
+graph/node_test.go:275:57: unused-parameter: parameter 's' seems to be unused, consider removing or renaming it as _ (revive)
+		node := NodeFunc[TestState](func(ctx context.Context, s TestState) NodeResult[TestState] {
+		                                                      ^
+graph/options.go:297:14: unused-parameter: parameter 'cfg' seems to be unused, consider removing or renaming it as _ (revive)
+	return func(cfg *engineConfig) error {
+	            ^
+graph/policy_test.go:200:21: unused-parameter: parameter 'err' seems to be unused, consider removing or renaming it as _ (revive)
+				Retryable: func(err error) bool {
+				                ^
+graph/policy_test.go:447:20: unused-parameter: parameter 'err' seems to be unused, consider removing or renaming it as _ (revive)
+			retryable: func(err error) bool {
+			                ^
+graph/policy_test.go:527:21: unused-parameter: parameter 'err' seems to be unused, consider removing or renaming it as _ (revive)
+				Retryable: func(err error) bool {
+				                ^
+graph/replay_test.go:622:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	fanOutNode := graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+	                                             ^
+graph/replay_test.go:846:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	fanOutNode := graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+	                                             ^
+graph/replay_test.go:950:47: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+	fanOutNode := graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+	                                             ^
+graph/retry_integration_test.go:10:2: dot-imports: should not use dot imports (revive)
+	. "github.com/dshills/langgraph-go/graph"
+	^
+graph/retry_integration_test.go:39:13: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			fn: func(ctx context.Context, s TestState) NodeResult[TestState] {
+			         ^
+graph/retry_integration_test.go:61:22: unused-parameter: parameter 'err' seems to be unused, consider removing or renaming it as _ (revive)
+					Retryable: func(err error) bool {
+					                ^
+graph/retry_integration_test.go:106:13: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			fn: func(ctx context.Context, s struct{}) NodeResult[struct{}] {
+			         ^
+graph/retry_integration_test.go:120:22: unused-parameter: parameter 'err' seems to be unused, consider removing or renaming it as _ (revive)
+					Retryable: func(err error) bool {
+					                ^
+graph/retry_integration_test.go:127:19: unused-parameter: parameter 'prev' seems to be unused, consider removing or renaming it as _ (revive)
+		reducer := func(prev, delta struct{}) struct{} { return struct{}{} }
+		                ^
+graph/retry_integration_test.go:163:13: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+			fn: func(ctx context.Context, s struct{}) NodeResult[struct{}] {
+			         ^
+graph/retry_integration_test.go:184:19: unused-parameter: parameter 'prev' seems to be unused, consider removing or renaming it as _ (revive)
+		reducer := func(prev, delta struct{}) struct{} { return struct{}{} }
+		                ^
+graph/store/common_test.go:86:20: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+			storeFunc: func(t *testing.T) (store.Store[TestState], func()) {
+			                ^
+graph/store/common_test.go:235:20: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+			storeFunc: func(t *testing.T) (store.Store[SimpleState], func()) {
+			                ^
+graph/store/memory.go:63:32: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MemStore[S]) SaveStep(ctx context.Context, runID string, step int, nodeID string, state S) error {
+                               ^
+graph/store/memory.go:81:34: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MemStore[S]) LoadLatest(ctx context.Context, runID string) (state S, step int, err error) {
+                                 ^
+graph/store/memory.go:110:38: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MemStore[S]) SaveCheckpoint(ctx context.Context, cpID string, state S, step int) error {
+                                     ^
+graph/store/memory.go:126:38: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MemStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (state S, step int, err error) {
+                                     ^
+graph/store/memory.go:257:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MemStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint CheckpointV2[S]) error {
+                                       ^
+graph/store/memory.go:286:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MemStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (CheckpointV2[S], error) {
+                                       ^
+graph/store/memory.go:307:40: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MemStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, error) {
+                                       ^
+graph/store/memory.go:321:37: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MemStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error) {
+                                    ^
+graph/store/memory.go:345:41: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MemStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string) error {
+                                        ^
+graph/store/memory_test.go:1052:44: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+	t.Run("concurrent CheckIdempotency", func(t *testing.T) {
+	                                          ^
+graph/store/memory_test.go:1082:63: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+	t.Run("concurrent PendingEvents and MarkEventsEmitted", func(t *testing.T) {
+	                                                             ^
+graph/store/mysql.go:12:2: blank-imports: a blank import should be only in a main or test package, or have a comment justifying it (revive)
+	_ "github.com/go-sql-driver/mysql"
+	^
+graph/store/mysql.go:416:60: unused-parameter: parameter 'runID' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *MySQLStore[S]) SaveStepBatch(ctx context.Context, runID string, steps interface{}) error {
+                                                           ^
+graph/store/mysql_test.go:810:18: unused-parameter: parameter 'ctx' seems to be unused, consider removing or renaming it as _ (revive)
+func tableExists(ctx context.Context, store *MySQLStore[TestState], tableName string) bool {
+                 ^
+graph/store/sqlite.go:12:2: blank-imports: a blank import should be only in a main or test package, or have a comment justifying it (revive)
+	_ "modernc.org/sqlite"
+	^
+graph/store/sqlite_test.go:675:42: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+func TestSQLiteStore_InterfaceCompliance(t *testing.T) {
+                                         ^
+graph/store/store_test.go:19:34: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+func TestStore_InterfaceContract(t *testing.T) {
+                                 ^
+graph/store/store_test.go:72:57: unused-parameter: parameter 'checkpoint' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *mockStore) SaveCheckpointV2(_ context.Context, checkpoint CheckpointV2[TestState]) error {
+                                                        ^
+graph/store/store_test.go:77:57: unused-parameter: parameter 'runID' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *mockStore) LoadCheckpointV2(_ context.Context, runID string, stepID int) (CheckpointV2[TestState], error) {
+                                                        ^
+graph/store/store_test.go:83:57: unused-parameter: parameter 'key' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *mockStore) CheckIdempotency(_ context.Context, key string) (bool, error) {
+                                                        ^
+graph/store/store_test.go:88:54: unused-parameter: parameter 'limit' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *mockStore) PendingEvents(_ context.Context, limit int) ([]emit.Event, error) {
+                                                     ^
+graph/store/store_test.go:93:58: unused-parameter: parameter 'eventIDs' seems to be unused, consider removing or renaming it as _ (revive)
+func (m *mockStore) MarkEventsEmitted(_ context.Context, eventIDs []string) error {
+                                                         ^
+graph/tool/http_test.go:172:76: unused-parameter: parameter 'r' seems to be unused, consider removing or renaming it as _ (revive)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	                                                                          ^
+graph/tool/http_test.go:241:76: unused-parameter: parameter 'r' seems to be unused, consider removing or renaming it as _ (revive)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	                                                                          ^
+graph/tool/tool_test.go:13:33: unused-parameter: parameter 't' seems to be unused, consider removing or renaming it as _ (revive)
+func TestTool_InterfaceContract(t *testing.T) {
+                                ^
+examples/research-pipeline/main.go:89:107: (*MockResearchTool).Call - result 1 (error) is always nil (unparam)
+func (m *MockResearchTool) Call(_ context.Context, input map[string]interface{}) (map[string]interface{}, error) {
+                                                                                                          ^
+graph/observability_test.go:507:48: createTestGraphWithMetrics - result 0 (*github.com/dshills/langgraph-go/graph.Engine[github.com/dshills/langgraph-go/graph.testState]) is always nil (unparam)
+func createTestGraphWithMetrics(t *testing.T) (*Engine[testState], *PrometheusMetrics) {
+                                               ^
+graph/observability_test.go:516:45: createTestGraphWithOTel - result 0 (*github.com/dshills/langgraph-go/graph.Engine[github.com/dshills/langgraph-go/graph.testState]) is always nil (unparam)
+func createTestGraphWithOTel(t *testing.T) (*Engine[testState], *mockTracer) {
+                                            ^
+graph/state_test.go:390:53: TestDeterministicMerge$3$1 - result 0 (github.com/dshills/langgraph-go/graph.MergeTestState) is never used (unparam)
+		impureReducer := func(prev, delta MergeTestState) MergeTestState {
+		                                                  ^
+526 issues:
+* copyloopvar: 1
+* errcheck: 20
+* errorlint: 11
+* goconst: 19
+* gocritic: 10
+* gocyclo: 5
+* godox: 39
+* gosec: 2
+* prealloc: 4
+* revive: 411
+* unparam: 4

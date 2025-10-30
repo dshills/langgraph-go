@@ -426,6 +426,10 @@ func New[S any](reducer Reducer[S], st store.Store[S], emitter emit.Emitter, opt
 //
 //	err := engine.Add("process", processNode)
 func (e *Engine[S]) Add(nodeID string, node Node[S]) error {
+	// Prevent panic when called on nil Engine
+	if e == nil {
+		return &EngineError{Message: "engine is nil", Code: "NIL_ENGINE"}
+	}
 	if nodeID == "" {
 		return &EngineError{Message: "node ID cannot be empty"}
 	}
@@ -464,6 +468,10 @@ func (e *Engine[S]) Add(nodeID string, node Node[S]) error {
 //	engine.Add("start", startNode)
 //	engine.StartAt("start")
 func (e *Engine[S]) StartAt(nodeID string) error {
+	// Prevent panic when called on nil Engine
+	if e == nil {
+		return &EngineError{Message: "engine is nil", Code: "NIL_ENGINE"}
+	}
 	if nodeID == "" {
 		return &EngineError{Message: "start node ID cannot be empty"}
 	}
@@ -512,6 +520,10 @@ func (e *Engine[S]) StartAt(nodeID string) error {
 //	    return s.Score > 0.8
 //	})
 func (e *Engine[S]) Connect(from, to string, predicate Predicate[S]) error {
+	// Prevent panic when called on nil Engine
+	if e == nil {
+		return &EngineError{Message: "engine is nil", Code: "NIL_ENGINE"}
+	}
 	if from == "" {
 		return &EngineError{Message: "from node ID cannot be empty"}
 	}
@@ -564,6 +576,11 @@ func (e *Engine[S]) Connect(from, to string, predicate Predicate[S]) error {
 //	fmt.Printf("Final state: %+v\n", final)
 func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error) {
 	var zero S
+
+	// Prevent panic when called on nil Engine
+	if e == nil {
+		return zero, &EngineError{Message: "engine is nil", Code: "NIL_ENGINE"}
+	}
 
 	// Validate configuration
 	if e.reducer == nil {
@@ -809,11 +826,6 @@ type nodeResult[S any] struct {
 func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) (S, error) {
 	var zero S
 
-	// Result channel for collecting node execution outcomes
-	// Buffer sized at MaxConcurrentNodes*2 to handle concurrent error delivery (BUG-001 fix)
-	// This prevents deadlock when all workers fail simultaneously and need to report errors
-	results := make(chan nodeResult[S], e.opts.MaxConcurrentNodes*2)
-
 	// WaitGroup tracks active workers
 	var wg sync.WaitGroup
 
@@ -836,11 +848,17 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 	var stepCounter atomic.Int32
 	var collectedResults []nodeResult[S]
 
-	// Spawn worker goroutines (up to MaxConcurrentNodes)
+	// Determine number of worker goroutines (up to MaxConcurrentNodes)
+	const defaultMaxWorkers = 8
 	maxWorkers := e.opts.MaxConcurrentNodes
-	if maxWorkers == 0 {
-		maxWorkers = 8 // Default if not specified
+	if maxWorkers <= 0 {
+		maxWorkers = defaultMaxWorkers // Default if not specified or negative
 	}
+
+	// Result channel for collecting node execution outcomes.
+	// Buffer sized at maxWorkers*2 to handle concurrent error delivery from all workers.
+	// This prevents deadlock when all workers fail simultaneously and need to report errors.
+	results := make(chan nodeResult[S], maxWorkers*2)
 
 	workerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -1000,9 +1018,9 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 					if result.Err != nil {
 						e.emitError(runID, item.NodeID, item.StepID, result.Err)
 
-						// Helper to send error result and cancel (BUG-001 fix: always block)
-						// Errors are rare and critical - we MUST deliver them to the caller
-						// Blocking is safe because results channel buffer is MaxConcurrentNodes*2
+						// Helper to send error result and cancel.
+						// Errors are rare and critical - we MUST deliver them to the caller.
+						// Blocking is safe because results channel buffer is maxWorkers*2.
 						sendErrorAndCancel := func(err error) {
 							select {
 							case results <- nodeResult[S]{err: err}:
