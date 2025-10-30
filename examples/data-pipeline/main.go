@@ -1,3 +1,4 @@
+// Package main demonstrates a data processing pipeline with error handling using LangGraph-Go.
 package main
 
 import (

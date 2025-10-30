@@ -1,3 +1,4 @@
+// Package main demonstrates an AI research assistant workflow using LangGraph-Go.
 package main
 
 import (

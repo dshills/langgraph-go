@@ -1,3 +1,4 @@
+// Package main demonstrates deterministic replay capabilities of LangGraph-Go.
 package main
 
 import (

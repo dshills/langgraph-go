@@ -1,3 +1,4 @@
+// Package main demonstrates conditional routing and decision-making in LangGraph-Go.
 package main
 
 import (

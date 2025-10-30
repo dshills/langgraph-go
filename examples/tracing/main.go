@@ -1,3 +1,4 @@
+// Package main demonstrates OpenTelemetry tracing integration with LangGraph-Go.
 package main
 
 import (

@@ -1,3 +1,4 @@
+// Package main demonstrates an interactive approval workflow using LangGraph-Go.
 package main
 
 import (

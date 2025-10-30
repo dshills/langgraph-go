@@ -1,3 +1,4 @@
+// Package main demonstrates a customer service chatbot with intent routing using LangGraph-Go.
 package main
 
 import (
