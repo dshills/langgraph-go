@@ -1,0 +1,12 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/dshills/langgraph-go/graph
+cpu: Apple M4 Pro
+BenchmarkLargeWorkflow-14                 	   75378	     46933 ns/op	         0.04693 ms/workflow	       100.0 nodes	     21307 workflows/sec	  121961 B/op	     815 allocs/op
+BenchmarkSmallWorkflowHighFrequency-14    	  378236	      9435 ns/op	         3.000 nodes	    105988 workflows/sec	         9.435 μs/workflow	    9397 B/op	      34 allocs/op
+BenchmarkCheckpointOverhead/SaveCheckpoint-14         	12749598	       327.6 ns/op	         0.3276 μs/save	     179 B/op	       2 allocs/op
+BenchmarkCheckpointOverhead/LoadCheckpoint-14         	373771678	         9.633 ns/op	         0.009633 μs/load	       0 B/op	       0 allocs/op
+BenchmarkParallelBranchCoordination-14                	  175594	     19415 ns/op	         4.000 parallel_branches	     51508 workflows/sec	        19.41 μs/workflow	   10756 B/op	      77 allocs/op
+BenchmarkStateAllocation-14                           	  407913	      8498 ns/op	    7067 B/op	      16 allocs/op
+PASS
+ok  	github.com/dshills/langgraph-go/graph	24.811s

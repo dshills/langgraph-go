@@ -171,16 +171,28 @@ func TestRNGDataRace(t *testing.T) {
 		emit.NewNullEmitter(),
 		opts,
 	)
-	engine.Add("start", node1)
-	engine.Add("node2", node2)
-	engine.Add("node3", node3)
+	if err := engine.Add("start", node1); err != nil {
+		t.Fatalf("failed to add start node: %v", err)
+	}
+	if err := engine.Add("node2", node2); err != nil {
+		t.Fatalf("failed to add node2: %v", err)
+	}
+	if err := engine.Add("node3", node3); err != nil {
+		t.Fatalf("failed to add node3: %v", err)
+	}
 
 	// Chain nodes sequentially - nodes will be executed by concurrent workers
 	// accessing the same shared RNG instance
-	engine.Connect("start", "node2", nil)
-	engine.Connect("node2", "node3", nil)
+	if err := engine.Connect("start", "node2", nil); err != nil {
+		t.Fatalf("failed to connect start to node2: %v", err)
+	}
+	if err := engine.Connect("node2", "node3", nil); err != nil {
+		t.Fatalf("failed to connect node2 to node3: %v", err)
+	}
 
-	engine.StartAt("start")
+	if err := engine.StartAt("start"); err != nil {
+		t.Fatalf("failed to start at start node: %v", err)
+	}
 
 	// Run multiple times to increase race detection probability
 	for i := 0; i < 5; i++ {
@@ -263,8 +275,12 @@ func TestRNGDeterminism(t *testing.T) {
 			emit.NewNullEmitter(),
 			opts,
 		)
-		engine.Add("random", randomNode)
-		engine.StartAt("random")
+		if err := engine.Add("random", randomNode); err != nil {
+			t.Fatalf("failed to add random node: %v", err)
+		}
+		if err := engine.StartAt("random"); err != nil {
+			t.Fatalf("failed to start at random node: %v", err)
+		}
 
 		ctx := context.Background()
 
@@ -350,8 +366,14 @@ func TestRNGConcurrentStress(t *testing.T) {
 				emit.NewNullEmitter(),
 				opts,
 			)
-			engine.Add("rng-node", node)
-			engine.StartAt("rng-node")
+			if err := engine.Add("rng-node", node); err != nil {
+				errors <- fmt.Errorf("failed to add rng-node: %w", err)
+				return
+			}
+			if err := engine.StartAt("rng-node"); err != nil {
+				errors <- fmt.Errorf("failed to start at rng-node: %w", err)
+				return
+			}
 
 			ctx := context.Background()
 			runID := fmt.Sprintf("stress-test-%d", id)

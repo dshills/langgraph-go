@@ -4,6 +4,7 @@ package tool
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 )
 
@@ -21,6 +22,7 @@ type mockTool struct {
 	input  map[string]interface{}
 	output map[string]interface{}
 	err    error
+	mu     sync.Mutex // Protect concurrent access to fields
 }
 
 func (m *mockTool) Name() string {
@@ -28,6 +30,8 @@ func (m *mockTool) Name() string {
 }
 
 func (m *mockTool) Call(_ context.Context, input map[string]interface{}) (map[string]interface{}, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.called = true
 	m.input = input
 	if m.err != nil {
