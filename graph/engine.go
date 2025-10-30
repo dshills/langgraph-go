@@ -684,6 +684,13 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 		// Emit node_start event (T153)
 		e.emitNodeStart(runID, currentNode, step-1) // step is incremented at start of loop, but events use 0-based indexing
 
+		// Get node policy for retry and timeout configuration (US1, US2)
+		var policy *NodePolicy
+		if policyProvider, ok := nodeImpl.(interface{ Policy() NodePolicy }); ok {
+			p := policyProvider.Policy()
+			policy = &p
+		}
+
 		// Execute node with retry support for sequential execution (US1: T005-T009)
 		var result NodeResult[S]
 		maxRetries := e.opts.Retries // Number of retry attempts (0 = no retries)
@@ -692,8 +699,13 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 			// Add retry attempt to context for nodes to access
 			attemptCtx := context.WithValue(ctx, AttemptKey, attempt)
 
-			// Execute node
-			result = nodeImpl.Run(attemptCtx, currentState)
+			// Execute node with timeout enforcement (US2: T017, T018)
+			var timeoutErr error
+			result, timeoutErr = executeNodeWithTimeout(attemptCtx, nodeImpl, currentNode, currentState, policy, e.opts.DefaultNodeTimeout)
+			if timeoutErr != nil {
+				// Timeout occurred - treat as node error
+				result.Err = timeoutErr
+			}
 
 			// If node succeeded, break out of retry loop
 			if result.Err == nil {
