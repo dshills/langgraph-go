@@ -395,10 +395,10 @@ func TestRNGConcurrentStress(t *testing.T) {
 }
 
 // ============================================================================
-// BUG-001: Results Channel Deadlock Risk Tests (T012-T016)
+// Results Channel Deadlock Risk Tests
 // ============================================================================
 
-// TestResultsChannelDeadlock_AllWorkersFailSimultaneously tests BUG-001: Results Channel Deadlock Risk.
+// TestResultsChannelDeadlock_AllWorkersFailSimultaneously tests the results channel deadlock scenario.
 // This test reproduces the scenario where all workers fail simultaneously and attempt to send
 // errors to the results channel, potentially causing deadlock if the channel buffer is too small.
 //
@@ -760,12 +760,12 @@ func TestResultsChannelDeadlock_ErrorDeliveryRate(t *testing.T) {
 
 	t.Logf("Error events in emitter: %d", errorEvents)
 
-	// The critical validation: error was delivered to caller WITHOUT deadlock
-	// This is the BUG-001 fix - ensuring the error reaches the caller
-	// When one node fails, context is canceled and other nodes may not execute
-	// The key is that AT LEAST ONE error is delivered and we don't deadlock
+	// The critical validation: error was delivered to caller WITHOUT deadlock.
+	// This verifies the fix - ensuring the error reaches the caller.
+	// When one node fails, context is canceled and other nodes may not execute.
+	// The key is that AT LEAST ONE error is delivered and we don't deadlock.
 	if err == nil {
-		t.Error("Critical failure: No error delivered to caller (BUG-001 deadlock)")
+		t.Error("Critical failure: No error delivered to caller (deadlock occurred)")
 	} else {
 		t.Logf("SUCCESS: Error delivered to caller without deadlock: %v", err)
 	}
