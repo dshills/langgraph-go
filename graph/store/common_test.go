@@ -83,7 +83,7 @@ func TestIdempotencyAcrossStores(t *testing.T) {
 	}{
 		{
 			name: "MemStore",
-			storeFunc: func(t *testing.T) (store.Store[TestState], func()) {
+			storeFunc: func(_ *testing.T) (store.Store[TestState], func()) {
 				st := store.NewMemStore[TestState]()
 				return st, func() { /* no cleanup needed */ }
 			},
@@ -232,7 +232,7 @@ func TestStoreContractConsistency(t *testing.T) {
 	}{
 		{
 			name: "MemStore",
-			storeFunc: func(t *testing.T) (store.Store[SimpleState], func()) {
+			storeFunc: func(_ *testing.T) (store.Store[SimpleState], func()) {
 				return store.NewMemStore[SimpleState](), func() {}
 			},
 		},

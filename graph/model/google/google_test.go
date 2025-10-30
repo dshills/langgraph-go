@@ -348,7 +348,7 @@ type mockGoogleClient struct {
 	lastMessages []model.Message
 }
 
-func (m *mockGoogleClient) generateContent(ctx context.Context, messages []model.Message, tools []model.ToolSpec) (model.ChatOut, error) {
+func (m *mockGoogleClient) generateContent(_ context.Context, messages []model.Message, _ []model.ToolSpec) (model.ChatOut, error) {
 	m.callCount++
 	m.lastMessages = messages
 

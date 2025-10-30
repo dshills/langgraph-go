@@ -507,7 +507,7 @@ func (n *FetchArxivPapersNode) Effects() graph.SideEffectPolicy {
 // FetchGitHubProjectsNode finds relevant open-source projects.
 type FetchGitHubProjectsNode struct{}
 
-func (n *FetchGitHubProjectsNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+func (n *FetchGitHubProjectsNode) Run(_ context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n💻 [GitHub] Finding relevant projects...")
 
 	// Simulate GitHub API call
@@ -557,7 +557,7 @@ func (n *FetchGitHubProjectsNode) Effects() graph.SideEffectPolicy {
 // FetchWikipediaNode gets background information from Wikipedia.
 type FetchWikipediaNode struct{}
 
-func (n *FetchWikipediaNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+func (n *FetchWikipediaNode) Run(_ context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n📖 [Wikipedia] Fetching background information...")
 
 	// Simulate Wikipedia API call
@@ -607,7 +607,7 @@ func (n *FetchWikipediaNode) Effects() graph.SideEffectPolicy {
 // Demonstrates: Complex state access, deterministic processing.
 type SynthesizeNode struct{}
 
-func (n *SynthesizeNode) Run(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+func (n *SynthesizeNode) Run(_ context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 	fmt.Println("\n🔬 [Synthesize] Combining all research findings...")
 
 	// Extract consensus findings from multiple LLM analyses
@@ -922,7 +922,7 @@ func runResearchWorkflow(topic, depth string, maxSources int, concurrent bool, g
 
 func buildResearchGraph(engine *graph.Engine[ResearchState], gptModel, claudeModel, geminiModel model.ChatModel) {
 	// Fan-out entry node - launches all parallel research tasks
-	fanout := graph.NodeFunc[ResearchState](func(ctx context.Context, s ResearchState) graph.NodeResult[ResearchState] {
+	fanout := graph.NodeFunc[ResearchState](func(_ context.Context, _ ResearchState) graph.NodeResult[ResearchState] {
 		return graph.NodeResult[ResearchState]{
 			Route: graph.Next{
 				Many: []string{
@@ -989,7 +989,7 @@ func buildResearchGraph(engine *graph.Engine[ResearchState], gptModel, claudeMod
 	}
 }
 
-func runReplayDemo(topic, depth string, maxSources int) {
+func runReplayDemo(_, _ string, _ int) {
 	fmt.Println("🔄 REPLAY MODE DEMONSTRATION")
 	fmt.Println("   This would replay a previous execution using recorded I/O")
 	fmt.Println("   See examples/replay_demo for full replay implementation")
@@ -1103,13 +1103,13 @@ func (e *detailedEmitter) Emit(event emit.Event) {
 	}
 }
 
-func (e *detailedEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+func (e *detailedEmitter) EmitBatch(_ context.Context, events []emit.Event) error {
 	for _, event := range events {
 		e.Emit(event)
 	}
 	return nil
 }
 
-func (e *detailedEmitter) Flush(ctx context.Context) error {
+func (e *detailedEmitter) Flush(_ context.Context) error {
 	return nil
 }

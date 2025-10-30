@@ -51,7 +51,7 @@ func main() {
 	engine := graph.New(reducer, st, multiEmitter, graph.WithMaxSteps(100))
 
 	// Define nodes
-	startNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	startNode := graph.NodeFunc[WorkflowState](func(_ context.Context, _ WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Println("\n[NODE: start] Processing input...")
 		time.Sleep(50 * time.Millisecond) // Simulate work
 
@@ -61,7 +61,7 @@ func main() {
 		}
 	})
 
-	processNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	processNode := graph.NodeFunc[WorkflowState](func(_ context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Println("[NODE: process] Processing data...")
 		time.Sleep(100 * time.Millisecond) // Simulate work
 
@@ -72,7 +72,7 @@ func main() {
 		}
 	})
 
-	validateNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	validateNode := graph.NodeFunc[WorkflowState](func(_ context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Println("[NODE: validate] Validating results...")
 		time.Sleep(75 * time.Millisecond) // Simulate work
 
@@ -90,7 +90,7 @@ func main() {
 		}
 	})
 
-	errorHandlerNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	errorHandlerNode := graph.NodeFunc[WorkflowState](func(_ context.Context, _ WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Println("[NODE: error_handler] Handling error...")
 		return graph.NodeResult[WorkflowState]{
 			Delta: WorkflowState{Results: []string{"error_handled"}},
@@ -98,7 +98,7 @@ func main() {
 		}
 	})
 
-	finishNode := graph.NodeFunc[WorkflowState](func(ctx context.Context, s WorkflowState) graph.NodeResult[WorkflowState] {
+	finishNode := graph.NodeFunc[WorkflowState](func(_ context.Context, _ WorkflowState) graph.NodeResult[WorkflowState] {
 		fmt.Println("[NODE: finish] Workflow complete!")
 		return graph.NodeResult[WorkflowState]{
 			Delta: WorkflowState{Counter: 1},

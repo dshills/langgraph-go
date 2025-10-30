@@ -2348,7 +2348,7 @@ func (e *Engine[S]) ReplayRun(ctx context.Context, runID string) (S, error) {
 	// Find the highest step ID by loading incrementally
 	// Start with step 0 and increment until we find the latest
 	var latestCheckpoint store.CheckpointV2[S]
-	var latestStep int = -1
+	latestStep := -1
 
 	// Try loading checkpoints from step 0 upwards
 	// In production, stores should implement a LoadLatestCheckpointV2 method

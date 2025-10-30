@@ -49,7 +49,7 @@ linters:
     - errorlint       # Error wrapping with Go 1.13+
     - copyloopvar     # Checks loop variable copying (replaces exportloopref)
     - gochecknoinits  # Checks that no init functions are present
-    - goconst         # Finds repeated strings for constants
+    # goconst disabled - test string constants don't add value, see disable section
     - revive          # Fast, configurable linter
     - whitespace      # Detection of leading and trailing whitespace
 
@@ -60,6 +60,7 @@ linters:
     - gocognit        # Covered by gocyclo
     - godot           # Comment punctuation - too noisy
     - godox           # TODO/FIXME comments are intentional project markers
+    - goconst         # Test string constants don't justify extraction
     - mnd             # Magic number detector - too noisy
     - lll             # Line length - formatters handle this
     - nlreturn        # Too opinionated

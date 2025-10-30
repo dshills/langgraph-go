@@ -346,7 +346,7 @@ type mockAnthropicClient struct {
 	systemPrompt string
 }
 
-func (m *mockAnthropicClient) createMessage(ctx context.Context, systemPrompt string, messages []model.Message, tools []model.ToolSpec) (model.ChatOut, error) {
+func (m *mockAnthropicClient) createMessage(_ context.Context, systemPrompt string, messages []model.Message, _ []model.ToolSpec) (model.ChatOut, error) {
 	m.callCount++
 	m.lastMessages = messages
 	m.systemPrompt = systemPrompt

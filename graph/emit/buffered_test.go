@@ -259,7 +259,7 @@ func TestBufferedEmitter_ThreadSafety(t *testing.T) {
 		// Start 10 goroutines emitting events.
 		done := make(chan bool)
 		for i := 0; i < 10; i++ {
-			go func(id int) {
+			go func(_ int) {
 				for j := 0; j < 100; j++ {
 					emitter.Emit(Event{
 						RunID: "run-001",
@@ -295,6 +295,6 @@ func TestBufferedEmitter_ThreadSafety(t *testing.T) {
 }
 
 // TestBufferedEmitter_InterfaceContract verifies BufferedEmitter implements Emitter (T170).
-func TestBufferedEmitter_InterfaceContract(t *testing.T) {
+func TestBufferedEmitter_InterfaceContract(_ *testing.T) {
 	var _ Emitter = NewBufferedEmitter()
 }

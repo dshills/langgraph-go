@@ -36,7 +36,7 @@ func TestRetryIntegration(t *testing.T) {
 		var mu sync.Mutex
 
 		node := retryableNode[TestState]{
-			fn: func(ctx context.Context, s TestState) NodeResult[TestState] {
+			fn: func(_ context.Context, s TestState) NodeResult[TestState] {
 				mu.Lock()
 				attempts++
 				currentAttempt := attempts
@@ -58,7 +58,7 @@ func TestRetryIntegration(t *testing.T) {
 					MaxAttempts: 3,
 					BaseDelay:   1 * time.Millisecond,
 					MaxDelay:    10 * time.Millisecond,
-					Retryable: func(err error) bool {
+					Retryable: func(_ error) bool {
 						return true
 					},
 				},
@@ -103,7 +103,7 @@ func TestRetryIntegration(t *testing.T) {
 		var mu sync.Mutex
 
 		node := retryableNode[struct{}]{
-			fn: func(ctx context.Context, s struct{}) NodeResult[struct{}] {
+			fn: func(_ context.Context, _ struct{}) NodeResult[struct{}] {
 				mu.Lock()
 				attempts++
 				mu.Unlock()
@@ -117,14 +117,14 @@ func TestRetryIntegration(t *testing.T) {
 					MaxAttempts: 2,
 					BaseDelay:   1 * time.Millisecond,
 					MaxDelay:    5 * time.Millisecond,
-					Retryable: func(err error) bool {
+					Retryable: func(_ error) bool {
 						return true
 					},
 				},
 			},
 		}
 
-		reducer := func(prev, delta struct{}) struct{} { return struct{}{} }
+		reducer := func(_, _ struct{}) struct{} { return struct{}{} }
 		memStore := store.NewMemStore[struct{}]()
 		engine := New(reducer, memStore, nil, Options{
 			MaxSteps:           10,
@@ -160,7 +160,7 @@ func TestRetryIntegration(t *testing.T) {
 		nonRetryableErr := errors.New("validation error")
 
 		node := retryableNode[struct{}]{
-			fn: func(ctx context.Context, s struct{}) NodeResult[struct{}] {
+			fn: func(_ context.Context, _ struct{}) NodeResult[struct{}] {
 				mu.Lock()
 				attempts++
 				mu.Unlock()
@@ -181,7 +181,7 @@ func TestRetryIntegration(t *testing.T) {
 			},
 		}
 
-		reducer := func(prev, delta struct{}) struct{} { return struct{}{} }
+		reducer := func(_, _ struct{}) struct{} { return struct{}{} }
 		memStore := store.NewMemStore[struct{}]()
 		engine := New(reducer, memStore, nil, Options{
 			MaxSteps:           10,

@@ -15,7 +15,7 @@ import (
 // simpleEmitter provides basic event logging for demonstration purposes.
 type simpleEmitter struct{}
 
-func (e *simpleEmitter) Emit(event emit.Event) {
+func (e *simpleEmitter) Emit(_ emit.Event) {
 	// Silent emitter for cleaner demo output.
 	// In production, you might log to stdout, file, or observability platform.
 }
@@ -57,7 +57,7 @@ func main() {
 	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(100))
 
 	// Entry node: Fan out to 4 parallel processing branches.
-	fanout := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
+	fanout := graph.NodeFunc[ProcessingState](func(_ context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
 		fmt.Printf("📤 Fanout: Splitting '%s' into 4 parallel branches\n", s.Input)
 		return graph.NodeResult[ProcessingState]{
 			Route: graph.Next{
@@ -67,7 +67,7 @@ func main() {
 	})
 
 	// Branch 1: Convert to uppercase.
-	uppercase := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
+	uppercase := graph.NodeFunc[ProcessingState](func(_ context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
 		time.Sleep(100 * time.Millisecond) // Simulate processing
 		result := fmt.Sprintf("UPPERCASE: %s", s.Input)
 		fmt.Printf("  🔤 Branch 1 (uppercase): %s\n", result)
@@ -78,7 +78,7 @@ func main() {
 	})
 
 	// Branch 2: Convert to lowercase.
-	lowercase := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
+	lowercase := graph.NodeFunc[ProcessingState](func(_ context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
 		time.Sleep(150 * time.Millisecond) // Simulate processing
 		result := fmt.Sprintf("lowercase: %s", s.Input)
 		fmt.Printf("  🔡 Branch 2 (lowercase): %s\n", result)
@@ -89,7 +89,7 @@ func main() {
 	})
 
 	// Branch 3: Reverse the string.
-	reverse := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
+	reverse := graph.NodeFunc[ProcessingState](func(_ context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
 		time.Sleep(120 * time.Millisecond) // Simulate processing
 		runes := []rune(s.Input)
 		for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
@@ -104,7 +104,7 @@ func main() {
 	})
 
 	// Branch 4: Count characters.
-	count := graph.NodeFunc[ProcessingState](func(ctx context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
+	count := graph.NodeFunc[ProcessingState](func(_ context.Context, s ProcessingState) graph.NodeResult[ProcessingState] {
 		time.Sleep(80 * time.Millisecond) // Simulate processing
 		result := fmt.Sprintf("length: %d characters", len(s.Input))
 		fmt.Printf("  📏 Branch 4 (count): %s\n", result)

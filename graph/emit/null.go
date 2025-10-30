@@ -33,13 +33,13 @@ func NewNullEmitter() *NullEmitter {
 //
 // This method is a no-op that immediately returns. It never errors.
 // and performs no I/O or processing.
-func (n *NullEmitter) Emit(event Event) {
+func (n *NullEmitter) Emit(_ Event) {
 	// No-op: discard the event.
 }
 
 // TODO: Implement in Phase 8
 // EmitBatch discards multiple events in a single operation.
-func (n *NullEmitter) EmitBatch(_ context.Context, events []Event) error {
+func (n *NullEmitter) EmitBatch(_ context.Context, _ []Event) error {
 	// No-op: discard all events.
 	return nil
 }

@@ -19,13 +19,13 @@ import (
 // GameState represents the state for a dice game workflow that demonstrates
 // deterministic replay with random number generation.
 type GameState struct {
-	PlayerName   string   `json:"player_name"`
-	RoundNumber  int      `json:"round_number"`
-	DiceRolls    []int    `json:"dice_rolls"` // History of all dice rolls
-	Score        int      `json:"score"`      // Total score
-	GameLog      []string `json:"game_log"`   // Human-readable game events
-	ApiCallsMade int      `json:"api_calls"`  // Track actual external calls
-	IsReplay     bool     `json:"is_replay"`  // Replay mode indicator
+	PlayerName    string   `json:"player_name"`
+	RoundNumber   int      `json:"round_number"`
+	DiceRolls     []int    `json:"dice_rolls"` // History of all dice rolls
+	Score         int      `json:"score"`      // Total score
+	GameLog       []string `json:"game_log"`   // Human-readable game events
+	APICallsMade  int      `json:"api_calls"`  // Track actual external calls
+	IsReplay      bool     `json:"is_replay"`  // Replay mode indicator
 }
 
 // gameReducer merges state updates deterministically.
@@ -45,7 +45,7 @@ func gameReducer(prev, delta GameState) GameState {
 	prev.Score += delta.Score
 
 	// Track API calls
-	prev.ApiCallsMade += delta.ApiCallsMade
+	prev.APICallsMade += delta.APICallsMade
 
 	// Copy replay flag
 	if delta.IsReplay {
@@ -61,7 +61,7 @@ type InitGameNode struct {
 	replayMode bool // Injected to simulate replay behavior
 }
 
-func (n *InitGameNode) Run(ctx context.Context, state GameState) graph.NodeResult[GameState] {
+func (n *InitGameNode) Run(_ context.Context, state GameState) graph.NodeResult[GameState] {
 	fmt.Println("\n🎮 [Init] Starting game session...")
 
 	// Simulate API call to load player profile
@@ -90,7 +90,7 @@ func (n *InitGameNode) Run(ctx context.Context, state GameState) graph.NodeResul
 	return graph.NodeResult[GameState]{
 		Delta: GameState{
 			GameLog:      log,
-			ApiCallsMade: apiCalls,
+			APICallsMade: apiCalls,
 		},
 		Route: graph.Goto("roll_dice"),
 	}
@@ -185,7 +185,7 @@ type FinalizeNode struct {
 	replayMode bool
 }
 
-func (n *FinalizeNode) Run(ctx context.Context, state GameState) graph.NodeResult[GameState] {
+func (n *FinalizeNode) Run(_ context.Context, state GameState) graph.NodeResult[GameState] {
 	fmt.Println("\n🏆 [Finalize] Computing final results...")
 
 	// Simulate API call to save high score
@@ -214,7 +214,7 @@ func (n *FinalizeNode) Run(ctx context.Context, state GameState) graph.NodeResul
 	return graph.NodeResult[GameState]{
 		Delta: GameState{
 			GameLog:      finalLog,
-			ApiCallsMade: apiCalls,
+			APICallsMade: apiCalls,
 		},
 		Route: graph.Stop(),
 	}
@@ -415,7 +415,7 @@ func displayGameResults(label string, state GameState) {
 	fmt.Printf("   Player:      %s\n", state.PlayerName)
 	fmt.Printf("   Rounds:      %d\n", state.RoundNumber)
 	fmt.Printf("   Final Score: %d\n", state.Score)
-	fmt.Printf("   API Calls:   %d\n", state.ApiCallsMade)
+	fmt.Printf("   API Calls:   %d\n", state.APICallsMade)
 	fmt.Printf("   Dice Rolls:  %v\n", state.DiceRolls)
 	fmt.Println()
 	fmt.Println("   Game Log:")
@@ -516,17 +516,17 @@ func stringSlicesEqual(a, b []string) bool {
 // simpleEmitter provides basic event logging.
 type simpleEmitter struct{}
 
-func (e *simpleEmitter) Emit(event emit.Event) {
+func (e *simpleEmitter) Emit(_ emit.Event) {
 	// Silent emitter for cleaner demo output
 }
 
-func (e *simpleEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+func (e *simpleEmitter) EmitBatch(_ context.Context, events []emit.Event) error {
 	for _, event := range events {
 		e.Emit(event)
 	}
 	return nil
 }
 
-func (e *simpleEmitter) Flush(ctx context.Context) error {
+func (e *simpleEmitter) Flush(_ context.Context) error {
 	return nil
 }

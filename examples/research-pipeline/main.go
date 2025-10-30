@@ -124,7 +124,7 @@ func main() {
 	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(20))
 
 	// Node 1: Initialize research.
-	if err := engine.Add("initialize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	if err := engine.Add("initialize", graph.NodeFunc[ResearchState](func(_ context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Printf("🔍 Initializing research on: %s\n", state.Topic)
 		fmt.Printf("📋 Research question: %s\n", state.ResearchQuestion)
 		fmt.Println()
@@ -284,7 +284,7 @@ func main() {
 	}
 
 	// Node 5: Synthesize all research (Join point for parallel execution).
-	if err := engine.Add("synthesize", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	if err := engine.Add("synthesize", graph.NodeFunc[ResearchState](func(_ context.Context, state ResearchState) graph.NodeResult[ResearchState] {
 		// Count available research.
 		count := 0
 		if state.HistoricalContext != "" {
@@ -366,7 +366,7 @@ func main() {
 	}
 
 	// Node 6: Generate final report.
-	if err := engine.Add("report", graph.NodeFunc[ResearchState](func(ctx context.Context, state ResearchState) graph.NodeResult[ResearchState] {
+	if err := engine.Add("report", graph.NodeFunc[ResearchState](func(_ context.Context, _ ResearchState) graph.NodeResult[ResearchState] {
 		fmt.Println()
 		fmt.Println("📊 Generating final research report...")
 		fmt.Println()

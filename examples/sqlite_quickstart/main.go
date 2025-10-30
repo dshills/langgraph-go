@@ -55,7 +55,7 @@ func main() {
 	engine := graph.New(reducer, sqliteStore, emitter, graph.WithMaxSteps(10))
 
 	// 5. Define workflow nodes.
-	startNode := graph.NodeFunc[State](func(ctx context.Context, s State) graph.NodeResult[State] {
+	startNode := graph.NodeFunc[State](func(_ context.Context, _ State) graph.NodeResult[State] {
 		fmt.Println("→ Node 'start': Initializing workflow")
 		return graph.NodeResult[State]{
 			Delta: State{
@@ -66,7 +66,7 @@ func main() {
 		}
 	})
 
-	processNode := graph.NodeFunc[State](func(ctx context.Context, s State) graph.NodeResult[State] {
+	processNode := graph.NodeFunc[State](func(_ context.Context, s State) graph.NodeResult[State] {
 		fmt.Printf("→ Node 'process': Processing (count=%d, message=%q)\n", s.Count, s.Message)
 		return graph.NodeResult[State]{
 			Delta: State{
@@ -77,7 +77,7 @@ func main() {
 		}
 	})
 
-	finishNode := graph.NodeFunc[State](func(ctx context.Context, s State) graph.NodeResult[State] {
+	finishNode := graph.NodeFunc[State](func(_ context.Context, s State) graph.NodeResult[State] {
 		fmt.Printf("→ Node 'finish': Completing (count=%d, message=%q)\n", s.Count, s.Message)
 		return graph.NodeResult[State]{
 			Delta: State{
@@ -95,15 +95,18 @@ func main() {
 		return
 	}
 	if err := engine.Add("process", processNode); err != nil {
-		log.Fatalf("Failed to add process node: %v", err)
+		log.Printf("Failed to add process node: %v", err)
+		return
 	}
 	if err := engine.Add("finish", finishNode); err != nil {
-		log.Fatalf("Failed to add finish node: %v", err)
+		log.Printf("Failed to add finish node: %v", err)
+		return
 	}
 
 	// 7. Set entry point for workflow.
 	if err := engine.StartAt("start"); err != nil {
-		log.Fatalf("Failed to set entry point: %v", err)
+		log.Printf("Failed to set entry point: %v", err)
+		return
 	}
 
 	// Run the workflow.
@@ -115,7 +118,8 @@ func main() {
 
 	finalState, err := engine.Run(ctx, runID, State{})
 	if err != nil {
-		log.Fatalf("Workflow execution failed: %v", err)
+		log.Printf("Workflow execution failed: %v", err)
+		return
 	}
 
 	fmt.Println("─────────────────────────────")
@@ -130,7 +134,8 @@ func main() {
 
 	loadedState, step, err := sqliteStore.LoadLatest(ctx, runID)
 	if err != nil {
-		log.Fatalf("Failed to load state from database: %v", err)
+		log.Printf("Failed to load state from database: %v", err)
+		return
 	}
 
 	fmt.Printf("✓ Loaded state from database:\n")

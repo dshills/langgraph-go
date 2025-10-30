@@ -162,7 +162,7 @@ func TestLogEmitter_JSONFormatting(t *testing.T) {
 }
 
 // TestLogEmitter_InterfaceContract verifies LogEmitter implements Emitter interface.
-func TestLogEmitter_InterfaceContract(t *testing.T) {
+func TestLogEmitter_InterfaceContract(_ *testing.T) {
 	var buf bytes.Buffer
 	var _ Emitter = NewLogEmitter(&buf, false)
 }

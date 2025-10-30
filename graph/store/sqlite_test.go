@@ -672,7 +672,7 @@ func TestSQLiteStore_ClosedStoreErrors(t *testing.T) {
 }
 
 // TestSQLiteStore_InterfaceCompliance verifies SQLiteStore implements Store interface.
-func TestSQLiteStore_InterfaceCompliance(t *testing.T) {
+func TestSQLiteStore_InterfaceCompliance(_ *testing.T) {
 	var _ Store[TestState] = (*SQLiteStore[TestState])(nil)
 }
 

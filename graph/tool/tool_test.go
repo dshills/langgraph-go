@@ -11,7 +11,7 @@ import (
 // T176: Tool interface tests.
 
 // TestTool_InterfaceContract verifies Tool interface can be implemented.
-func TestTool_InterfaceContract(t *testing.T) {
+func TestTool_InterfaceContract(_ *testing.T) {
 	var _ Tool = (*mockTool)(nil)
 }
 

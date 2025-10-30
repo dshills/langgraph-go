@@ -113,7 +113,7 @@ func main() {
 	}
 
 	// Node 2: Route based on intent
-	if err := engine.Add("route_intent", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("route_intent", graph.NodeFunc[ChatState](func(_ context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Printf("🔀 Routing to handler for: %s\n", state.Intent)
 
 		switch state.Intent {
@@ -134,7 +134,7 @@ func main() {
 	}
 
 	// Handler: Refund requests
-	if err := engine.Add("handle_refund", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("handle_refund", graph.NodeFunc[ChatState](func(_ context.Context, _ ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("💰 Processing refund request...")
 
 		response := "I understand you'd like a refund. I can help with that. " +
@@ -157,7 +157,7 @@ func main() {
 	}
 
 	// Handler: Shipping inquiries
-	if err := engine.Add("handle_shipping", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("handle_shipping", graph.NodeFunc[ChatState](func(_ context.Context, _ ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("📦 Processing shipping inquiry...")
 
 		response := "I can help you track your order! " +
@@ -179,7 +179,7 @@ func main() {
 	}
 
 	// Handler: Technical support
-	if err := engine.Add("handle_technical", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("handle_technical", graph.NodeFunc[ChatState](func(_ context.Context, state ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("🔧 Processing technical support request...")
 
 		// Check if issue is complex enough to escalate
@@ -215,7 +215,7 @@ func main() {
 	}
 
 	// Handler: Cancellation
-	if err := engine.Add("handle_cancellation", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("handle_cancellation", graph.NodeFunc[ChatState](func(_ context.Context, _ ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("❌ Processing cancellation request...")
 
 		response := "I can help you cancel your order. " +
@@ -238,7 +238,7 @@ func main() {
 	}
 
 	// Handler: General inquiries
-	if err := engine.Add("handle_general", graph.NodeFunc[ChatState](func(ctx context.Context, state ChatState) graph.NodeResult[ChatState] {
+	if err := engine.Add("handle_general", graph.NodeFunc[ChatState](func(_ context.Context, _ ChatState) graph.NodeResult[ChatState] {
 		fmt.Println("❓ Processing general inquiry...")
 
 		response := "Thank you for contacting support! " +

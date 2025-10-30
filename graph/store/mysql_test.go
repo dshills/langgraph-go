@@ -808,7 +808,7 @@ func cleanupTestTables(t *testing.T, dsn string) {
 	_, _ = db.ExecContext(ctx, "DROP TABLE IF EXISTS workflow_checkpoints")
 }
 
-func tableExists(ctx context.Context, store *MySQLStore[TestState], tableName string) bool {
+func tableExists(_ context.Context, _ *MySQLStore[TestState], _ string) bool {
 	// This will be implemented once MySQLStore is created
 	// For now, assume tables exist if no error
 	return true

@@ -414,7 +414,7 @@ func (m *MySQLStore[S]) Stats() sql.DBStats {
 //	    {2, "node-b", stateB},
 //	}
 //	err := store.SaveStepBatch(ctx, "run-001", steps)
-func (m *MySQLStore[S]) SaveStepBatch(ctx context.Context, runID string, steps interface{}) error {
+func (m *MySQLStore[S]) SaveStepBatch(ctx context.Context, _ string, _ interface{}) error {
 	m.mu.RLock()
 	if m.closed {
 		m.mu.RUnlock()

@@ -102,7 +102,7 @@ func main() {
 	newsTool := &DemoNewsTool{}
 
 	// Node 1: Extract location from query.
-	parseNode := graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	parseNode := graph.NodeFunc[State](func(_ context.Context, state State) graph.NodeResult[State] {
 		fmt.Printf("📝 Parsing query: %q\n", state.UserQuery)
 
 		// Simplified demo: Extract location from query.
@@ -174,7 +174,7 @@ func main() {
 	})
 
 	// Node 4: Summarize results.
-	summarizeNode := graph.NodeFunc[State](func(ctx context.Context, state State) graph.NodeResult[State] {
+	summarizeNode := graph.NodeFunc[State](func(_ context.Context, state State) graph.NodeResult[State] {
 		fmt.Println("📊 Generating summary...")
 
 		// Extract weather data with proper type checking.

@@ -311,7 +311,7 @@ type mockOpenAIClient struct {
 	lastMessages []model.Message
 }
 
-func (m *mockOpenAIClient) createChatCompletion(ctx context.Context, messages []model.Message, tools []model.ToolSpec) (model.ChatOut, error) {
+func (m *mockOpenAIClient) createChatCompletion(_ context.Context, messages []model.Message, _ []model.ToolSpec) (model.ChatOut, error) {
 	m.callCount++
 	m.lastMessages = messages
 

@@ -16,7 +16,7 @@ type TestState struct {
 }
 
 // TestStore_InterfaceContract verifies Store[S] interface can be implemented (T027).
-func TestStore_InterfaceContract(t *testing.T) {
+func TestStore_InterfaceContract(_ *testing.T) {
 	// Verify interface can be declared.
 	var _ Store[TestState] = (*mockStore)(nil)
 }
@@ -69,28 +69,28 @@ func (m *mockStore) LoadCheckpoint(_ context.Context, cpID string) (TestState, i
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) SaveCheckpointV2(_ context.Context, checkpoint CheckpointV2[TestState]) error {
+func (m *mockStore) SaveCheckpointV2(_ context.Context, _ CheckpointV2[TestState]) error {
 	return nil
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) LoadCheckpointV2(_ context.Context, runID string, stepID int) (CheckpointV2[TestState], error) {
+func (m *mockStore) LoadCheckpointV2(_ context.Context, _ string, _ int) (CheckpointV2[TestState], error) {
 	var zero CheckpointV2[TestState]
 	return zero, ErrNotFound
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) CheckIdempotency(_ context.Context, key string) (bool, error) {
+func (m *mockStore) CheckIdempotency(_ context.Context, _ string) (bool, error) {
 	return false, nil
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) PendingEvents(_ context.Context, limit int) ([]emit.Event, error) {
+func (m *mockStore) PendingEvents(_ context.Context, _ int) ([]emit.Event, error) {
 	return nil, nil
 }
 
 // TODO: Implement in Phase 8
-func (m *mockStore) MarkEventsEmitted(_ context.Context, eventIDs []string) error {
+func (m *mockStore) MarkEventsEmitted(_ context.Context, _ []string) error {
 	return nil
 }
 

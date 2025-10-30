@@ -294,7 +294,7 @@ const (
 // graph.WithConflictPolicy(graph.ConflictFail), // Explicit error on conflicts.
 // ).
 func WithConflictPolicy(policy ConflictPolicy) Option {
-	return func(cfg *engineConfig) error {
+	return func(_ *engineConfig) error {
 		// Currently only ConflictFail is supported.
 		// Future: Implement LastWriterWins and ConflictCRDT.
 		if policy != ConflictFail {

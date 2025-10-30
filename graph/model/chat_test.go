@@ -423,7 +423,7 @@ type testChatModel struct {
 	err      error
 }
 
-func (m *testChatModel) Chat(ctx context.Context, messages []Message, tools []ToolSpec) (ChatOut, error) {
+func (m *testChatModel) Chat(ctx context.Context, _ []Message, _ []ToolSpec) (ChatOut, error) {
 	// Check context for cancellation.
 	if ctx.Err() != nil {
 		return ChatOut{}, ctx.Err()

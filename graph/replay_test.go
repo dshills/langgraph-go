@@ -619,7 +619,7 @@ func TestDeterministicParallelMerge(t *testing.T) {
 	}
 
 	// Create a fan-out node that spawns 5 branches
-	fanOutNode := graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+	fanOutNode := graph.NodeFunc[TestState](func(_ context.Context, s TestState) graph.NodeResult[TestState] {
 		return graph.NodeResult[TestState]{
 			Delta: s,
 			Route: graph.Many([]string{"branch1", "branch2", "branch3", "branch4", "branch5"}),
@@ -843,7 +843,7 @@ func TestOrderKeyConsistentMerge(t *testing.T) {
 		})
 	}
 
-	fanOutNode := graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+	fanOutNode := graph.NodeFunc[TestState](func(_ context.Context, s TestState) graph.NodeResult[TestState] {
 		return graph.NodeResult[TestState]{
 			Delta: s,
 			// OrderKey will be: computeOrderKey(parentNodeID, edgeIndex)
@@ -947,7 +947,7 @@ func TestDeterminismStressTest(t *testing.T) {
 		})
 	}
 
-	fanOutNode := graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+	fanOutNode := graph.NodeFunc[TestState](func(_ context.Context, s TestState) graph.NodeResult[TestState] {
 		return graph.NodeResult[TestState]{
 			Delta: s,
 			Route: graph.Many([]string{"worker1", "worker2", "worker3"}),

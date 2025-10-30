@@ -53,7 +53,7 @@ func main() {
 	engine := graph.New(reducer, st, emitter, graph.WithMaxSteps(10))
 
 	// Node 1: Analyze query and generate initial response
-	analyzeNode := graph.NodeFunc[AgentState](func(ctx context.Context, s AgentState) graph.NodeResult[AgentState] {
+	analyzeNode := graph.NodeFunc[AgentState](func(_ context.Context, s AgentState) graph.NodeResult[AgentState] {
 		fmt.Printf("Analyzing query: %q\n", s.Query)
 
 		// Simulate analysis and response generation
@@ -73,7 +73,7 @@ func main() {
 	})
 
 	// Node 2: Refine response (for low confidence)
-	refineNode := graph.NodeFunc[AgentState](func(ctx context.Context, s AgentState) graph.NodeResult[AgentState] {
+	refineNode := graph.NodeFunc[AgentState](func(_ context.Context, s AgentState) graph.NodeResult[AgentState] {
 		fmt.Printf("Refining response (attempt %d)...\n", s.Attempts)
 
 		// Simulate refinement with improved confidence
@@ -96,7 +96,7 @@ func main() {
 	})
 
 	// Node 3: Validate response (for high confidence)
-	validateNode := graph.NodeFunc[AgentState](func(ctx context.Context, s AgentState) graph.NodeResult[AgentState] {
+	validateNode := graph.NodeFunc[AgentState](func(_ context.Context, s AgentState) graph.NodeResult[AgentState] {
 		fmt.Printf("Validating response (confidence: %.2f)...\n", s.Confidence)
 
 		// Simulate validation
@@ -207,13 +207,13 @@ func (e *simpleEmitter) Emit(event emit.Event) {
 	}
 }
 
-func (e *simpleEmitter) EmitBatch(ctx context.Context, events []emit.Event) error {
+func (e *simpleEmitter) EmitBatch(_ context.Context, events []emit.Event) error {
 	for _, event := range events {
 		e.Emit(event)
 	}
 	return nil
 }
 
-func (e *simpleEmitter) Flush(ctx context.Context) error {
+func (e *simpleEmitter) Flush(_ context.Context) error {
 	return nil
 }
