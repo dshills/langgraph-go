@@ -48,7 +48,7 @@ func TestFrontierStandalone(t *testing.T) {
 
 	t.Run("enqueue and dequeue in order", func(t *testing.T) {
 		ctx := context.Background()
-		f := NewFrontier[testState](ctx, 10)
+		f := NewFrontier[testState](ctx, 10, "", nil, nil)
 
 		// Enqueue items with different order keys.
 		items := []WorkItem[testState]{
@@ -87,7 +87,7 @@ func TestFrontierStandalone(t *testing.T) {
 
 	t.Run("backpressure on full queue", func(t *testing.T) {
 		ctx := context.Background()
-		f := NewFrontier[testState](ctx, 2)
+		f := NewFrontier[testState](ctx, 2, "", nil, nil)
 
 		// Fill the queue.
 		for i := 0; i < 2; i++ {
@@ -111,7 +111,7 @@ func TestFrontierStandalone(t *testing.T) {
 
 	t.Run("context cancellation", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
-		f := NewFrontier[testState](ctx, 10)
+		f := NewFrontier[testState](ctx, 10, "", nil, nil)
 
 		cancel() // Cancel immediately
 
@@ -131,7 +131,7 @@ func TestFrontierStandalone(t *testing.T) {
 
 	t.Run("concurrent operations", func(t *testing.T) {
 		ctx := context.Background()
-		f := NewFrontier[testState](ctx, 100)
+		f := NewFrontier[testState](ctx, 100, "", nil, nil)
 
 		const numItems = 20
 		done := make(chan bool)

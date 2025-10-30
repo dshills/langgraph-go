@@ -639,7 +639,7 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 		if queueDepth == 0 {
 			queueDepth = 1024 // Default queue depth
 		}
-		e.frontier = NewFrontier[S](ctx, queueDepth)
+		e.frontier = NewFrontier[S](ctx, queueDepth, runID, e.opts.Metrics, e.emitter)
 
 		// Use concurrent execution path (T035)
 		return e.runConcurrent(ctx, runID, initial)
@@ -1948,7 +1948,7 @@ func (e *Engine[S]) RunWithCheckpoint(ctx context.Context, checkpoint store.Chec
 		if queueDepth == 0 {
 			queueDepth = 1024 // Default queue depth
 		}
-		e.frontier = NewFrontier[S](ctx, queueDepth)
+		e.frontier = NewFrontier[S](ctx, queueDepth, checkpoint.RunID, e.opts.Metrics, e.emitter)
 
 		// Enqueue all work items from checkpoint
 		for _, item := range frontierItems {

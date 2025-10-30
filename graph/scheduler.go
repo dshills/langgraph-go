@@ -7,6 +7,9 @@ import (
 	"encoding/binary"
 	"sync"
 	"sync/atomic"
+	"time"
+
+	"github.com/dshills/langgraph-go/graph/emit"
 )
 
 // Scheduler manages concurrent node execution with deterministic ordering
@@ -143,19 +146,32 @@ type Frontier[S any] struct {
 	totalDequeued      atomic.Int64 // Total work items dequeued
 	backpressureEvents atomic.Int32 // Count of backpressure triggers
 	peakQueueDepth     atomic.Int32 // Maximum queue depth observed
+
+	// US3: Observability parameters for backpressure monitoring
+	runID   string             // Run identifier for event/metric attribution
+	metrics *PrometheusMetrics // Optional Prometheus metrics collector
+	emitter emit.Emitter       // Optional event emitter
 }
 
 // NewFrontier creates a new Frontier with the specified capacity and context.
 // The capacity determines the maximum number of work items that can be queued.
 // The context is used for cancellation propagation.
 //
+// US3: Optional observability parameters enable backpressure monitoring:
+//   - runID: Run identifier for event/metric attribution
+//   - metrics: Prometheus metrics collector for backpressure_events_total
+//   - emitter: Event emitter for backpressure events with metadata
+//
 // BUG-003 fix (T019): Channel is notification-only (empty struct), not data carrier.
-func NewFrontier[S any](ctx context.Context, capacity int) *Frontier[S] {
+func NewFrontier[S any](ctx context.Context, capacity int, runID string, metrics *PrometheusMetrics, emitter emit.Emitter) *Frontier[S] {
 	f := &Frontier[S]{
 		heap:     make(workHeap[S], 0),
 		queue:    make(chan struct{}, capacity), // T019: Empty struct channel
 		capacity: capacity,
 		ctx:      ctx,
+		runID:    runID,
+		metrics:  metrics,
+		emitter:  emitter,
 	}
 	heap.Init(&f.heap)
 	return f
@@ -201,21 +217,32 @@ func (f *Frontier[S]) Enqueue(ctx context.Context, item WorkItem[S]) error {
 		}
 	}
 
-	// Check if we're at capacity (backpressure condition)
-	// #nosec G115 -- capacity is bounded config value (max queue depth)
+	// US3 (T027-T030): Backpressure observability with metrics and events
+	// #nosec G115 -- capacity is bounded config value
 	if currentDepth >= int32(f.capacity) {
-		// Increment backpressure event counter (T068, T069)
 		f.backpressureEvents.Add(1)
+		if f.metrics != nil {
+			f.metrics.IncrementBackpressure(f.runID, "queue_full")
+		}
+		waitStart := time.Now()
+		if f.emitter != nil {
+			go f.emitter.Emit(emit.Event{RunID: f.runID, Step: item.StepID, NodeID: item.NodeID, Msg: "backpressure", Meta: map[string]interface{}{"queue_depth": currentDepth, "capacity": f.capacity, "node_id": item.NodeID, "order_key": item.OrderKey}})
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case f.queue <- struct{}{}:
+			f.totalEnqueued.Add(1)
+			if time.Since(waitStart) > time.Millisecond && f.emitter != nil {
+				go f.emitter.Emit(emit.Event{RunID: f.runID, Step: item.StepID, NodeID: item.NodeID, Msg: "backpressure_resolved", Meta: map[string]interface{}{"wait_duration_ms": time.Since(waitStart).Milliseconds(), "queue_depth": currentDepth}})
+			}
+			return nil
+		}
 	}
-
-	// Send notification to channel (may block if full - this is the backpressure mechanism)
-	// The buffered channel enforces QueueDepth capacity (T063)
-	// BUG-003 fix (T020): Send empty struct notification, not data
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case f.queue <- struct{}{}: // T020: Send notification only
-		// Update metrics: increment total enqueued (T068)
+	case f.queue <- struct{}{}:
 		f.totalEnqueued.Add(1)
 		return nil
 	}
