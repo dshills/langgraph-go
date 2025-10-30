@@ -2,15 +2,18 @@
 package graph_test
 
 import (
+
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/dshills/langgraph-go/graph"
+	"github.com/dshills/langgraph-go/graph/store"
 	"math/rand"
 	"testing"
 	"time"
-
-	"github.com/dshills/langgraph-go/graph"
 )
 
 // Note: RNGKey is now defined in engine.go and imported via dot-import.
@@ -462,3 +465,564 @@ func computeRNGSeed(runID string) int64 {
 	return int64(uint64(h[0]) | uint64(h[1])<<8 | uint64(h[2])<<16 | uint64(h[3])<<24 |
 		uint64(h[4])<<32 | uint64(h[5])<<40 | uint64(h[6])<<48 | uint64(h[7])<<56)
 }
+
+// ============================================================================
+// T036-T043: Determinism Validation Tests (Phase 4, User Story 2)
+// ============================================================================
+
+// TestDeterministicRetryDelays (T037) verifies that retry delays are identical across multiple runs.
+//
+// According to spec.md FR-020: System MUST provide per-run seeded PRNG that produces stable values across replays.
+// This test validates that the RNG fix (BUG-002) produces deterministic backoff delays for retries.
+//
+// Requirements:
+// - Same runID produces identical retry delay sequences
+// - 100 executions produce byte-identical final states
+// - Retry backoff is deterministic across runs
+func TestDeterministicRetryDelays(t *testing.T) {
+	type TestState struct {
+		RetryCount    int
+		RetryDelays   []time.Duration
+		ExecutionHash string
+	}
+
+	// Create a node that fails N times before succeeding, capturing retry delays
+	failuresBeforeSuccess := 3
+	createRetryNode := func() graph.Node[TestState] {
+		attemptCount := 0
+		return graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+			attemptCount++
+
+			// Extract RNG from context to compute backoff
+			rng := ctx.Value(graph.RNGKey).(*rand.Rand)
+			if rng == nil {
+				t.Fatal("RNG not found in context")
+			}
+
+			// Fail first N attempts
+			if attemptCount <= failuresBeforeSuccess {
+				// Simulate retry backoff calculation
+				baseDelay := 100 * time.Millisecond
+				jitter := time.Duration(rng.Intn(50)) * time.Millisecond
+				delay := baseDelay + jitter
+
+				delta := s
+				delta.RetryCount++
+				delta.RetryDelays = append(delta.RetryDelays, delay)
+
+				return graph.NodeResult[TestState]{
+					Delta: delta,
+					Err:   errors.New("transient failure"),
+				}
+			}
+
+			// Success on attempt N+1
+			delta := s
+			delta.RetryCount++
+			return graph.NodeResult[TestState]{
+				Delta: delta,
+				Route: graph.Stop(),
+			}
+		})
+	}
+
+	// Run workflow 100 times with same runID
+	const numRuns = 100
+	runID := "determinism-test-retry-001"
+	var stateHashes []string
+
+	reducer := func(prev, delta TestState) TestState {
+		if delta.RetryCount > 0 {
+			prev.RetryCount = delta.RetryCount
+		}
+		if len(delta.RetryDelays) > 0 {
+			prev.RetryDelays = append(prev.RetryDelays, delta.RetryDelays...)
+		}
+		return prev
+	}
+
+	for i := 0; i < numRuns; i++ {
+		store := store.NewMemStore[TestState]()
+		engine := graph.New(reducer, store, nil, graph.Options{
+			Retries:            failuresBeforeSuccess,
+			MaxConcurrentNodes: 0, // Sequential execution for simplicity
+		})
+
+		retryNode := createRetryNode()
+		_ = engine.Add("retry_node", retryNode)
+		_ = engine.StartAt("retry_node")
+
+		initialState := TestState{}
+		finalState, err := engine.Run(context.Background(), runID, initialState)
+		if err != nil {
+			t.Fatalf("run %d failed: %v", i, err)
+		}
+
+		// Compute state hash
+		stateJSON, _ := json.Marshal(finalState)
+		hash := sha256.Sum256(stateJSON)
+		stateHash := hex.EncodeToString(hash[:])
+		stateHashes = append(stateHashes, stateHash)
+
+		// Verify retry delays on first run
+		if i == 0 {
+			if len(finalState.RetryDelays) != failuresBeforeSuccess {
+				t.Errorf("expected %d retry delays, got %d", failuresBeforeSuccess, len(finalState.RetryDelays))
+			}
+		}
+	}
+
+	// Verify all state hashes are identical
+	firstHash := stateHashes[0]
+	for i, hash := range stateHashes {
+		if hash != firstHash {
+			t.Errorf("run %d produced different state hash: %s != %s", i, hash, firstHash)
+		}
+	}
+
+	t.Logf("✅ %d runs produced identical state hashes", numRuns)
+}
+
+// TestDeterministicParallelMerge (T038) verifies that parallel branch merge order is identical across runs.
+//
+// According to spec.md FR-024: System MUST use OrderKey-based merge ordering to ensure deterministic results.
+// This test validates that the Frontier fix (BUG-003) produces deterministic merge order.
+//
+// Requirements:
+// - 5 parallel branches execute and merge deterministically
+// - 50 executions produce identical merge order
+// - OrderKey sorting ensures consistent results
+func TestDeterministicParallelMerge(t *testing.T) {
+	type TestState struct {
+		MergeOrder []string
+		StateHash  string
+	}
+
+	// Create nodes that capture their execution order
+	createBranchNode := func(branchID string) graph.Node[TestState] {
+		return graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+			// Simulate some work with random delay (using seeded RNG)
+			rng := ctx.Value(graph.RNGKey).(*rand.Rand)
+			if rng != nil {
+				delay := time.Duration(rng.Intn(10)) * time.Millisecond
+				time.Sleep(delay)
+			}
+
+			delta := s
+			delta.MergeOrder = append(delta.MergeOrder, branchID)
+
+			return graph.NodeResult[TestState]{
+				Delta: delta,
+				Route: graph.Stop(),
+			}
+		})
+	}
+
+	// Create a fan-out node that spawns 5 branches
+	fanOutNode := graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+		return graph.NodeResult[TestState]{
+			Delta: s,
+			Route: graph.Many([]string{"branch1", "branch2", "branch3", "branch4", "branch5"}),
+		}
+	})
+
+	// Run workflow 50 times with same runID
+	const numRuns = 50
+	runID := "determinism-test-parallel-001"
+	var mergeOrderHashes []string
+
+	reducer := func(prev, delta TestState) TestState {
+		if len(delta.MergeOrder) > 0 {
+			prev.MergeOrder = append(prev.MergeOrder, delta.MergeOrder...)
+		}
+		return prev
+	}
+
+	for i := 0; i < numRuns; i++ {
+		store := store.NewMemStore[TestState]()
+		engine := graph.New(reducer, store, nil, graph.Options{
+			MaxConcurrentNodes: 8, // Enable concurrent execution
+			QueueDepth:         100,
+		})
+
+		_ = engine.Add("fanout", fanOutNode)
+		_ = engine.Add("branch1", createBranchNode("branch1"))
+		_ = engine.Add("branch2", createBranchNode("branch2"))
+		_ = engine.Add("branch3", createBranchNode("branch3"))
+		_ = engine.Add("branch4", createBranchNode("branch4"))
+		_ = engine.Add("branch5", createBranchNode("branch5"))
+		_ = engine.StartAt("fanout")
+
+		initialState := TestState{}
+		finalState, err := engine.Run(context.Background(), runID, initialState)
+		if err != nil {
+			t.Fatalf("run %d failed: %v", i, err)
+		}
+
+		// Compute merge order hash
+		orderJSON, _ := json.Marshal(finalState.MergeOrder)
+		hash := sha256.Sum256(orderJSON)
+		orderHash := hex.EncodeToString(hash[:])
+		mergeOrderHashes = append(mergeOrderHashes, orderHash)
+
+		// Verify we got all 5 branches on first run
+		if i == 0 {
+			if len(finalState.MergeOrder) != 5 {
+				t.Errorf("expected 5 branches in merge order, got %d: %v", len(finalState.MergeOrder), finalState.MergeOrder)
+			}
+			t.Logf("First run merge order: %v", finalState.MergeOrder)
+		}
+	}
+
+	// Verify all merge orders are identical
+	firstHash := mergeOrderHashes[0]
+	for i, hash := range mergeOrderHashes {
+		if hash != firstHash {
+			t.Errorf("run %d produced different merge order: %s != %s", i, hash, firstHash)
+		}
+	}
+
+	t.Logf("✅ %d runs produced identical merge orders", numRuns)
+}
+
+// TestReplayWithoutMismatch (T039) verifies that replay mode doesn't raise mismatch errors.
+//
+// According to spec.md FR-007: System MUST replay executions deterministically by reusing recorded I/O.
+// This test validates that replaying a recorded execution produces identical results.
+//
+// Requirements:
+// - Record mode captures execution state
+// - Replay mode reuses recorded data
+// - No ErrReplayMismatch raised during replay
+func TestReplayWithoutMismatch(t *testing.T) {
+	t.Skip("Replay mode requires full I/O recording infrastructure - will be implemented in future phases")
+
+	// This test will verify:
+	// 1. Execute workflow in record mode (ReplayMode=false)
+	// 2. Save checkpoint with RecordedIOs
+	// 3. Execute same workflow in replay mode (ReplayMode=true)
+	// 4. Verify final states match exactly
+	// 5. Verify no ErrReplayMismatch errors raised
+}
+
+// TestRNGSequenceIdentity (T040) verifies that RNG sequences are identical across replays.
+//
+// According to spec.md FR-020: System MUST provide per-run seeded PRNG that produces stable values.
+// This test validates that the same runID produces the same random sequence every time.
+//
+// Requirements:
+// - Same runID produces identical RNG sequences
+// - Different runIDs produce different sequences
+// - RNG is accessible via context
+func TestRNGSequenceIdentity(t *testing.T) {
+	type TestState struct {
+		RandomValues []int
+	}
+
+	// Create a node that generates random values using context RNG
+	randomNode := graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+		rng := ctx.Value(graph.RNGKey).(*rand.Rand)
+		if rng == nil {
+			return graph.NodeResult[TestState]{
+				Err: fmt.Errorf("RNG not found in context"),
+			}
+		}
+
+		delta := s
+		// Generate 10 random values
+		for i := 0; i < 10; i++ {
+			delta.RandomValues = append(delta.RandomValues, rng.Intn(1000))
+		}
+
+		return graph.NodeResult[TestState]{
+			Delta: delta,
+			Route: graph.Stop(),
+		}
+	})
+
+	reducer := func(prev, delta TestState) TestState {
+		if len(delta.RandomValues) > 0 {
+			prev.RandomValues = append(prev.RandomValues, delta.RandomValues...)
+		}
+		return prev
+	}
+
+	// Test 1: Same runID produces identical sequences
+	runID := "rng-test-001"
+	var sequences [][]int
+
+	for i := 0; i < 100; i++ {
+		store := store.NewMemStore[TestState]()
+		engine := graph.New(reducer, store, nil, graph.Options{})
+
+		_ = engine.Add("random", randomNode)
+		_ = engine.StartAt("random")
+
+		finalState, err := engine.Run(context.Background(), runID, TestState{})
+		if err != nil {
+			t.Fatalf("run %d failed: %v", i, err)
+		}
+
+		sequences = append(sequences, finalState.RandomValues)
+	}
+
+	// Verify all sequences are identical
+	firstSeq := sequences[0]
+	for i, seq := range sequences {
+		if len(seq) != len(firstSeq) {
+			t.Errorf("run %d: sequence length mismatch: %d != %d", i, len(seq), len(firstSeq))
+			continue
+		}
+		for j := range seq {
+			if seq[j] != firstSeq[j] {
+				t.Errorf("run %d: value %d mismatch: %d != %d", i, j, seq[j], firstSeq[j])
+			}
+		}
+	}
+
+	t.Logf("✅ 100 runs with same runID produced identical RNG sequences: %v", firstSeq[:5])
+
+	// Test 2: Different runIDs produce different sequences
+	runID2 := "rng-test-002"
+	store2 := store.NewMemStore[TestState]()
+	engine2 := graph.New(reducer, store2, nil, graph.Options{})
+	_ = engine2.Add("random", randomNode)
+	_ = engine2.StartAt("random")
+
+	finalState2, err := engine2.Run(context.Background(), runID2, TestState{})
+	if err != nil {
+		t.Fatalf("runID2 failed: %v", err)
+	}
+
+	// Verify sequences are different
+	differences := 0
+	for i := range finalState2.RandomValues {
+		if finalState2.RandomValues[i] != firstSeq[i] {
+			differences++
+		}
+	}
+
+	if differences == 0 {
+		t.Error("different runIDs produced identical RNG sequences")
+	}
+
+	t.Logf("✅ Different runID produced different RNG sequence: %v (diff count: %d)", finalState2.RandomValues[:5], differences)
+}
+
+// TestOrderKeyConsistentMerge (T041) verifies that OrderKey-based merge produces consistent results.
+//
+// According to spec.md FR-024: System MUST use OrderKey-based merge ordering.
+// This test validates that the merge order is deterministic based on OrderKey values.
+//
+// Requirements:
+// - Deltas merged in OrderKey order (ascending)
+// - Same OrderKeys produce same merge order
+// - Merge order independent of goroutine completion order
+func TestOrderKeyConsistentMerge(t *testing.T) {
+	type TestState struct {
+		Values []int
+	}
+
+	// Create nodes that append values with known OrderKeys
+	createValueNode := func(value int) graph.Node[TestState] {
+		return graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+			// Simulate variable execution time
+			rng := ctx.Value(graph.RNGKey).(*rand.Rand)
+			if rng != nil {
+				delay := time.Duration(rng.Intn(5)) * time.Millisecond
+				time.Sleep(delay)
+			}
+
+			delta := s
+			delta.Values = append(delta.Values, value)
+
+			return graph.NodeResult[TestState]{
+				Delta: delta,
+				Route: graph.Stop(),
+			}
+		})
+	}
+
+	fanOutNode := graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+		return graph.NodeResult[TestState]{
+			Delta: s,
+			// OrderKey will be: computeOrderKey(parentNodeID, edgeIndex)
+			// Edge index 0, 1, 2, 3, 4 should produce deterministic OrderKeys
+			Route: graph.Many([]string{"node1", "node2", "node3", "node4", "node5"}),
+		}
+	})
+
+	reducer := func(prev, delta TestState) TestState {
+		if len(delta.Values) > 0 {
+			prev.Values = append(prev.Values, delta.Values...)
+		}
+		return prev
+	}
+
+	// Run workflow 50 times
+	const numRuns = 50
+	runID := "orderkey-test-001"
+	var valueSequences [][]int
+
+	for i := 0; i < numRuns; i++ {
+		store := store.NewMemStore[TestState]()
+		engine := graph.New(reducer, store, nil, graph.Options{
+			MaxConcurrentNodes: 8,
+			QueueDepth:         100,
+		})
+
+		_ = engine.Add("fanout", fanOutNode)
+		_ = engine.Add("node1", createValueNode(10))
+		_ = engine.Add("node2", createValueNode(20))
+		_ = engine.Add("node3", createValueNode(30))
+		_ = engine.Add("node4", createValueNode(40))
+		_ = engine.Add("node5", createValueNode(50))
+		_ = engine.StartAt("fanout")
+
+		finalState, err := engine.Run(context.Background(), runID, TestState{})
+		if err != nil {
+			t.Fatalf("run %d failed: %v", i, err)
+		}
+
+		valueSequences = append(valueSequences, finalState.Values)
+	}
+
+	// Verify all sequences are identical
+	firstSeq := valueSequences[0]
+	for i, seq := range valueSequences {
+		if len(seq) != len(firstSeq) {
+			t.Errorf("run %d: sequence length mismatch: %d != %d", i, len(seq), len(firstSeq))
+			continue
+		}
+		for j := range seq {
+			if seq[j] != firstSeq[j] {
+				t.Errorf("run %d: value %d mismatch: %d != %d", i, j, seq[j], firstSeq[j])
+			}
+		}
+	}
+
+	t.Logf("✅ %d runs produced identical value sequences: %v", numRuns, firstSeq)
+}
+
+// TestDeterminismStressTest (T042) runs 1000 iterations to validate determinism under stress.
+//
+// According to spec.md SC-002: Replayed executions produce identical state deltas 100% of the time.
+// This is the final validation that all determinism fixes work correctly.
+//
+// Requirements:
+// - 1000 executions produce identical final states
+// - Same runID produces byte-identical state hashes
+// - No variation in execution order or results
+func TestDeterminismStressTest(t *testing.T) {
+	type TestState struct {
+		Counter      int
+		RandomValues []int
+		MergeOrder   []string
+		StateHash    string
+	}
+
+	// Create a complex workflow with multiple sources of non-determinism
+	createComplexNode := func(nodeID string) graph.Node[TestState] {
+		return graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+			rng := ctx.Value(graph.RNGKey).(*rand.Rand)
+			if rng == nil {
+				return graph.NodeResult[TestState]{
+					Err: fmt.Errorf("RNG not found in context"),
+				}
+			}
+
+			// Simulate work with random delay
+			delay := time.Duration(rng.Intn(3)) * time.Millisecond
+			time.Sleep(delay)
+
+			delta := s
+			delta.Counter++
+			delta.RandomValues = append(delta.RandomValues, rng.Intn(100))
+			delta.MergeOrder = append(delta.MergeOrder, nodeID)
+
+			return graph.NodeResult[TestState]{
+				Delta: delta,
+				Route: graph.Stop(),
+			}
+		})
+	}
+
+	fanOutNode := graph.NodeFunc[TestState](func(ctx context.Context, s TestState) graph.NodeResult[TestState] {
+		return graph.NodeResult[TestState]{
+			Delta: s,
+			Route: graph.Many([]string{"worker1", "worker2", "worker3"}),
+		}
+	})
+
+	reducer := func(prev, delta TestState) TestState {
+		if delta.Counter > 0 {
+			prev.Counter += delta.Counter
+		}
+		if len(delta.RandomValues) > 0 {
+			prev.RandomValues = append(prev.RandomValues, delta.RandomValues...)
+		}
+		if len(delta.MergeOrder) > 0 {
+			prev.MergeOrder = append(prev.MergeOrder, delta.MergeOrder...)
+		}
+		return prev
+	}
+
+	// Run workflow 1000 times with same runID
+	const numRuns = 1000
+	runID := "stress-test-determinism-001"
+	var stateHashes []string
+
+	t.Logf("Running %d iterations for determinism stress test...", numRuns)
+
+	for i := 0; i < numRuns; i++ {
+		store := store.NewMemStore[TestState]()
+		engine := graph.New(reducer, store, nil, graph.Options{
+			MaxConcurrentNodes: 8,
+			QueueDepth:         100,
+		})
+
+		_ = engine.Add("fanout", fanOutNode)
+		_ = engine.Add("worker1", createComplexNode("worker1"))
+		_ = engine.Add("worker2", createComplexNode("worker2"))
+		_ = engine.Add("worker3", createComplexNode("worker3"))
+		_ = engine.StartAt("fanout")
+
+		finalState, err := engine.Run(context.Background(), runID, TestState{})
+		if err != nil {
+			t.Fatalf("run %d failed: %v", i, err)
+		}
+
+		// Compute state hash
+		stateJSON, _ := json.Marshal(finalState)
+		hash := sha256.Sum256(stateJSON)
+		stateHash := hex.EncodeToString(hash[:])
+		stateHashes = append(stateHashes, stateHash)
+
+		// Log progress every 100 iterations
+		if (i+1)%100 == 0 {
+			t.Logf("Completed %d/%d iterations", i+1, numRuns)
+		}
+	}
+
+	// Verify all state hashes are identical
+	firstHash := stateHashes[0]
+	mismatches := 0
+	for i, hash := range stateHashes {
+		if hash != firstHash {
+			t.Errorf("run %d produced different state hash: %s != %s", i, hash, firstHash)
+			mismatches++
+		}
+	}
+
+	if mismatches == 0 {
+		t.Logf("✅ 100%% determinism: %d runs produced identical state hashes", numRuns)
+		t.Logf("   Final state hash: %s", firstHash[:16]+"...")
+	} else {
+		t.Errorf("❌ Determinism failure: %d/%d runs produced different hashes (%0.2f%% success rate)",
+			mismatches, numRuns, 100.0*float64(numRuns-mismatches)/float64(numRuns))
+	}
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================

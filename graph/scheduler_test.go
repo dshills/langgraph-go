@@ -479,6 +479,151 @@ type SchedulerTestState struct {
 	Counter int
 }
 
+// TestFrontierHeapChannelDesync (T017) demonstrates the heap/channel desynchronization bug.
+//
+// BUG-003: Dual data structure (heap + channel) in Frontier can desynchronize, causing
+// work items to be dequeued out of OrderKey sequence. This violates deterministic ordering
+// guarantees required by FR-002.
+//
+// This test enqueues items in random order and verifies they dequeue in OrderKey order.
+// EXPECTED: Test FAILS with current implementation (items dequeue in channel order, not heap order)
+// EXPECTED: Test PASSES after fix (items dequeue in heap OrderKey order)
+func TestFrontierHeapChannelDesync(t *testing.T) {
+	t.Run("dequeue follows channel order not heap order - demonstrates bug", func(t *testing.T) {
+		ctx := context.Background()
+		capacity := 10
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity)
+
+		// Enqueue 5 items with OrderKeys in non-sequential order
+		items := []graph.WorkItem[SchedulerTestState]{
+			{NodeID: "node5", OrderKey: 500, StepID: 1, State: SchedulerTestState{Value: "fifth"}},
+			{NodeID: "node2", OrderKey: 200, StepID: 1, State: SchedulerTestState{Value: "second"}},
+			{NodeID: "node4", OrderKey: 400, StepID: 1, State: SchedulerTestState{Value: "fourth"}},
+			{NodeID: "node1", OrderKey: 100, StepID: 1, State: SchedulerTestState{Value: "first"}},
+			{NodeID: "node3", OrderKey: 300, StepID: 1, State: SchedulerTestState{Value: "third"}},
+		}
+
+		// Enqueue all items
+		for _, item := range items {
+			if err := frontier.Enqueue(ctx, item); err != nil {
+				t.Fatalf("enqueue failed: %v", err)
+			}
+		}
+
+		// Dequeue and verify OrderKey ordering
+		// Expected: 100, 200, 300, 400, 500 (ascending OrderKey)
+		// Actual (buggy): 500, 200, 400, 100, 300 (channel insertion order)
+		expectedOrderKeys := []uint64{100, 200, 300, 400, 500}
+		actualOrderKeys := make([]uint64, 0, len(items))
+
+		for i := 0; i < len(items); i++ {
+			item, err := frontier.Dequeue(ctx)
+			if err != nil {
+				t.Fatalf("dequeue %d failed: %v", i, err)
+			}
+			actualOrderKeys = append(actualOrderKeys, item.OrderKey)
+		}
+
+		// Check if ordering matches expected
+		orderingCorrect := true
+		for i := range expectedOrderKeys {
+			if expectedOrderKeys[i] != actualOrderKeys[i] {
+				orderingCorrect = false
+				break
+			}
+		}
+
+		if !orderingCorrect {
+			t.Logf("BUG-003 DETECTED: Items dequeued out of OrderKey order")
+			t.Logf("Expected OrderKeys: %v", expectedOrderKeys)
+			t.Logf("Actual OrderKeys:   %v", actualOrderKeys)
+			t.Errorf("Frontier returned items in channel order, not heap OrderKey order")
+		}
+	})
+}
+
+// TestFrontierOrderingLargeScale (T022) validates OrderKey ordering with 1,000 items.
+//
+// This stress test ensures the Frontier correctly maintains OrderKey ordering even with:
+// - Large number of items (1,000)
+// - Random submission order
+// - Random OrderKey values
+//
+// Requirements:
+// - All items must dequeue in ascending OrderKey order
+// - 100% compliance required (zero ordering violations)
+func TestFrontierOrderingLargeScale(t *testing.T) {
+	t.Run("1000 items dequeue in ascending OrderKey order", func(t *testing.T) {
+		ctx := context.Background()
+		numItems := 1000
+		capacity := numItems + 10 // Large enough to avoid blocking during test
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity)
+		items := make([]graph.WorkItem[SchedulerTestState], numItems)
+
+		// Generate items with random OrderKeys
+		usedKeys := make(map[uint64]bool)
+		for i := 0; i < numItems; i++ {
+			// Generate unique OrderKey
+			var orderKey uint64
+			for {
+				orderKey = uint64(i*100 + (i%7)*13) // Deterministic but non-sequential
+				if !usedKeys[orderKey] {
+					usedKeys[orderKey] = true
+					break
+				}
+			}
+
+			items[i] = graph.WorkItem[SchedulerTestState]{
+				StepID:   i,
+				OrderKey: orderKey,
+				NodeID:   "node_" + string(rune('A'+i%26)),
+				State:    SchedulerTestState{Counter: i},
+			}
+		}
+
+		// Shuffle items to randomize enqueue order
+		for i := range items {
+			j := i + (i*7)%(numItems-i)
+			items[i], items[j] = items[j], items[i]
+		}
+
+		// Enqueue all items in random order
+		for _, item := range items {
+			if err := frontier.Enqueue(ctx, item); err != nil {
+				t.Fatalf("enqueue failed: %v", err)
+			}
+		}
+
+		// Dequeue all items and verify ascending OrderKey order
+		var prevOrderKey uint64
+		violations := 0
+
+		for i := 0; i < numItems; i++ {
+			item, err := frontier.Dequeue(ctx)
+			if err != nil {
+				t.Fatalf("dequeue %d failed: %v", i, err)
+			}
+
+			if i > 0 && item.OrderKey < prevOrderKey {
+				violations++
+				if violations <= 10 { // Log first 10 violations
+					t.Logf("Ordering violation at position %d: prev=%d, current=%d",
+						i, prevOrderKey, item.OrderKey)
+				}
+			}
+
+			prevOrderKey = item.OrderKey
+		}
+
+		if violations > 0 {
+			t.Errorf("Found %d ordering violations out of %d items (%.2f%% failure rate)",
+				violations, numItems, float64(violations)/float64(numItems)*100)
+		} else {
+			t.Logf("✓ All %d items dequeued in correct OrderKey order", numItems)
+		}
+	})
+}
+
 // TestBackpressureBlocking (T084) verifies that Frontier.Enqueue blocks when queue reaches capacity.
 // and that backpressure events are recorded.
 //

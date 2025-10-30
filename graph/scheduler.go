@@ -119,17 +119,24 @@ func (h *workHeap[S]) Pop() interface{} {
 // even when they are enqueued concurrently from multiple goroutines. This is critical
 // for deterministic replay of graph executions.
 //
+// Architecture (BUG-003 fix):
+// - Heap is the single source of truth for work item storage and ordering
+// - Channel carries empty struct notifications only (not data)
+// - Enqueue: Push to heap THEN send notification to channel
+// - Dequeue: Wait for notification from channel THEN pop from heap
+// This prevents heap/channel desynchronization and reduces memory usage.
+//
 // The bounded channel provides backpressure: when the queue is full, Enqueue will block
 // until capacity becomes available or the context is cancelled. This prevents unbounded
 // memory growth when nodes produce work faster than it can be consumed.
 //
 // Thread-safety: All methods are safe for concurrent use by multiple goroutines.
 type Frontier[S any] struct {
-	heap     workHeap[S]      // Priority queue for deterministic ordering
-	queue    chan WorkItem[S] // Buffered channel for bounded capacity
-	capacity int              // Maximum queue depth
-	ctx      context.Context  // Context for cancellation
-	mu       sync.Mutex       // Protects heap and len operations
+	heap     workHeap[S]     // Priority queue for deterministic ordering (single source of truth)
+	queue    chan struct{}   // Notification channel (empty struct, no data)
+	capacity int             // Maximum queue depth
+	ctx      context.Context // Context for cancellation
+	mu       sync.Mutex      // Protects heap and len operations
 
 	// Metrics tracking (T068) - use atomic operations for thread-safe updates
 	totalEnqueued      atomic.Int64 // Total work items enqueued
@@ -141,10 +148,12 @@ type Frontier[S any] struct {
 // NewFrontier creates a new Frontier with the specified capacity and context.
 // The capacity determines the maximum number of work items that can be queued.
 // The context is used for cancellation propagation.
+//
+// BUG-003 fix (T019): Channel is notification-only (empty struct), not data carrier.
 func NewFrontier[S any](ctx context.Context, capacity int) *Frontier[S] {
 	f := &Frontier[S]{
 		heap:     make(workHeap[S], 0),
-		queue:    make(chan WorkItem[S], capacity),
+		queue:    make(chan struct{}, capacity), // T019: Empty struct channel
 		capacity: capacity,
 		ctx:      ctx,
 	}
@@ -199,12 +208,13 @@ func (f *Frontier[S]) Enqueue(ctx context.Context, item WorkItem[S]) error {
 		f.backpressureEvents.Add(1)
 	}
 
-	// Send to channel (may block if full - this is the backpressure mechanism)
+	// Send notification to channel (may block if full - this is the backpressure mechanism)
 	// The buffered channel enforces QueueDepth capacity (T063)
+	// BUG-003 fix (T020): Send empty struct notification, not data
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case f.queue <- item:
+	case f.queue <- struct{}{}: // T020: Send notification only
 		// Update metrics: increment total enqueued (T068)
 		f.totalEnqueued.Add(1)
 		return nil
@@ -219,8 +229,9 @@ func (f *Frontier[S]) Enqueue(ctx context.Context, item WorkItem[S]) error {
 // Returns the work item with the minimum OrderKey and nil error on success.
 // Returns a zero-value work item and context error if the context is cancelled.
 //
-// The deterministic ordering guarantee is maintained by popping from the heap,
-// which keeps items sorted by OrderKey.
+// BUG-003 fix (T021): Dequeue waits for notification, then pops from heap.
+// This ensures deterministic ordering: heap is the single source of truth for
+// work item storage and ordering. The channel provides notification only.
 func (f *Frontier[S]) Dequeue(ctx context.Context) (WorkItem[S], error) {
 	var zero WorkItem[S]
 
@@ -229,12 +240,13 @@ func (f *Frontier[S]) Dequeue(ctx context.Context) (WorkItem[S], error) {
 		return zero, ctx.Err()
 	}
 
-	// Receive from channel (may block if empty)
+	// T021: Wait for notification from channel (may block if empty)
 	select {
 	case <-ctx.Done():
 		return zero, ctx.Err()
-	case <-f.queue:
-		// Pop min OrderKey item from heap under lock
+	case <-f.queue: // T021: Receive notification (empty struct discarded)
+		// T021: Pop min OrderKey item from heap under lock
+		// Heap is the single source of truth for ordering
 		f.mu.Lock()
 		defer f.mu.Unlock()
 
