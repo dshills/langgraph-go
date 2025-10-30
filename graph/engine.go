@@ -639,7 +639,7 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 		if queueDepth == 0 {
 			queueDepth = 1024 // Default queue depth
 		}
-		e.frontier = NewFrontier[S](ctx, queueDepth)
+		e.frontier = NewFrontier[S](ctx, queueDepth, runID, e.opts.Metrics, e.emitter)
 
 		// Use concurrent execution path (T035)
 		return e.runConcurrent(ctx, runID, initial)
@@ -684,16 +684,85 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 		// Emit node_start event (T153)
 		e.emitNodeStart(runID, currentNode, step-1) // step is incremented at start of loop, but events use 0-based indexing
 
-		// Execute node
-		result := nodeImpl.Run(ctx, currentState)
+		// Get node policy for retry and timeout configuration (US1, US2)
+		var policy *NodePolicy
+		if policyProvider, ok := nodeImpl.(interface{ Policy() NodePolicy }); ok {
+			p := policyProvider.Policy()
+			policy = &p
+		}
 
-		// Handle node error (T159)
-		if result.Err != nil {
+		// Execute node with retry support for sequential execution (US1: T005-T009)
+		var result NodeResult[S]
+		maxRetries := e.opts.Retries // Number of retry attempts (0 = no retries)
+
+		for attempt := 0; attempt <= maxRetries; attempt++ {
+			// Add retry attempt to context for nodes to access
+			attemptCtx := context.WithValue(ctx, AttemptKey, attempt)
+
+			// Execute node with timeout enforcement (US2: T017, T018)
+			var timeoutErr error
+			result, timeoutErr = executeNodeWithTimeout(attemptCtx, nodeImpl, currentNode, currentState, policy, e.opts.DefaultNodeTimeout)
+			if timeoutErr != nil {
+				// Timeout occurred - treat as node error
+				result.Err = timeoutErr
+			}
+
+			// If node succeeded, break out of retry loop
+			if result.Err == nil {
+				break
+			}
+
+			// Node failed - check if we should retry
+			if attempt < maxRetries {
+				// Get RNG from attemptCtx for deterministic backoff jitter
+				var rng *rand.Rand
+				if rngVal := attemptCtx.Value(RNGKey); rngVal != nil {
+					if r, ok := rngVal.(*rand.Rand); ok {
+						rng = r
+					}
+				}
+
+				// Compute exponential backoff with jitter (deterministic)
+				const maxBackoff = 30 * time.Second // Cap backoff to prevent overflow
+				baseDelay := 100 * time.Millisecond
+
+				// Safe exponential calculation with bounds checking
+				shift := attempt
+				if shift > 10 {
+					shift = 10 // Cap shift to prevent overflow (2^10 = 1024)
+				}
+				backoff := baseDelay * time.Duration(1<<uint(shift)) // #nosec G115 -- shift capped at 10, safe conversion
+				if backoff > maxBackoff {
+					backoff = maxBackoff
+				}
+
+				// Add deterministic jitter if RNG available
+				var jitter time.Duration
+				if rng != nil {
+					// Deterministic jitter for replay consistency
+					jitter = time.Duration(rng.Intn(50)) * time.Millisecond
+				}
+				delay := backoff + jitter
+
+				// Apply backoff delay with context cancellation support
+				select {
+				case <-time.After(delay):
+					// Backoff completed, continue to retry
+				case <-ctx.Done():
+					// Context canceled during backoff
+					return zero, ctx.Err()
+				}
+
+				// Continue to next retry attempt
+				continue
+			}
+
+			// Max retries exceeded - emit final error and return
 			e.emitError(runID, currentNode, step-1, result.Err)
 			return zero, result.Err
 		}
 
-		// Merge state update
+		// Merge state update (only on success)
 		currentState = e.reducer(currentState, result.Delta)
 
 		// Persist state after node execution (T058)
@@ -1948,7 +2017,7 @@ func (e *Engine[S]) RunWithCheckpoint(ctx context.Context, checkpoint store.Chec
 		if queueDepth == 0 {
 			queueDepth = 1024 // Default queue depth
 		}
-		e.frontier = NewFrontier[S](ctx, queueDepth)
+		e.frontier = NewFrontier[S](ctx, queueDepth, checkpoint.RunID, e.opts.Metrics, e.emitter)
 
 		// Enqueue all work items from checkpoint
 		for _, item := range frontierItems {

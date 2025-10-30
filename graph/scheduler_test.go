@@ -117,7 +117,7 @@ func TestFrontierOrdering(t *testing.T) {
 	t.Run("dequeue in ascending order key order", func(t *testing.T) {
 		// Create frontier with capacity 10.
 		ctx := context.Background()
-		frontier := graph.NewFrontier[SchedulerTestState](ctx, 10)
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, 10, "", nil, nil)
 
 		// Enqueue items in random order.
 		items := []graph.WorkItem[SchedulerTestState]{
@@ -176,7 +176,7 @@ func TestFrontierOrdering(t *testing.T) {
 	t.Run("dequeue from empty frontier", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		frontier := graph.NewFrontier[SchedulerTestState](ctx, 10)
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, 10, "", nil, nil)
 
 		// Dequeue from empty should block and timeout.
 		_, err := frontier.Dequeue(ctx)
@@ -209,7 +209,7 @@ func TestBackpressureBlock(t *testing.T) {
 	t.Run("enqueue blocks when queue is full", func(t *testing.T) {
 		ctx := context.Background()
 		capacity := 5
-		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity)
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity, "", nil, nil)
 
 		// Fill the frontier to capacity.
 		for i := 0; i < capacity; i++ {
@@ -295,7 +295,7 @@ func TestBackpressureBlock(t *testing.T) {
 	t.Run("enqueue respects context cancellation when blocked", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		capacity := 3
-		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity)
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity, "", nil, nil)
 
 		// Fill the frontier to capacity.
 		for i := 0; i < capacity; i++ {
@@ -355,7 +355,7 @@ func TestBackpressureBlock(t *testing.T) {
 	t.Run("multiple goroutines can block on full queue", func(t *testing.T) {
 		ctx := context.Background()
 		capacity := 2
-		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity)
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity, "", nil, nil)
 
 		// Fill the frontier to capacity.
 		for i := 0; i < capacity; i++ {
@@ -493,7 +493,7 @@ func TestFrontierHeapChannelDesync(t *testing.T) {
 	t.Run("dequeue follows channel order not heap order - demonstrates bug", func(t *testing.T) {
 		ctx := context.Background()
 		capacity := 10
-		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity)
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity, "", nil, nil)
 
 		// Enqueue 5 items with OrderKeys in non-sequential order
 		items := []graph.WorkItem[SchedulerTestState]{
@@ -558,7 +558,7 @@ func TestFrontierOrderingLargeScale(t *testing.T) {
 		ctx := context.Background()
 		numItems := 1000
 		capacity := numItems + 10 // Large enough to avoid blocking during test
-		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity)
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, capacity, "", nil, nil)
 		items := make([]graph.WorkItem[SchedulerTestState], numItems)
 
 		// Generate items with random OrderKeys
@@ -643,7 +643,7 @@ func TestBackpressureBlocking(t *testing.T) {
 	t.Run("enqueue blocks at queue capacity and records backpressure event", func(t *testing.T) {
 		ctx := context.Background()
 		queueDepth := 1 // Small queue to trigger backpressure quickly
-		frontier := graph.NewFrontier[SchedulerTestState](ctx, queueDepth)
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, queueDepth, "", nil, nil)
 
 		// Fill the frontier to capacity (1 item).
 		item1 := graph.WorkItem[SchedulerTestState]{
@@ -791,7 +791,7 @@ func TestBackpressureBlocking(t *testing.T) {
 		defer cancel()
 
 		queueDepth := 1
-		frontier := graph.NewFrontier[SchedulerTestState](ctx, queueDepth)
+		frontier := graph.NewFrontier[SchedulerTestState](ctx, queueDepth, "", nil, nil)
 
 		// Fill to capacity.
 		item1 := graph.WorkItem[SchedulerTestState]{
