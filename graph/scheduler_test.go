@@ -3,6 +3,7 @@ package graph_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -179,7 +180,7 @@ func TestFrontierOrdering(t *testing.T) {
 
 		// Dequeue from empty should block and timeout.
 		_, err := frontier.Dequeue(ctx)
-		if err != context.DeadlineExceeded {
+		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Errorf("expected DeadlineExceeded when dequeuing from empty frontier, got %v", err)
 		}
 	})
@@ -342,7 +343,7 @@ func TestBackpressureBlock(t *testing.T) {
 			if err == nil {
 				t.Error("expected context cancellation error, got nil")
 			}
-			if err != context.Canceled {
+			if !errors.Is(err, context.Canceled) {
 				t.Errorf("expected context.Canceled, got %v", err)
 			}
 			t.Log("Enqueue correctly failed with context cancellation")
@@ -828,7 +829,7 @@ func TestBackpressureBlocking(t *testing.T) {
 			if err == nil {
 				t.Error("expected context cancellation error, got nil")
 			}
-			if err != context.Canceled {
+			if !errors.Is(err, context.Canceled) {
 				t.Logf("expected context.Canceled, got %v (acceptable if engine wraps error)", err)
 			}
 			t.Log("✓ Backpressure respects context cancellation")

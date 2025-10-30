@@ -61,31 +61,43 @@ func TestPrometheusMetricsExposed(t *testing.T) {
 	)
 
 	// Add nodes that will trigger different metric types
-	eng.Add("start", NodeFunc[simpleState](func(ctx context.Context, state simpleState) NodeResult[simpleState] {
+	if err := eng.Add("start", NodeFunc[simpleState](func(ctx context.Context, state simpleState) NodeResult[simpleState] {
 		return NodeResult[simpleState]{
 			Delta: simpleState{Counter: 1, Visited: []string{"start"}},
 			Route: Goto("process"),
 		}
-	}))
+	})); err != nil {
+		t.Fatalf("failed to add start node: %v", err)
+	}
 
-	eng.Add("process", NodeFunc[simpleState](func(ctx context.Context, state simpleState) NodeResult[simpleState] {
+	if err := eng.Add("process", NodeFunc[simpleState](func(ctx context.Context, state simpleState) NodeResult[simpleState] {
 		time.Sleep(50 * time.Millisecond) // Add some latency
 		return NodeResult[simpleState]{
 			Delta: simpleState{Counter: 1, Visited: []string{"process"}},
 			Route: Goto("end"),
 		}
-	}))
+	})); err != nil {
+		t.Fatalf("failed to add process node: %v", err)
+	}
 
-	eng.Add("end", NodeFunc[simpleState](func(ctx context.Context, state simpleState) NodeResult[simpleState] {
+	if err := eng.Add("end", NodeFunc[simpleState](func(ctx context.Context, state simpleState) NodeResult[simpleState] {
 		return NodeResult[simpleState]{
 			Delta: simpleState{Counter: 1, Visited: []string{"end"}},
 			Route: Stop(),
 		}
-	}))
+	})); err != nil {
+		t.Fatalf("failed to add end node: %v", err)
+	}
 
-	eng.StartAt("start")
-	eng.Connect("start", "process", nil)
-	eng.Connect("process", "end", nil)
+	if err := eng.StartAt("start"); err != nil {
+		t.Fatalf("failed to set start node: %v", err)
+	}
+	if err := eng.Connect("start", "process", nil); err != nil {
+		t.Fatalf("failed to connect start to process: %v", err)
+	}
+	if err := eng.Connect("process", "end", nil); err != nil {
+		t.Fatalf("failed to connect process to end: %v", err)
+	}
 
 	// Execute workflow
 	ctx := context.Background()
@@ -231,24 +243,32 @@ func TestOpenTelemetryAttributes(t *testing.T) {
 	)
 
 	// Add nodes that emit different types of metadata
-	eng.Add("start", NodeFunc[testState](func(ctx context.Context, state testState) NodeResult[testState] {
+	if err := eng.Add("start", NodeFunc[testState](func(ctx context.Context, state testState) NodeResult[testState] {
 		return NodeResult[testState]{
 			Delta: testState{Counter: 1, Path: []string{"start"}},
 			Route: Goto("llm_node"),
 		}
-	}))
+	})); err != nil {
+		t.Fatalf("failed to add start node: %v", err)
+	}
 
-	eng.Add("llm_node", NodeFunc[testState](func(ctx context.Context, state testState) NodeResult[testState] {
+	if err := eng.Add("llm_node", NodeFunc[testState](func(ctx context.Context, state testState) NodeResult[testState] {
 		// Node execution - engine will emit node_start and node_end events
 		time.Sleep(10 * time.Millisecond) // Simulate some work
 		return NodeResult[testState]{
 			Delta: testState{Counter: 1, Path: []string{"llm"}},
 			Route: Stop(),
 		}
-	}))
+	})); err != nil {
+		t.Fatalf("failed to add llm_node: %v", err)
+	}
 
-	eng.StartAt("start")
-	eng.Connect("start", "llm_node", nil)
+	if err := eng.StartAt("start"); err != nil {
+		t.Fatalf("failed to set start node: %v", err)
+	}
+	if err := eng.Connect("start", "llm_node", nil); err != nil {
+		t.Fatalf("failed to connect start to llm_node: %v", err)
+	}
 
 	// Execute workflow
 	ctx := context.Background()

@@ -269,7 +269,7 @@ func TestReplayMismatch(t *testing.T) {
 
 		// When hashes don't match, should get ErrReplayMismatch.
 		err := detectReplayMismatch(recordedHash, currentHash)
-		if err != graph.ErrReplayMismatch {
+		if !errors.Is(err, graph.ErrReplayMismatch) {
 			t.Errorf("expected ErrReplayMismatch, got %v", err)
 		}
 	})

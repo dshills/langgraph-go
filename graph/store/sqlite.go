@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -531,7 +532,7 @@ func (s *SQLiteStore[S]) LoadCheckpointV2(ctx context.Context, runID string, ste
 		&checkpoint.Label,
 	)
 
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		var zero CheckpointV2[S]
 		return zero, ErrNotFound
 	}

@@ -1026,7 +1026,6 @@ func TestCompletionDetectionStress(t *testing.T) {
 	// Run tests in parallel to increase stress
 	t.Run("stress", func(t *testing.T) {
 		for i := 0; i < numExecutions; i++ {
-			i := i // Capture
 			t.Run(fmt.Sprintf("exec_%d", i), func(t *testing.T) {
 				t.Parallel()
 

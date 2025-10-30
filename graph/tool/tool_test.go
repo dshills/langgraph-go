@@ -159,7 +159,7 @@ func TestTool_Call_Success(t *testing.T) {
 		if err == nil {
 			t.Error("Call() error = nil, want context.Canceled")
 		}
-		if !errors.Is(err, context.Canceled) && err != context.Canceled {
+		if !errors.Is(err, context.Canceled) {
 			t.Errorf("Call() error = %v, want context.Canceled", err)
 		}
 	})
@@ -180,7 +180,7 @@ func TestTool_Call_Error(t *testing.T) {
 		if err == nil {
 			t.Fatal("Call() error = nil, want error")
 		}
-		if err != expectedErr {
+		if !errors.Is(err, expectedErr) {
 			t.Errorf("Call() error = %v, want %v", err, expectedErr)
 		}
 		if result != nil {

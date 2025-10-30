@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -683,7 +684,7 @@ func TestMySQLStore_LoadCheckpoint(t *testing.T) {
 		if err == nil {
 			t.Error("Expected error when loading non-existent checkpoint, got nil")
 		}
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("Expected ErrNotFound, got %v", err)
 		}
 	})
@@ -973,7 +974,7 @@ func TestMySQLStore_LoadCheckpointV2(t *testing.T) {
 
 		ctx := context.Background()
 		_, err = store.LoadCheckpointV2(ctx, "non-existent-run", 999)
-		if err != ErrNotFound {
+		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("Expected ErrNotFound, got %v", err)
 		}
 	})
