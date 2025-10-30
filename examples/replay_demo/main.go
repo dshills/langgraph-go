@@ -19,13 +19,13 @@ import (
 // GameState represents the state for a dice game workflow that demonstrates
 // deterministic replay with random number generation.
 type GameState struct {
-	PlayerName    string   `json:"player_name"`
-	RoundNumber   int      `json:"round_number"`
-	DiceRolls     []int    `json:"dice_rolls"` // History of all dice rolls
-	Score         int      `json:"score"`      // Total score
-	GameLog       []string `json:"game_log"`   // Human-readable game events
-	APICallsMade  int      `json:"api_calls"`  // Track actual external calls
-	IsReplay      bool     `json:"is_replay"`  // Replay mode indicator
+	PlayerName   string   `json:"player_name"`
+	RoundNumber  int      `json:"round_number"`
+	DiceRolls    []int    `json:"dice_rolls"` // History of all dice rolls
+	Score        int      `json:"score"`      // Total score
+	GameLog      []string `json:"game_log"`   // Human-readable game events
+	APICallsMade int      `json:"api_calls"`  // Track actual external calls
+	IsReplay     bool     `json:"is_replay"`  // Replay mode indicator
 }
 
 // gameReducer merges state updates deterministically.
