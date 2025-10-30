@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/dshills/langgraph-go/graph/emit"
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // SQLite driver for database/sql
 )
 
 // SQLiteStore is a SQLite implementation of Store[S].

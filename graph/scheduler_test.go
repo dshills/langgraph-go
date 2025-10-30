@@ -567,7 +567,7 @@ func TestFrontierOrderingLargeScale(t *testing.T) {
 			// Generate unique OrderKey
 			var orderKey uint64
 			for {
-				orderKey = uint64(i*100 + (i%7)*13) // Deterministic but non-sequential
+				orderKey = uint64(i*100 + (i%7)*13) // #nosec G115 -- i bounded by loop, mathematically safe
 				if !usedKeys[orderKey] {
 					usedKeys[orderKey] = true
 					break

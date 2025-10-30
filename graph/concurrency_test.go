@@ -26,7 +26,7 @@ import (
 // in the concurrent engine workers.
 func TestRNGDataRace_DirectAccess(_ *testing.T) {
 	// Create a single RNG instance (like what's in the context)
-	rng := rand.New(rand.NewSource(12345))
+	rng := rand.New(rand.NewSource(12345)) // #nosec G404 -- deterministic RNG for reproducible concurrent testing
 
 	// Spawn multiple goroutines that all access the same RNG
 	// This simulates what happens when workers share the RNG from workerCtx

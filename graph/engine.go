@@ -56,6 +56,9 @@ const (
 	// Provides deterministic randomness for replay scenarios.
 	// Type: *rand.Rand (from math/rand package)
 	RNGKey contextKey = "langgraph.rng"
+
+	// RecordedIOsKey is the context key for storing recorded I/O during replay.
+	RecordedIOsKey contextKey = "langgraph.recordedIOs"
 )
 
 // initRNG creates a deterministic random number generator seeded from the runID.
@@ -2399,7 +2402,7 @@ func (e *Engine[S]) ReplayRun(ctx context.Context, runID string) (S, error) {
 	// Store recorded I/O in context for nodes to access during replay
 	// This is a placeholder - in real implementation, nodes would check for recorded I/O
 	// and use it instead of making live calls
-	ctx = context.WithValue(ctx, "recordedIOs", recordedIOs)
+	ctx = context.WithValue(ctx, RecordedIOsKey, recordedIOs)
 
 	// Resume execution from checkpoint
 	// The replay logic is handled in RunWithCheckpoint, which will use recorded I/O

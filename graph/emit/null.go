@@ -37,14 +37,12 @@ func (n *NullEmitter) Emit(_ Event) {
 	// No-op: discard the event.
 }
 
-// TODO: Implement in Phase 8
 // EmitBatch discards multiple events in a single operation.
 func (n *NullEmitter) EmitBatch(_ context.Context, _ []Event) error {
 	// No-op: discard all events.
 	return nil
 }
 
-// TODO: Implement in Phase 8
 // Flush is a no-op for null emitter.
 func (n *NullEmitter) Flush(_ context.Context) error {
 	// No-op: nothing to flush.

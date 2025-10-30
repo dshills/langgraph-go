@@ -427,7 +427,7 @@ func TestEngine_Connect(t *testing.T) {
 		}
 	})
 
-	t.Run("multiple edges from same node", func(t *testing.T) {
+	t.Run("multiple edges from same node", func(_ *testing.T) {
 		engine := createTestEngine()
 
 		// Should allow multiple edges from the same node (for conditional routing)
@@ -4433,7 +4433,7 @@ func TestConcurrencyLimit(t *testing.T) {
 
 				// Route to next node or stop
 				var route Next
-				if id == "node1" {
+				if id == "node1" { //nolint:staticcheck // if-else more readable than switch for simple routing
 					route = Goto("node2")
 				} else if id == "node2" {
 					route = Goto("node3")

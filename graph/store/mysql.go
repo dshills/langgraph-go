@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/dshills/langgraph-go/graph/emit"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // MySQL driver for database/sql
 )
 
 // MySQLStore is a MySQL/MariaDB implementation of Store[S].

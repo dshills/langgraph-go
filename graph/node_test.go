@@ -228,7 +228,7 @@ func TestStopAndGoto_Helpers(t *testing.T) {
 
 // TestNodeFunc_Wrapper verifies NodeFunc functional wrapper (T020).
 func TestNodeFunc_Wrapper(t *testing.T) {
-	t.Run("NodeFunc implements Node interface", func(t *testing.T) {
+	t.Run("NodeFunc implements Node interface", func(_ *testing.T) {
 		var _ Node[TestState] = NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
 			return NodeResult[TestState]{Route: Stop()}
 		})

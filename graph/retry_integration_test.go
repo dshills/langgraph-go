@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/dshills/langgraph-go/graph"
+	. "github.com/dshills/langgraph-go/graph" //nolint:revive // dot import improves test readability
 	"github.com/dshills/langgraph-go/graph/store"
 )
 

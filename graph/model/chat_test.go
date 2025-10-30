@@ -162,9 +162,8 @@ func TestToolSpec_Construction(t *testing.T) {
 		if spec.Name != "get_weather" {
 			t.Errorf("expected Name = 'get_weather', got %q", spec.Name)
 		}
-		if spec.Schema == nil {
-			// Schema being nil is acceptable for simple tools.
-		}
+		// Schema being nil is acceptable for simple tools.
+		_ = spec.Schema
 	})
 }
 
@@ -302,7 +301,7 @@ func TestToolCall_Structure(t *testing.T) {
 
 // TestChatModel_Interface verifies ChatModel interface contract (T126).
 func TestChatModel_Interface(t *testing.T) {
-	t.Run("interface can be implemented", func(t *testing.T) {
+	t.Run("interface can be implemented", func(_ *testing.T) {
 		// Verify that a concrete type can implement ChatModel.
 		var _ ChatModel = &testChatModel{}
 	})
