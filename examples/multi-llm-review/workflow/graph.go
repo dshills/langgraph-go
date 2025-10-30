@@ -58,13 +58,31 @@ func NewReviewWorkflow(provider CodeReviewer, scanner FileScanner, batchSize int
 //   - *graph.Engine[ReviewState]: The configured workflow engine
 //   - error: Configuration error if any
 func NewReviewWorkflowWithProviders(providers []CodeReviewer, scanner FileScanner, batchSize int) (*graph.Engine[ReviewState], error) {
+	return NewReviewWorkflowWithProvidersAndEmitter(providers, scanner, batchSize, nil)
+}
+
+// NewReviewWorkflowWithProvidersAndEmitter creates a new review workflow engine with multiple providers
+// and a custom emitter for observability.
+//
+// Parameters:
+//   - providers: The AI code reviewers to use for analysis (called concurrently)
+//   - scanner: The file scanner to discover code files
+//   - batchSize: Number of files to process per batch
+//   - emitter: Custom event emitter (nil = use default log emitter)
+//
+// Returns:
+//   - *graph.Engine[ReviewState]: The configured workflow engine
+//   - error: Configuration error if any
+func NewReviewWorkflowWithProvidersAndEmitter(providers []CodeReviewer, scanner FileScanner, batchSize int, emitter emit.Emitter) (*graph.Engine[ReviewState], error) {
 	// Create in-memory store for checkpoints (T040)
 	// In production, this would be replaced with a persistent store (MySQL, PostgreSQL, etc.)
 	st := store.NewMemStore[ReviewState]()
 
-	// Create stdout log emitter for observability (T041)
+	// Use provided emitter or create default stdout log emitter for observability (T041)
 	// Emits node_start, node_end, routing_decision, and error events
-	emitter := emit.NewLogEmitter(os.Stdout, false) // false = text mode (not JSON)
+	if emitter == nil {
+		emitter = emit.NewLogEmitter(os.Stdout, false) // false = text mode (not JSON)
+	}
 
 	// Create the engine with reducer, store, emitter, and options
 	// MaxSteps: 100 - Prevent infinite loops (reasonable for batched processing)

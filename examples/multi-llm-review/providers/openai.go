@@ -194,7 +194,7 @@ func (p *OpenAIProvider) callAPI(ctx context.Context, prompt string) (*apiRespon
 		ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
 			OfJSONObject: openai.Ptr(shared.NewResponseFormatJSONObjectParam()),
 		},
-		Temperature: openai.Float(0.3), // Lower temperature for more consistent output
+		Temperature: openai.Float(1.0), // Default temperature (some models only support 1.0)
 	})
 
 	if err != nil {

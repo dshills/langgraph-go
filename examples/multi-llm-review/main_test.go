@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -14,8 +15,10 @@ func TestParseArgs_ValidCodebase(t *testing.T) {
 	if parsed.CodebasePath != "./testdata/fixtures" {
 		t.Errorf("CodebasePath = %q, want %q", parsed.CodebasePath, "./testdata/fixtures")
 	}
-	if parsed.ConfigFile != "config.yaml" {
-		t.Errorf("ConfigFile = %q, want %q", parsed.ConfigFile, "config.yaml")
+	// ConfigFile should be default path (~/.multi-llm-review/config.yaml)
+	expectedDefault := getDefaultConfigPath()
+	if parsed.ConfigFile != expectedDefault {
+		t.Errorf("ConfigFile = %q, want %q", parsed.ConfigFile, expectedDefault)
 	}
 	if parsed.Format != "markdown" {
 		t.Errorf("Format = %q, want %q", parsed.Format, "markdown")
@@ -193,8 +196,10 @@ func TestArgsParsing_PositionalOnly(t *testing.T) {
 	if parsed.CodebasePath != "/home/user/project" {
 		t.Errorf("CodebasePath = %q, want %q", parsed.CodebasePath, "/home/user/project")
 	}
-	if parsed.ConfigFile != "config.yaml" {
-		t.Errorf("ConfigFile = %q, want default", parsed.ConfigFile)
+	// ConfigFile should be default path
+	expectedDefault := getDefaultConfigPath()
+	if parsed.ConfigFile != expectedDefault {
+		t.Errorf("ConfigFile = %q, want default %q", parsed.ConfigFile, expectedDefault)
 	}
 	if parsed.Format != "markdown" {
 		t.Errorf("Format = %q, want default", parsed.Format)
@@ -304,4 +309,206 @@ func TestWorkflowExecution_EmptyCodebase(t *testing.T) {
 	if err == nil {
 		t.Error("runWorkflow() expected error for empty directory, got nil")
 	}
+}
+
+// TestExpandEnvVars tests environment variable expansion in strings.
+func TestExpandEnvVars(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		envVars  map[string]string
+		expected string
+	}{
+		{
+			name:     "single variable",
+			input:    "${TEST_VAR}",
+			envVars:  map[string]string{"TEST_VAR": "test_value"},
+			expected: "test_value",
+		},
+		{
+			name:     "multiple variables",
+			input:    "${VAR1}-${VAR2}",
+			envVars:  map[string]string{"VAR1": "hello", "VAR2": "world"},
+			expected: "hello-world",
+		},
+		{
+			name:     "mixed content",
+			input:    "prefix-${VAR}-suffix",
+			envVars:  map[string]string{"VAR": "middle"},
+			expected: "prefix-middle-suffix",
+		},
+		{
+			name:     "undefined variable",
+			input:    "${UNDEFINED_VAR}",
+			envVars:  map[string]string{},
+			expected: "",
+		},
+		{
+			name:     "no variables",
+			input:    "plain text",
+			envVars:  map[string]string{},
+			expected: "plain text",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set environment variables
+			for k, v := range tt.envVars {
+				os.Setenv(k, v)
+				defer os.Unsetenv(k)
+			}
+
+			result := expandEnvVars(tt.input)
+			if result != tt.expected {
+				t.Errorf("expandEnvVars(%q) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestCreateProviders tests provider creation from configuration.
+func TestCreateProviders(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      *Config
+		envVars     map[string]string
+		wantErr     bool
+		wantCount   int
+		wantNames   []string
+		errContains string
+	}{
+		{
+			name: "single enabled provider",
+			config: &Config{
+				Providers: []struct {
+					Name    string `yaml:"name"`
+					APIKey  string `yaml:"api_key"`
+					Model   string `yaml:"model"`
+					Enabled bool   `yaml:"enabled"`
+				}{
+					{Name: "openai", APIKey: "test-key", Model: "gpt-4", Enabled: true},
+				},
+			},
+			wantErr:   false,
+			wantCount: 1,
+			wantNames: []string{"openai"},
+		},
+		{
+			name: "multiple enabled providers",
+			config: &Config{
+				Providers: []struct {
+					Name    string `yaml:"name"`
+					APIKey  string `yaml:"api_key"`
+					Model   string `yaml:"model"`
+					Enabled bool   `yaml:"enabled"`
+				}{
+					{Name: "openai", APIKey: "test-key-1", Model: "gpt-4", Enabled: true},
+					{Name: "anthropic", APIKey: "test-key-2", Model: "claude-3-5-sonnet-20241022", Enabled: true},
+				},
+			},
+			wantErr:   false,
+			wantCount: 2,
+			wantNames: []string{"openai", "anthropic"},
+		},
+		{
+			name: "disabled provider ignored",
+			config: &Config{
+				Providers: []struct {
+					Name    string `yaml:"name"`
+					APIKey  string `yaml:"api_key"`
+					Model   string `yaml:"model"`
+					Enabled bool   `yaml:"enabled"`
+				}{
+					{Name: "openai", APIKey: "test-key", Model: "gpt-4", Enabled: true},
+					{Name: "google", APIKey: "test-key-2", Model: "gemini-1.5-flash", Enabled: false},
+				},
+			},
+			wantErr:   false,
+			wantCount: 1,
+			wantNames: []string{"openai"},
+		},
+		{
+			name: "no enabled providers",
+			config: &Config{
+				Providers: []struct {
+					Name    string `yaml:"name"`
+					APIKey  string `yaml:"api_key"`
+					Model   string `yaml:"model"`
+					Enabled bool   `yaml:"enabled"`
+				}{
+					{Name: "openai", APIKey: "test-key", Model: "gpt-4", Enabled: false},
+				},
+			},
+			wantErr:     true,
+			errContains: "no enabled providers",
+		},
+		{
+			name: "empty API key skipped",
+			config: &Config{
+				Providers: []struct {
+					Name    string `yaml:"name"`
+					APIKey  string `yaml:"api_key"`
+					Model   string `yaml:"model"`
+					Enabled bool   `yaml:"enabled"`
+				}{
+					{Name: "openai", APIKey: "", Model: "gpt-4", Enabled: true},
+					{Name: "anthropic", APIKey: "test-key", Model: "claude-3-5-sonnet-20241022", Enabled: true},
+				},
+			},
+			wantErr:   false,
+			wantCount: 1,
+			wantNames: []string{"anthropic"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set environment variables if needed
+			for k, v := range tt.envVars {
+				os.Setenv(k, v)
+				defer os.Unsetenv(k)
+			}
+
+			providers, providerNames, err := createProviders(tt.config)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("createProviders() expected error containing %q, got nil", tt.errContains)
+				} else if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+					t.Errorf("createProviders() error = %q, want to contain %q", err.Error(), tt.errContains)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("createProviders() unexpected error: %v", err)
+				return
+			}
+
+			if len(providers) != tt.wantCount {
+				t.Errorf("createProviders() returned %d providers, want %d", len(providers), tt.wantCount)
+			}
+
+			if len(providerNames) != tt.wantCount {
+				t.Errorf("createProviders() returned %d provider names, want %d", len(providerNames), tt.wantCount)
+			}
+
+			// Verify provider names from the workflow interface
+			for i, name := range tt.wantNames {
+				if i >= len(providers) {
+					t.Errorf("missing provider at index %d (expected %s)", i, name)
+					continue
+				}
+				if providers[i].Name() != name {
+					t.Errorf("provider[%d].Name() = %q, want %q", i, providers[i].Name(), name)
+				}
+			}
+		})
+	}
+}
+
+// contains checks if a string contains a substring.
+func contains(s, substr string) bool {
+	return strings.Contains(s, substr)
 }
