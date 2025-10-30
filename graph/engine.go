@@ -846,7 +846,7 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 
 	// Track step counter and collected deltas
 	var stepCounter atomic.Int32
-	var collectedResults []nodeResult[S]
+	collectedResults := make([]nodeResult[S], 0, e.opts.MaxSteps)
 
 	// Determine number of worker goroutines (up to MaxConcurrentNodes)
 	const defaultMaxWorkers = 8
@@ -1379,7 +1379,7 @@ func (e *Engine[S]) executeParallel(ctx context.Context, branches []string, stat
 	close(results)
 
 	// Collect all results
-	var branchResults []branchResult
+	branchResults := make([]branchResult, 0, len(branches))
 	for result := range results {
 		branchResults = append(branchResults, result)
 	}
@@ -2083,7 +2083,7 @@ func (e *Engine[S]) runConcurrentFromCheckpoint(ctx context.Context, runID strin
 	// Track step counter starting from checkpoint
 	var stepCounter atomic.Int32
 	stepCounter.Store(int32(startStepID)) // #nosec G115 -- startStepID is bounded by MaxSteps (default 100)
-	var collectedResults []nodeResult[S]
+	collectedResults := make([]nodeResult[S], 0, e.opts.MaxSteps)
 
 	// Spawn worker goroutines
 	maxWorkers := e.opts.MaxConcurrentNodes

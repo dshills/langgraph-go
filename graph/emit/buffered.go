@@ -183,7 +183,7 @@ func (b *BufferedEmitter) GetHistoryWithFilter(runID string, filter HistoryFilte
 	}
 
 	// Apply filters.
-	var result []Event
+	result := make([]Event, 0, len(events))
 	for _, event := range events {
 		if !b.matchesFilter(event, filter) {
 			continue
