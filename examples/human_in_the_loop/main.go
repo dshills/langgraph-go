@@ -93,28 +93,28 @@ func ApprovalGateNode(_ context.Context, s ApprovalState) graph.NodeResult[Appro
 		return graph.NodeResult[ApprovalState]{
 			Route: graph.Goto("finalize"),
 		}
-	} else {
-		fmt.Printf("\n❌ Rejected by human reviewer\n")
-		if s.ApprovalComment != "" {
-			fmt.Printf("Reason: %s\n", s.ApprovalComment)
-		}
+	}
 
-		// Check if we should retry.
-		if s.Attempts < 3 {
-			fmt.Printf("Regenerating output (attempt %d/3)...\n", s.Attempts+1)
-			// Reset approval state and regenerate.
-			return graph.NodeResult[ApprovalState]{
-				Delta: ApprovalState{
-					Approved: nil, // Reset approval status
-				},
-				Route: graph.Goto("generate"),
-			}
-		} else {
-			fmt.Printf("Max attempts reached. Workflow cancelled.\n")
-			return graph.NodeResult[ApprovalState]{
-				Route: graph.Stop(),
-			}
+	fmt.Printf("\n❌ Rejected by human reviewer\n")
+	if s.ApprovalComment != "" {
+		fmt.Printf("Reason: %s\n", s.ApprovalComment)
+	}
+
+	// Check if we should retry.
+	if s.Attempts < 3 {
+		fmt.Printf("Regenerating output (attempt %d/3)...\n", s.Attempts+1)
+		// Reset approval state and regenerate.
+		return graph.NodeResult[ApprovalState]{
+			Delta: ApprovalState{
+				Approved: nil, // Reset approval status
+			},
+			Route: graph.Goto("generate"),
 		}
+	}
+
+	fmt.Printf("Max attempts reached. Workflow cancelled.\n")
+	return graph.NodeResult[ApprovalState]{
+		Route: graph.Stop(),
 	}
 }
 

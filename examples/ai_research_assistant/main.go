@@ -132,9 +132,9 @@ func researchReducer(prev, delta ResearchState) ResearchState {
 	return prev
 }
 
-//==============================================================================
+// ==============================================================================
 // Node Implementations
-//==============================================================================
+// ==============================================================================
 
 // GPTAnalysisNode uses GPT-4 to provide initial analysis of the research topic.
 // Demonstrates: LLM integration, retry policies, recordable I/O for replay.
@@ -718,9 +718,9 @@ This report was generated using LangGraph-Go's concurrent execution engine:
 	}
 }
 
-//==============================================================================
+// ==============================================================================
 // Helper Functions
-//==============================================================================
+// ==============================================================================
 
 func formatList(items []string, prefix string) string {
 	if len(items) == 0 {
@@ -771,9 +771,9 @@ func formatPapers(papers []Paper) string {
 	return result.String()
 }
 
-//==============================================================================
+// ==============================================================================
 // Main Application
-//==============================================================================
+// ==============================================================================
 
 // initModels creates LLM models from environment variables if available.
 // Returns nil for any model where the API key is not set.

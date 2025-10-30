@@ -91,7 +91,8 @@ func main() {
 
 	// 6. Add nodes to engine.
 	if err := engine.Add("start", startNode); err != nil {
-		log.Fatalf("Failed to add start node: %v", err)
+		log.Printf("Failed to add start node: %v", err)
+		return
 	}
 	if err := engine.Add("process", processNode); err != nil {
 		log.Fatalf("Failed to add process node: %v", err)
