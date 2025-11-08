@@ -1144,3 +1144,299 @@ func TestCompletionDetectionStress(t *testing.T) {
 		t.Errorf("CRITICAL: %d delayed terminations detected (polling inefficiency)", delayed)
 	}
 }
+
+// ============================================================================
+// Test Helpers for Concurrent Workflow Execution (T004-T006)
+// ============================================================================
+
+// ConcurrentWorkflowResult captures the results and timing from a concurrent workflow execution.
+type ConcurrentWorkflowResult struct {
+	FinalState    TestState
+	Err           error
+	Duration      time.Duration
+	NodesExecuted int
+	StartTime     time.Time
+	EndTime       time.Time
+}
+
+// ConcurrentWorkflowConfig configures a concurrent workflow execution test.
+type ConcurrentWorkflowConfig struct {
+	// NumWorkers sets MaxConcurrentNodes (0 for sequential execution)
+	NumWorkers int
+
+	// NumNodes is the total number of nodes to execute in the workflow
+	NumNodes int
+
+	// NodeFunc is the function to execute for each node (if nil, uses a simple counter node)
+	NodeFunc func(ctx context.Context, state TestState) NodeResult[TestState]
+
+	// Reducer merges state updates (if nil, uses a simple counter reducer)
+	Reducer func(prev, delta TestState) TestState
+
+	// InitialState is the starting state for the workflow
+	InitialState TestState
+
+	// RunID is the unique identifier for this workflow execution
+	RunID string
+
+	// Timeout is the maximum duration to wait for workflow completion
+	Timeout time.Duration
+
+	// FanOutPattern determines how nodes are connected (true = fan-out from start, false = sequential chain)
+	FanOutPattern bool
+}
+
+// runConcurrentWorkflow executes a workflow with N concurrent workers and returns
+// detailed results including timing information.
+//
+// This helper function is designed to be reusable across multiple test scenarios:
+// - Validates concurrent execution with configurable worker counts
+// - Collects timing and execution statistics
+// - Supports custom node functions and reducers
+// - Handles both fan-out and sequential workflow patterns
+//
+// Example usage:
+//
+//	config := ConcurrentWorkflowConfig{
+//	    NumWorkers: 10,
+//	    NumNodes: 50,
+//	    RunID: "test-run-001",
+//	    Timeout: 5 * time.Second,
+//	}
+//	result := runConcurrentWorkflow(t, config)
+//	if result.Err != nil {
+//	    t.Fatalf("Workflow failed: %v", result.Err)
+//	}
+//	t.Logf("Executed %d nodes in %v", result.NodesExecuted, result.Duration)
+func runConcurrentWorkflow(t *testing.T, config ConcurrentWorkflowConfig) ConcurrentWorkflowResult {
+	t.Helper()
+
+	// Apply defaults
+	if config.Timeout == 0 {
+		config.Timeout = 10 * time.Second
+	}
+	if config.RunID == "" {
+		config.RunID = fmt.Sprintf("concurrent-test-%d", time.Now().UnixNano())
+	}
+
+	// Use default reducer if not provided
+	reducer := config.Reducer
+	if reducer == nil {
+		reducer = func(prev, delta TestState) TestState {
+			// Create new state to avoid in-place mutation
+			newState := prev
+			newState.Counter += delta.Counter
+			if delta.Value != "" {
+				newState.Value = delta.Value
+			}
+			return newState
+		}
+	}
+
+	// Track execution count
+	var executionCount atomic.Int32
+
+	// Use default node function if not provided
+	nodeFunc := config.NodeFunc
+	if nodeFunc == nil {
+		nodeFunc = func(_ context.Context, state TestState) NodeResult[TestState] {
+			executionCount.Add(1)
+			return NodeResult[TestState]{
+				Delta: TestState{Counter: 1},
+				Route: Stop(),
+			}
+		}
+	}
+
+	// Create engine with specified concurrency
+	st := store.NewMemStore[TestState]()
+	emitter := emit.NewBufferedEmitter()
+	opts := Options{
+		MaxSteps:           config.NumNodes * 10, // Allow enough steps for the workflow with safety margin
+		MaxConcurrentNodes: config.NumWorkers,
+	}
+	engine := New(reducer, st, emitter, opts)
+
+	// Add worker nodes
+	for i := 0; i < config.NumNodes; i++ {
+		nodeID := fmt.Sprintf("node_%d", i)
+
+		// For sequential pattern, wrap the node function to handle chaining
+		if !config.FanOutPattern {
+			idx := i // Capture index for closure
+			wrappedFunc := func(ctx context.Context, state TestState) NodeResult[TestState] {
+				// Execute the user's node function
+				result := nodeFunc(ctx, state)
+
+				// Override the route to chain to next node (or stop if last)
+				if idx < config.NumNodes-1 {
+					result.Route = Goto(fmt.Sprintf("node_%d", idx+1))
+				} else {
+					result.Route = Stop()
+				}
+
+				return result
+			}
+			if err := engine.Add(nodeID, NodeFunc[TestState](wrappedFunc)); err != nil {
+				t.Fatalf("Failed to add node %s: %v", nodeID, err)
+			}
+		} else {
+			// Fan-out pattern: nodes route themselves (use original nodeFunc)
+			if err := engine.Add(nodeID, NodeFunc[TestState](nodeFunc)); err != nil {
+				t.Fatalf("Failed to add node %s: %v", nodeID, err)
+			}
+		}
+	}
+
+	// Create start node based on pattern
+	var startNode Node[TestState]
+	if config.FanOutPattern {
+		// Fan-out: start node triggers all worker nodes concurrently
+		startNode = NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
+			nextNodes := make([]string, config.NumNodes)
+			for i := 0; i < config.NumNodes; i++ {
+				nextNodes[i] = fmt.Sprintf("node_%d", i)
+			}
+			return NodeResult[TestState]{
+				Route: Next{Many: nextNodes},
+			}
+		})
+	} else {
+		// Sequential: start node routes to first node in chain
+		startNode = NodeFunc[TestState](func(_ context.Context, _ TestState) NodeResult[TestState] {
+			return NodeResult[TestState]{
+				Route: Goto("node_0"),
+			}
+		})
+	}
+
+	if err := engine.Add("start", startNode); err != nil {
+		t.Fatalf("Failed to add start node: %v", err)
+	}
+	if err := engine.StartAt("start"); err != nil {
+		t.Fatalf("Failed to set start node: %v", err)
+	}
+
+	// Execute workflow with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
+	defer cancel()
+
+	startTime := time.Now()
+	finalState, err := engine.Run(ctx, config.RunID, config.InitialState)
+	endTime := time.Now()
+
+	return ConcurrentWorkflowResult{
+		FinalState:    finalState,
+		Err:           err,
+		Duration:      endTime.Sub(startTime),
+		NodesExecuted: int(executionCount.Load()),
+		StartTime:     startTime,
+		EndTime:       endTime,
+	}
+}
+
+// DeterminismValidationResult captures the results of determinism validation across multiple runs.
+type DeterminismValidationResult struct {
+	// TotalRuns is the number of times the workflow was executed
+	TotalRuns int
+
+	// AllIdentical indicates whether all runs produced byte-identical outputs
+	AllIdentical bool
+
+	// StateHashes contains the hash of the final state from each run
+	StateHashes []string
+
+	// FirstDivergence is the index of the first run that differed (0-based), or -1 if all identical
+	FirstDivergence int
+
+	// DifferentHashes maps unique hashes to the list of run indices that produced them
+	DifferentHashes map[string][]int
+}
+
+// validateDeterminism runs a workflow N times with identical inputs and verifies
+// that all executions produce byte-for-byte identical final states.
+//
+// This helper detects non-deterministic behavior by comparing state hashes across runs.
+// It returns detailed information about any divergence, including:
+// - Which runs produced different outputs
+// - Hash values for debugging
+// - Index of first divergent run
+//
+// Example usage:
+//
+//	config := ConcurrentWorkflowConfig{
+//	    NumWorkers: 0, // Sequential for determinism testing
+//	    NumNodes: 10,
+//	    RunID: "determinism-test",
+//	}
+//	result := validateDeterminism(t, config, 100)
+//	if !result.AllIdentical {
+//	    t.Errorf("Non-deterministic behavior detected at run %d", result.FirstDivergence)
+//	    for hash, runs := range result.DifferentHashes {
+//	        t.Logf("Hash %s produced by runs: %v", hash, runs)
+//	    }
+//	}
+func validateDeterminism(t *testing.T, config ConcurrentWorkflowConfig, numRuns int) DeterminismValidationResult {
+	t.Helper()
+
+	if numRuns < 2 {
+		t.Fatal("validateDeterminism requires at least 2 runs for comparison")
+	}
+
+	result := DeterminismValidationResult{
+		TotalRuns:       numRuns,
+		StateHashes:     make([]string, numRuns),
+		FirstDivergence: -1,
+		DifferentHashes: make(map[string][]int),
+	}
+
+	// Run workflow multiple times with the same runID (for determinism)
+	// Set a fixed RunID before the loop to ensure all runs use the same RNG seed
+	config.RunID = "determinism-validation-run"
+	for i := 0; i < numRuns; i++ {
+		// Use the same runID for all runs to ensure identical RNG seeds
+		workflowResult := runConcurrentWorkflow(t, config)
+
+		if workflowResult.Err != nil {
+			t.Fatalf("Run %d failed: %v", i, workflowResult.Err)
+		}
+
+		// Compute hash of final state
+		stateJSON, err := json.Marshal(workflowResult.FinalState)
+		if err != nil {
+			t.Fatalf("Run %d: failed to marshal state: %v", i, err)
+		}
+		hash := sha256.Sum256(stateJSON)
+		hashStr := hex.EncodeToString(hash[:])
+
+		result.StateHashes[i] = hashStr
+
+		// Track which runs produced which hashes
+		result.DifferentHashes[hashStr] = append(result.DifferentHashes[hashStr], i)
+	}
+
+	// Check if all hashes are identical
+	firstHash := result.StateHashes[0]
+	result.AllIdentical = true
+
+	for i := 1; i < numRuns; i++ {
+		if result.StateHashes[i] != firstHash {
+			result.AllIdentical = false
+			if result.FirstDivergence == -1 {
+				result.FirstDivergence = i
+			}
+		}
+	}
+
+	// Log summary
+	if result.AllIdentical {
+		t.Logf("Determinism validated: %d runs produced identical state (hash: %s)", numRuns, firstHash)
+	} else {
+		t.Logf("Non-determinism detected: %d unique outputs from %d runs", len(result.DifferentHashes), numRuns)
+		for hash, runs := range result.DifferentHashes {
+			t.Logf("  Hash %s: runs %v (%d times)", hash[:16]+"...", runs, len(runs))
+		}
+	}
+
+	return result
+}
