@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>tool - Go Documentation Server</title>
+
+<link type="text/css" rel="stylesheet" href="/lib/godoc/style.css">
+
+<script>window.initFuncs = [];</script>
+<script src="/lib/godoc/jquery.js" defer></script>
+
+
+
+<script>var goVersion = "go1.25.4";</script>
+<script src="/lib/godoc/godocs.js" defer></script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="/pkg/">Go Documentation Server</a></div>
+<div class="top-heading" id="heading-narrow"><a href="/pkg/">GoDoc</a></div>
+<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="/search">
+<div id="menu">
+
+<span class="search-box"><input type="search" id="search" name="q" placeholder="Search" aria-label="Search" required><button type="submit"><span><!-- magnifying glass: --><svg width="24" height="24" viewBox="0 0 24 24"><title>submit search</title><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M0 0h24v24H0z" fill="none"/></svg></span></button></span>
+</div>
+</form>
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package tool
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/dshills/langgraph-go/graph/tool"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package tool provides tool interfaces for graph nodes.
+
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#HTTPTool">type HTTPTool</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewHTTPTool">func NewHTTPTool() *HTTPTool</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#HTTPTool.Call">func (h *HTTPTool) Call(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#HTTPTool.Name">func (h *HTTPTool) Name() string</a></dd>
+				
+			
+				
+				<dd><a href="#MockTool">type MockTool</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MockTool.Call">func (m *MockTool) Call(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MockTool.CallCount">func (m *MockTool) CallCount() int</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MockTool.Name">func (m *MockTool) Name() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MockTool.Reset">func (m *MockTool) Reset()</a></dd>
+				
+			
+				
+				<dd><a href="#MockToolCall">type MockToolCall</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Tool">type Tool</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/tool/http.go">http.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/tool/mock.go">mock.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/tool/tool.go">tool.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="HTTPTool">type <a href="/src/github.com/dshills/langgraph-go/graph/tool/http.go?s=1189:1234#L38">HTTPTool</a>
+				<a class="permalink" href="#HTTPTool">&#xb6;</a>
+				
+				
+			</h2>
+			<p>HTTPTool is a tool for making HTTP requests.
+<p>It supports GET and POST methods and returns the HTTP response including
+status code, headers, and body. Useful for LLM agents that need to:
+<ul>
+<li>Fetch data from REST APIs
+<li>Send data to webhooks
+<li>Scrape web pages
+<li>Interact with external services
+</ul>
+<p>Input Parameters:
+<ul>
+<li>method: HTTP method (&quot;GET&quot; or &quot;POST&quot;, defaults to &quot;GET&quot;)
+<li>url: Target URL (required)
+<li>headers: Optional map of HTTP headers
+<li>body: Optional request body (for POST requests)
+</ul>
+<p>Output:
+<ul>
+<li>status_code: HTTP status code (e.g., 200, 404)
+<li>headers: Response headers as map
+<li>body: Response body as string
+</ul>
+<p>Example usage:
+<pre>tool := NewHTTPTool()
+result, err := tool.Call(ctx, map[string]interface{}{
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;url&quot;: &quot;https://api.example.com/data&quot;,
+    &quot;headers&quot;: map[string]interface{}{
+        &quot;Authorization&quot;: &quot;Bearer token&quot;,
+    },
+})
+fmt.Printf(&quot;Status: %d, Body: %s\n&quot;, result[&quot;status_code&quot;], result[&quot;body&quot;])
+</pre>
+
+			<pre>type HTTPTool struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewHTTPTool">func <a href="/src/github.com/dshills/langgraph-go/graph/tool/http.go?s=1298:1326#L43">NewHTTPTool</a>
+					<a class="permalink" href="#NewHTTPTool">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewHTTPTool() *<a href="#HTTPTool">HTTPTool</a></pre>
+				<p>NewHTTPTool creates a new HTTP tool with default settings.
+
+				
+				
+			
+
+			
+				
+				<h3 id="HTTPTool.Call">func (*HTTPTool) <a href="/src/github.com/dshills/langgraph-go/graph/tool/http.go?s=1578:1684#L57">Call</a>
+					<a class="permalink" href="#HTTPTool.Call">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="#HTTPTool">HTTPTool</a>) Call(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, input map[<a href="/pkg/builtin/#string">string</a>]interface{}) (map[<a href="/pkg/builtin/#string">string</a>]interface{}, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>Call executes an HTTP request with the provided parameters.
+
+				
+				
+				
+			
+				
+				<h3 id="HTTPTool.Name">func (*HTTPTool) <a href="/src/github.com/dshills/langgraph-go/graph/tool/http.go?s=1454:1486#L52">Name</a>
+					<a class="permalink" href="#HTTPTool.Name">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="#HTTPTool">HTTPTool</a>) Name() <a href="/pkg/builtin/#string">string</a></pre>
+				<p>Name returns the tool identifier.
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="MockTool">type <a href="/src/github.com/dshills/langgraph-go/graph/tool/mock.go?s=875:1877#L27">MockTool</a>
+				<a class="permalink" href="#MockTool">&#xb6;</a>
+				
+				
+			</h2>
+			<p>MockTool is a test implementation of Tool.
+<p>Use MockTool in tests to verify workflow behavior without
+executing actual tool logic. It provides:
+<ul>
+<li>Configurable tool name
+<li>Configurable response sequences
+<li>Call history tracking
+<li>Error injection
+<li>Thread-safe operation
+</ul>
+<p>Example usage:
+<pre>mock := &amp;MockTool{
+    ToolName: &quot;search_web&quot;,
+    Responses: []map[string]interface{}{
+        {&quot;results&quot;: []string{&quot;result1&quot;, &quot;result2&quot;}},
+    },
+}
+output, err := mock.Call(ctx, map[string]interface{}{&quot;query&quot;: &quot;test&quot;})
+// Returns {&quot;results&quot;: [&quot;result1&quot;, &quot;result2&quot;]}
+</pre>
+<p>Example with error injection:
+<pre>mock := &amp;MockTool{
+    ToolName: &quot;api_call&quot;,
+    Err:      errors.New(&quot;API timeout&quot;),
+}
+_, err := mock.Call(ctx, input)
+// Returns the configured error
+</pre>
+
+			<pre>type MockTool struct {
+<span id="MockTool.ToolName"></span>    <span class="comment">// ToolName is the identifier returned by Name().</span>
+    <span class="comment">// Must be set for the mock to function properly.</span>
+    ToolName <a href="/pkg/builtin/#string">string</a>
+
+<span id="MockTool.Responses"></span>    <span class="comment">// Responses contains the sequence of outputs to return.</span>
+    <span class="comment">// Each call to Call() returns the next response in order.</span>
+    <span class="comment">// If all responses are consumed, the last response repeats.</span>
+    Responses []map[<a href="/pkg/builtin/#string">string</a>]interface{}
+
+<span id="MockTool.Err"></span>    <span class="comment">// Err, if set, will be returned by Call() instead of a response.</span>
+    Err <a href="/pkg/builtin/#error">error</a>
+
+<span id="MockTool.Calls"></span>    <span class="comment">// Calls tracks the history of all Call() invocations.</span>
+    <span class="comment">// Useful for verifying that tools were called with expected inputs.</span>
+    <span class="comment">// Each recorded input is a defensive copy, preventing external mutations</span>
+    <span class="comment">// from affecting test assertions on call history.</span>
+    Calls []<a href="#MockToolCall">MockToolCall</a>
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockTool.Call">func (*MockTool) <a href="/src/github.com/dshills/langgraph-go/graph/tool/mock.go?s=2321:2427#L71">Call</a>
+					<a class="permalink" href="#MockTool.Call">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockTool">MockTool</a>) Call(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, input map[<a href="/pkg/builtin/#string">string</a>]interface{}) (map[<a href="/pkg/builtin/#string">string</a>]interface{}, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>Call implements the Tool interface.
+<p>Returns:
+<ul>
+<li>The next response from Responses (or repeats the last response)
+<li>Or Err if configured
+</ul>
+<p>Always records the call in Calls history regardless of success/failure.
+
+				
+				
+				
+			
+				
+				<h3 id="MockTool.CallCount">func (*MockTool) <a href="/src/github.com/dshills/langgraph-go/graph/tool/mock.go?s=3960:3994#L138">CallCount</a>
+					<a class="permalink" href="#MockTool.CallCount">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockTool">MockTool</a>) CallCount() <a href="/pkg/builtin/#int">int</a></pre>
+				<p>CallCount returns the number of times Call() has been called.
+<p>Thread-safe convenience method:
+<pre>if mock.CallCount() != 2 {
+    t.Errorf(&quot;expected 2 calls, got %d&quot;, mock.CallCount())
+}
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="MockTool.Name">func (*MockTool) <a href="/src/github.com/dshills/langgraph-go/graph/tool/mock.go?s=2033:2065#L60">Name</a>
+					<a class="permalink" href="#MockTool.Name">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockTool">MockTool</a>) Name() <a href="/pkg/builtin/#string">string</a></pre>
+				<p>Name implements the Tool interface.
+
+				
+				
+				
+			
+				
+				<h3 id="MockTool.Reset">func (*MockTool) <a href="/src/github.com/dshills/langgraph-go/graph/tool/mock.go?s=3658:3684#L123">Reset</a>
+					<a class="permalink" href="#MockTool.Reset">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockTool">MockTool</a>) Reset()</pre>
+				<p>Reset clears the call history and resets the response index.
+<p>Useful when reusing the same mock across multiple test cases:
+<pre>mock := &amp;MockTool{ToolName: &quot;test&quot;, Responses: []map[string]interface{}{{&quot;ok&quot;: true}}}
+// ... run test 1 ...
+mock.Reset()
+// ... run test 2 with clean state ...
+</pre>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="MockToolCall">type <a href="/src/github.com/dshills/langgraph-go/graph/tool/mock.go?s=1934:1992#L55">MockToolCall</a>
+				<a class="permalink" href="#MockToolCall">&#xb6;</a>
+				
+				
+			</h2>
+			<p>MockToolCall records a single invocation of Call().
+
+			<pre>type MockToolCall struct {
+<span id="MockToolCall.Input"></span>    Input map[<a href="/pkg/builtin/#string">string</a>]interface{}
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Tool">type <a href="/src/github.com/dshills/langgraph-go/graph/tool/tool.go?s=1509:2704#L49">Tool</a>
+				<a class="permalink" href="#Tool">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Tool defines the interface for executable tools that LLMs can invoke.
+<p>Tools enable LLMs to interact with external systems and perform actions:
+- Web searches.
+- Database queries.
+- API calls.
+- File operations.
+- Calculations.
+- Code execution.
+<p>Implementations should:
+- Validate input parameters.
+- Respect context cancellation and timeouts.
+- Return structured output as map[string]interface{}.
+- Handle errors gracefully with clear error messages.
+- Be idempotent when possible.
+<p>Example implementation:
+<p>type WeatherTool struct{}.
+<p>func (w *WeatherTool) Name() string {.
+return &quot;get_weather&quot;.
+}.
+<p>func (w *WeatherTool) Call(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {.
+location, ok := input[&quot;location&quot;].(string).
+if !ok {.
+return nil, errors.New(&quot;location parameter required&quot;).
+}.
+<pre>// Fetch weather data...
+</pre>
+<p>temp := 72.5.
+<p>return map[string]interface{}{.
+<pre>	        &quot;temperature&quot;: temp,
+	        &quot;conditions&quot;:  &quot;sunny&quot;,
+	        &quot;location&quot;:    location,
+}, nil.
+</pre>
+<p>}.
+<p>Example usage in a workflow:
+<p>weatherTool := &amp;WeatherTool{}.
+input := map[string]interface{}{&quot;location&quot;: &quot;San Francisco&quot;}.
+output, err := weatherTool.Call(ctx, input).
+if err != nil {.
+log.Fatal(err).
+}.
+fmt.Printf(&quot;Temperature: %v\n&quot;, output[&quot;temperature&quot;]).
+
+			<pre>type Tool interface {
+    <span class="comment">// Name returns the unique identifier for this tool.</span>
+    <span class="comment">//</span>
+    <span class="comment">// The name must match the tool name in ToolSpec used by the LLM.</span>
+    <span class="comment">// Names should be lowercase with underscores, following function naming conventions.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Examples: &#34;search_web&#34;, &#34;get_weather&#34;, &#34;calculate&#34;, &#34;send_email&#34;.</span>
+    Name() <a href="/pkg/builtin/#string">string</a>
+
+    <span class="comment">// Call executes the tool with the provided input and returns the result.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - ctx: Context for cancellation, timeout, and metadata propagation.</span>
+    <span class="comment">// - input: Tool parameters as key-value pairs (may be nil for parameterless tools).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns:</span>
+    <span class="comment">// - map[string]interface{}: Tool execution result.</span>
+    <span class="comment">// - error: Execution errors, validation errors, or context cancellation.</span>
+    <span class="comment">//</span>
+    <span class="comment">// The input structure should match the Schema defined in the corresponding ToolSpec.</span>
+    <span class="comment">// The output can be any structured data that the LLM can process.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Implementations should:</span>
+    <span class="comment">// - Check ctx.Err() before expensive operations.</span>
+    <span class="comment">// - Validate required input parameters.</span>
+    <span class="comment">// - Return descriptive errors for invalid inputs.</span>
+    <span class="comment">// - Include relevant metadata in the output.</span>
+    Call(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, input map[<a href="/pkg/builtin/#string">string</a>]interface{}) (map[<a href="/pkg/builtin/#string">string</a>]interface{}, <a href="/pkg/builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.25.4.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="/LICENSE">BSD license</a>.<br>
+<a href="https://golang.org/doc/tos.html">Terms of Service</a> |
+<a href="https://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</body>
+</html>

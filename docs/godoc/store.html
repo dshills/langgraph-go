@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>store - Go Documentation Server</title>
+
+<link type="text/css" rel="stylesheet" href="/lib/godoc/style.css">
+
+<script>window.initFuncs = [];</script>
+<script src="/lib/godoc/jquery.js" defer></script>
+
+
+
+<script>var goVersion = "go1.25.4";</script>
+<script src="/lib/godoc/godocs.js" defer></script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="/pkg/">Go Documentation Server</a></div>
+<div class="top-heading" id="heading-narrow"><a href="/pkg/">GoDoc</a></div>
+<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="/search">
+<div id="menu">
+
+<span class="search-box"><input type="search" id="search" name="q" placeholder="Search" aria-label="Search" required><button type="submit"><span><!-- magnifying glass: --><svg width="24" height="24" viewBox="0 0 24 24"><title>submit search</title><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M0 0h24v24H0z" fill="none"/></svg></span></button></span>
+</div>
+</form>
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package store
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/dshills/langgraph-go/graph/store"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package store provides persistence implementations for graph state.
+
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+			
+				
+				<dd><a href="#Checkpoint">type Checkpoint</a></dd>
+				
+				
+			
+				
+				<dd><a href="#CheckpointV2">type CheckpointV2</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MemStore">type MemStore</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewMemStore">func NewMemStore[S any]() *MemStore[S]</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.CheckIdempotency">func (m *MemStore[S]) CheckIdempotency(_ context.Context, key string) (bool, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.LoadCheckpoint">func (m *MemStore[S]) LoadCheckpoint(_ context.Context, cpID string) (state S, step int, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.LoadCheckpointV2">func (m *MemStore[S]) LoadCheckpointV2(_ context.Context, runID string, stepID int) (CheckpointV2[S], error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.LoadLatest">func (m *MemStore[S]) LoadLatest(_ context.Context, runID string) (state S, step int, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.MarkEventsEmitted">func (m *MemStore[S]) MarkEventsEmitted(_ context.Context, eventIDs []string) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.MarshalJSON">func (m *MemStore[S]) MarshalJSON() ([]byte, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.PendingEvents">func (m *MemStore[S]) PendingEvents(_ context.Context, limit int) ([]emit.Event, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.SaveCheckpoint">func (m *MemStore[S]) SaveCheckpoint(_ context.Context, cpID string, state S, step int) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.SaveCheckpointV2">func (m *MemStore[S]) SaveCheckpointV2(_ context.Context, checkpoint CheckpointV2[S]) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.SaveStep">func (m *MemStore[S]) SaveStep(_ context.Context, runID string, step int, nodeID string, state S) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MemStore.UnmarshalJSON">func (m *MemStore[S]) UnmarshalJSON(data []byte) error</a></dd>
+				
+			
+				
+				<dd><a href="#MySQLStore">type MySQLStore</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewMySQLStore">func NewMySQLStore[S any](dsn string) (*MySQLStore[S], error)</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.CheckIdempotency">func (m *MySQLStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.Close">func (m *MySQLStore[S]) Close() error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.LoadCheckpoint">func (m *MySQLStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (state S, step int, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.LoadCheckpointV2">func (m *MySQLStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (CheckpointV2[S], error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.LoadLatest">func (m *MySQLStore[S]) LoadLatest(ctx context.Context, runID string) (state S, step int, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.MarkEventsEmitted">func (m *MySQLStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.PendingEvents">func (m *MySQLStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.Ping">func (m *MySQLStore[S]) Ping(ctx context.Context) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.SaveCheckpoint">func (m *MySQLStore[S]) SaveCheckpoint(ctx context.Context, cpID string, state S, step int) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.SaveCheckpointV2">func (m *MySQLStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint CheckpointV2[S]) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.SaveStep">func (m *MySQLStore[S]) SaveStep(ctx context.Context, runID string, step int, nodeID string, state S) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.SaveStepBatch">func (m *MySQLStore[S]) SaveStepBatch(ctx context.Context, _ string, _ interface{}) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.Stats">func (m *MySQLStore[S]) Stats() sql.DBStats</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MySQLStore.WithTransaction">func (m *MySQLStore[S]) WithTransaction(ctx context.Context, fn func(context.Context, *sql.Tx) error) error</a></dd>
+				
+			
+				
+				<dd><a href="#SQLiteStore">type SQLiteStore</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewSQLiteStore">func NewSQLiteStore[S any](path string) (*SQLiteStore[S], error)</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.CheckIdempotency">func (s *SQLiteStore[S]) CheckIdempotency(ctx context.Context, key string) (bool, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.Close">func (s *SQLiteStore[S]) Close() error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.LoadCheckpoint">func (s *SQLiteStore[S]) LoadCheckpoint(ctx context.Context, cpID string) (state S, step int, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.LoadCheckpointV2">func (s *SQLiteStore[S]) LoadCheckpointV2(ctx context.Context, runID string, stepID int) (CheckpointV2[S], error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.LoadLatest">func (s *SQLiteStore[S]) LoadLatest(ctx context.Context, runID string) (state S, step int, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.MarkEventsEmitted">func (s *SQLiteStore[S]) MarkEventsEmitted(ctx context.Context, eventIDs []string) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.Path">func (s *SQLiteStore[S]) Path() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.PendingEvents">func (s *SQLiteStore[S]) PendingEvents(ctx context.Context, limit int) ([]emit.Event, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.Ping">func (s *SQLiteStore[S]) Ping(ctx context.Context) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.SaveCheckpoint">func (s *SQLiteStore[S]) SaveCheckpoint(ctx context.Context, cpID string, state S, step int) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.SaveCheckpointV2">func (s *SQLiteStore[S]) SaveCheckpointV2(ctx context.Context, checkpoint CheckpointV2[S]) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SQLiteStore.SaveStep">func (s *SQLiteStore[S]) SaveStep(ctx context.Context, runID string, step int, nodeID string, state S) error</a></dd>
+				
+			
+				
+				<dd><a href="#StepRecord">type StepRecord</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Store">type Store</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go">memory.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go">mysql.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go">sqlite.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/store/store.go">store.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>ErrNotFound is returned when a requested run ID or checkpoint ID does not exist.
+
+				<pre>var <span id="ErrNotFound">ErrNotFound</span> = <a href="/pkg/errors/">errors</a>.<a href="/pkg/errors/#New">New</a>(&#34;not found&#34;)</pre>
+			
+		
+		
+		
+			
+			
+			<h2 id="Checkpoint">type <a href="/src/github.com/dshills/langgraph-go/graph/store/store.go?s=7469:7685#L176">Checkpoint</a>
+				<a class="permalink" href="#Checkpoint">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Checkpoint represents a named snapshot of workflow state.
+Used by Store implementations to persist and restore checkpoints.
+<p>Deprecated: Use CheckpointV2 for enhanced checkpointing features.
+This type is kept for backward compatibility with the original SaveCheckpoint/LoadCheckpoint methods.
+
+			<pre>type Checkpoint[S <a href="/pkg/builtin/#any">any</a>] struct {
+<span id="Checkpoint.ID"></span>    <span class="comment">// ID is the unique checkpoint identifier.</span>
+    ID <a href="/pkg/builtin/#string">string</a>
+
+<span id="Checkpoint.State"></span>    <span class="comment">// State is the snapshotted workflow state.</span>
+    State S
+
+<span id="Checkpoint.Step"></span>    <span class="comment">// Step is the step number when this checkpoint was created.</span>
+    Step <a href="/pkg/builtin/#int">int</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="CheckpointV2">type <a href="/src/github.com/dshills/langgraph-go/graph/store/store.go?s=8333:9993#L200">CheckpointV2</a>
+				<a class="permalink" href="#CheckpointV2">&#xb6;</a>
+				
+				
+			</h2>
+			<p>CheckpointV2 represents an enhanced checkpoint with full execution context for deterministic replay.
+<p>This type contains all information needed to resume execution from a specific point:
+- Current accumulated state.
+- Work items ready to execute (frontier).
+- Recorded I/O for replay.
+- RNG seed for deterministic random number generation.
+- Idempotency key for preventing duplicate commits.
+<p>CheckpointV2 supports both automatic resumption after failures and.
+user-initiated labeled snapshots for debugging or branching workflows.
+<p>This type is generic over the state type S, which must be JSON-serializable.
+
+			<pre>type CheckpointV2[S <a href="/pkg/builtin/#any">any</a>] struct {
+<span id="CheckpointV2.RunID"></span>    <span class="comment">// RunID uniquely identifies the execution this checkpoint belongs to.</span>
+    RunID <a href="/pkg/builtin/#string">string</a> `json:&#34;run_id&#34;`
+
+<span id="CheckpointV2.StepID"></span>    <span class="comment">// StepID is the execution step number at checkpoint time.</span>
+    <span class="comment">// Monotonically increasing within a run.</span>
+    StepID <a href="/pkg/builtin/#int">int</a> `json:&#34;step_id&#34;`
+
+<span id="CheckpointV2.State"></span>    <span class="comment">// State is the current accumulated state after applying all deltas up to StepID.</span>
+    <span class="comment">// Must be JSON-serializable for persistence.</span>
+    State S `json:&#34;state&#34;`
+
+<span id="CheckpointV2.Frontier"></span>    <span class="comment">// Frontier contains the work items ready to execute at this checkpoint.</span>
+    <span class="comment">// Must be JSON-serializable. Type is interface{} to avoid circular dependency.</span>
+    <span class="comment">// Expected to be []WorkItem[S] from graph package.</span>
+    Frontier interface{} `json:&#34;frontier&#34;`
+
+<span id="CheckpointV2.RNGSeed"></span>    <span class="comment">// RNGSeed is the seed for deterministic random number generation.</span>
+    <span class="comment">// Computed from RunID to ensure consistent random values across replays.</span>
+    RNGSeed <a href="/pkg/builtin/#int64">int64</a> `json:&#34;rng_seed&#34;`
+
+<span id="CheckpointV2.RecordedIOs"></span>    <span class="comment">// RecordedIOs contains all captured external interactions up to this checkpoint.</span>
+    <span class="comment">// Must be JSON-serializable. Type is interface{} to avoid circular dependency.</span>
+    <span class="comment">// Expected to be []RecordedIO from graph package.</span>
+    RecordedIOs interface{} `json:&#34;recorded_ios&#34;`
+
+<span id="CheckpointV2.IdempotencyKey"></span>    <span class="comment">// IdempotencyKey is a hash of (RunID, StepID, State, Frontier) that prevents.</span>
+    <span class="comment">// duplicate checkpoint commits. Format: &#34;sha256:hex_encoded_hash&#34;.</span>
+    IdempotencyKey <a href="/pkg/builtin/#string">string</a> `json:&#34;idempotency_key&#34;`
+
+<span id="CheckpointV2.Timestamp"></span>    <span class="comment">// Timestamp records when this checkpoint was created.</span>
+    Timestamp <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Time">Time</a> `json:&#34;timestamp&#34;`
+
+<span id="CheckpointV2.Label"></span>    <span class="comment">// Label is an optional user-defined name for this checkpoint, useful for.</span>
+    <span class="comment">// debugging or creating named save points (e.g., &#34;before_summary&#34;, &#34;after_validation&#34;).</span>
+    <span class="comment">// Empty string for automatic checkpoints.</span>
+    Label <a href="/pkg/builtin/#string">string</a> `json:&#34;label,omitempty&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="MemStore">type <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=752:1318#L20">MemStore</a>
+				<a class="permalink" href="#MemStore">&#xb6;</a>
+				
+				
+			</h2>
+			<p>MemStore is an in-memory implementation of Store[S].
+<p>It stores workflow state and checkpoints in memory using maps.
+Designed for:
+<ul>
+<li>Testing and development
+<li>Single-process workflows
+<li>Short-lived workflows where persistence isn&apos;t required
+</ul>
+<p>MemStore is thread-safe and supports concurrent access.
+<p>Limitations:
+<ul>
+<li>Data is lost when process terminates
+<li>Not suitable for distributed systems
+<li>Memory usage grows with workflow history
+</ul>
+<p>For production use with persistence, use database-backed stores (MySQL, PostgreSQL, Redis).
+<p>Type parameter S is the state type to persist.
+
+			<pre>type MemStore[S <a href="/pkg/builtin/#any">any</a>] struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMemStore">func <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=1473:1511#L37">NewMemStore</a>
+					<a class="permalink" href="#NewMemStore">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewMemStore[S <a href="/pkg/builtin/#any">any</a>]() *<a href="#MemStore">MemStore</a>[S]</pre>
+				<p>NewMemStore creates a new in-memory store.
+<p>Example:
+<pre>store := NewMemStore[MyState]()
+engine := graph.New(reducer, store, emitter, opts)
+</pre>
+
+				
+				
+			
+
+			
+				
+				<h3 id="MemStore.CheckIdempotency">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=9061:9144#L297">CheckIdempotency</a>
+					<a class="permalink" href="#MemStore.CheckIdempotency">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) CheckIdempotency(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, key <a href="/pkg/builtin/#string">string</a>) (<a href="/pkg/builtin/#bool">bool</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>CheckIdempotency verifies if an idempotency key has been used (T096).
+<p>Returns (true, nil) if the key exists (has been used).
+Returns (false, nil) if the key doesn&apos;t exist (safe to use).
+Only returns error on store access failure (never for this in-memory implementation).
+<p>Thread-safe for concurrent access.
+
+				
+				
+				
+			
+				
+				<h3 id="MemStore.LoadCheckpoint">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=3632:3731#L116">LoadCheckpoint</a>
+					<a class="permalink" href="#MemStore.LoadCheckpoint">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) LoadCheckpoint(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, cpID <a href="/pkg/builtin/#string">string</a>) (state S, step <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>LoadCheckpoint retrieves a named checkpoint (T042).
+<p>Returns ErrNotFound if the checkpoint ID doesn&apos;t exist.
+
+				
+				
+				
+			
+				
+				<h3 id="MemStore.LoadCheckpointV2">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=8398:8506#L276">LoadCheckpointV2</a>
+					<a class="permalink" href="#MemStore.LoadCheckpointV2">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) LoadCheckpointV2(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>, stepID <a href="/pkg/builtin/#int">int</a>) (<a href="#CheckpointV2">CheckpointV2</a>[S], <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>LoadCheckpointV2 retrieves an enhanced checkpoint by run ID and step ID (T095).
+<p>Returns ErrNotFound if the checkpoint doesn&apos;t exist.
+Thread-safe for concurrent reads.
+
+				
+				
+				
+			
+				
+				<h3 id="MemStore.LoadLatest">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=2482:2578#L71">LoadLatest</a>
+					<a class="permalink" href="#MemStore.LoadLatest">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) LoadLatest(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>) (state S, step <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>LoadLatest retrieves the most recent step for a run (T038).
+<p>Returns the step with the highest step number.
+This handles out-of-order step saves correctly.
+
+				
+				
+				
+			
+				
+				<h3 id="MemStore.MarkEventsEmitted">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=10250:10333#L335">MarkEventsEmitted</a>
+					<a class="permalink" href="#MemStore.MarkEventsEmitted">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) MarkEventsEmitted(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, eventIDs []<a href="/pkg/builtin/#string">string</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>MarkEventsEmitted marks events as successfully emitted to prevent re-delivery (T098).
+<p>Removes events from the pending queue by their IDs.
+Event IDs should be stored in the event&apos;s Meta map with key &quot;event_id&quot;.
+If an event ID is not found, it is silently ignored (idempotent operation).
+<p>Thread-safe for concurrent access.
+
+				
+				
+				
+			
+				
+				<h3 id="MemStore.MarshalJSON">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=5068:5119#L158">MarshalJSON</a>
+					<a class="permalink" href="#MemStore.MarshalJSON">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) MarshalJSON() ([]<a href="/pkg/builtin/#byte">byte</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>MarshalJSON serializes the MemStore to JSON (T072).
+<p>The resulting JSON can be saved to disk, transmitted over network, or used for debugging.
+All state values must be JSON-serializable.
+<p>Thread-safe: acquires read lock during serialization.
+<p>Example:
+<pre>store := NewMemStore[MyState]()
+// ... add steps and checkpoints ...
+data, err := store.MarshalJSON()
+if err != nil {
+    log.Fatal(err)
+}
+os.WriteFile(&quot;store.json&quot;, data, 0644)
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="MemStore.PendingEvents">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=9514:9601#L311">PendingEvents</a>
+					<a class="permalink" href="#MemStore.PendingEvents">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) PendingEvents(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, limit <a href="/pkg/builtin/#int">int</a>) ([]<a href="/pkg/github.com/dshills/langgraph-go/graph/emit/">emit</a>.<a href="/pkg/github.com/dshills/langgraph-go/graph/emit/#Event">Event</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>PendingEvents retrieves events from the transactional outbox that haven&apos;t been emitted (T097).
+<p>Returns up to &apos;limit&apos; pending events ordered by insertion order.
+Empty list is not an error - it means no events are pending.
+<p>Thread-safe for concurrent access.
+
+				
+				
+				
+			
+				
+				<h3 id="MemStore.SaveCheckpoint">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=3281:3374#L100">SaveCheckpoint</a>
+					<a class="permalink" href="#MemStore.SaveCheckpoint">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) SaveCheckpoint(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, cpID <a href="/pkg/builtin/#string">string</a>, state S, step <a href="/pkg/builtin/#int">int</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveCheckpoint creates a named checkpoint (T040).
+<p>Checkpoints can be used to:
+<ul>
+<li>Create branching workflows (save checkpoint, try different paths)
+<li>Mark significant milestones (after-validation, before-deploy)
+<li>Provide manual resumption points
+</ul>
+<p>If a checkpoint with the same ID exists, it is overwritten.
+
+				
+				
+				
+			
+				
+				<h3 id="MemStore.SaveCheckpointV2">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=7445:7536#L247">SaveCheckpointV2</a>
+					<a class="permalink" href="#MemStore.SaveCheckpointV2">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) SaveCheckpointV2(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, checkpoint <a href="#CheckpointV2">CheckpointV2</a>[S]) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveCheckpointV2 persists an enhanced checkpoint with full execution context (T094).
+<p>Stores checkpoint indexed by (runID, stepID) and optionally by label if provided.
+Returns error if the idempotency key already exists (duplicate commit prevention).
+<p>Thread-safe for concurrent access.
+
+				
+				
+				
+			
+				
+				<h3 id="MemStore.SaveStep">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=2029:2132#L53">SaveStep</a>
+					<a class="permalink" href="#MemStore.SaveStep">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) SaveStep(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>, step <a href="/pkg/builtin/#int">int</a>, nodeID <a href="/pkg/builtin/#string">string</a>, state S) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveStep persists a workflow execution step (T036).
+<p>Steps are appended to the run&apos;s history in the order they are saved.
+Thread-safe for concurrent writes.
+
+				
+				
+				
+			
+				
+				<h3 id="MemStore.UnmarshalJSON">func (*MemStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/memory.go?s=5938:5992#L190">UnmarshalJSON</a>
+					<a class="permalink" href="#MemStore.UnmarshalJSON">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MemStore">MemStore</a>[S]) UnmarshalJSON(data []<a href="/pkg/builtin/#byte">byte</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>UnmarshalJSON deserializes JSON data into the MemStore (T074).
+<p>Replaces the current contents of the MemStore with the deserialized data.
+All existing steps and checkpoints are discarded.
+<p>Thread-safe: acquires write lock during deserialization.
+<p>Example:
+<pre>data, _ := os.ReadFile(&quot;store.json&quot;)
+store := NewMemStore[MyState]()
+if err := store.UnmarshalJSON(data); err != nil {
+    log.Fatal(err)
+}
+// Store now contains data from JSON file
+</pre>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="MySQLStore">type <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=864:947#L22">MySQLStore</a>
+				<a class="permalink" href="#MySQLStore">&#xb6;</a>
+				
+				
+			</h2>
+			<p>MySQLStore is a MySQL/MariaDB implementation of Store[S].
+<p>It stores workflow state and checkpoints in a relational database.
+Designed for:
+<ul>
+<li>Production workflows requiring persistence
+<li>Distributed systems with multiple workers
+<li>Long-running workflows that survive process restarts
+<li>Audit trails and compliance requirements
+</ul>
+<p>MySQLStore uses connection pooling and transactions for reliability.
+<p>Schema:
+<ul>
+<li>workflow_steps: Step-by-step execution history
+<li>workflow_checkpoints: Named checkpoints for resumption
+</ul>
+<p>Type parameter S is the state type to persist (must be JSON-serializable).
+
+			<pre>type MySQLStore[S <a href="/pkg/builtin/#any">any</a>] struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMySQLStore">func <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=1922:1983#L61">NewMySQLStore</a>
+					<a class="permalink" href="#NewMySQLStore">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewMySQLStore[S <a href="/pkg/builtin/#any">any</a>](dsn <a href="/pkg/builtin/#string">string</a>) (*<a href="#MySQLStore">MySQLStore</a>[S], <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>NewMySQLStore creates a new MySQL-backed store.
+<p>The DSN (Data Source Name) format is:
+<pre>[username[:password]@][protocol[(address)]]/dbname[?param1=value1&amp;...&amp;paramN=valueN]
+</pre>
+<p>Example DSNs:
+<pre>user:password@tcp(localhost:3306)/workflows
+user:password@tcp(127.0.0.1:3306)/workflows?parseTime=true
+user:password@/workflows (uses localhost:3306)
+</pre>
+<p>Security Warning:
+<pre>NEVER hardcode credentials in your source code. Use environment variables:
+    dsn := os.Getenv(&quot;MYSQL_DSN&quot;)
+    if dsn == &quot;&quot; {
+        log.Fatal(&quot;MYSQL_DSN environment variable not set&quot;)
+    }
+    store, err := NewMySQLStore[State](dsn)
+</pre>
+<p>The store automatically:
+<ul>
+<li>Creates required tables if they don&apos;t exist
+<li>Configures connection pooling
+<li>Sets appropriate timeouts
+</ul>
+<p>Example:
+<pre>store, err := NewMySQLStore[MyState](&quot;user:pass@tcp(localhost:3306)/workflows&quot;)
+if err != nil {
+    log.Fatal(err)
+}
+defer store.Close()
+</pre>
+
+				
+				
+			
+
+			
+				
+				<h3 id="MySQLStore.CheckIdempotency">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=20066:20153#L699">CheckIdempotency</a>
+					<a class="permalink" href="#MySQLStore.CheckIdempotency">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) CheckIdempotency(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, key <a href="/pkg/builtin/#string">string</a>) (<a href="/pkg/builtin/#bool">bool</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>CheckIdempotency verifies if an idempotency key has been used.
+<p>Returns true if the key exists in the idempotency_keys table.
+Returns false if the key doesn&apos;t exist (safe to use).
+Returns error only on database access failures.
+<p>This uses a unique constraint on the key for race-safe duplicate detection.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.Close">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=10587:10624#L348">Close</a>
+					<a class="permalink" href="#MySQLStore.Close">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) Close() <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Close closes the database connection pool.
+<p>After Close, all operations will return an error.
+Calling Close multiple times is safe (subsequent calls are no-ops).
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.LoadCheckpoint">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=9631:9734#L309">LoadCheckpoint</a>
+					<a class="permalink" href="#MySQLStore.LoadCheckpoint">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) LoadCheckpoint(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, cpID <a href="/pkg/builtin/#string">string</a>) (state S, step <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>LoadCheckpoint retrieves a named checkpoint (implements Store interface).
+<p>Returns ErrNotFound if the checkpoint ID doesn&apos;t exist.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.LoadCheckpointV2">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=18143:18255#L629">LoadCheckpointV2</a>
+					<a class="permalink" href="#MySQLStore.LoadCheckpointV2">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) LoadCheckpointV2(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>, stepID <a href="/pkg/builtin/#int">int</a>) (<a href="#CheckpointV2">CheckpointV2</a>[S], <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>LoadCheckpointV2 retrieves an enhanced checkpoint by run ID and step ID.
+<p>This method can also load checkpoints by label if stepID is 0 and a label is stored.
+Returns ErrNotFound if no checkpoint exists for the given identifiers.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.LoadLatest">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=7707:7807#L231">LoadLatest</a>
+					<a class="permalink" href="#MySQLStore.LoadLatest">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) LoadLatest(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>) (state S, step <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>LoadLatest retrieves the most recent step for a run (implements Store interface).
+<p>Returns the step with the highest step number for the given runID.
+Returns ErrNotFound if no steps exist for the runID.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.MarkEventsEmitted">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=22041:22128#L777">MarkEventsEmitted</a>
+					<a class="permalink" href="#MySQLStore.MarkEventsEmitted">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) MarkEventsEmitted(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, eventIDs []<a href="/pkg/builtin/#string">string</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>MarkEventsEmitted marks events as successfully emitted to prevent re-delivery.
+<p>Updates the emitted_at timestamp for the specified event IDs.
+This ensures the events won&apos;t be returned by PendingEvents again.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.PendingEvents">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=20742:20833#L724">PendingEvents</a>
+					<a class="permalink" href="#MySQLStore.PendingEvents">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) PendingEvents(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, limit <a href="/pkg/builtin/#int">int</a>) ([]<a href="/pkg/github.com/dshills/langgraph-go/graph/emit/">emit</a>.<a href="/pkg/github.com/dshills/langgraph-go/graph/emit/#Event">Event</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>PendingEvents retrieves events from the outbox that haven&apos;t been emitted yet.
+<p>Returns events where emitted_at IS NULL, ordered by created_at.
+Limited to the specified number of events for batching.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.Ping">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=10897:10952#L363">Ping</a>
+					<a class="permalink" href="#MySQLStore.Ping">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) Ping(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Ping verifies the database connection is alive.
+<p>Useful for health checks and connection validation.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.SaveCheckpoint">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=8746:8843#L274">SaveCheckpoint</a>
+					<a class="permalink" href="#MySQLStore.SaveCheckpoint">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) SaveCheckpoint(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, cpID <a href="/pkg/builtin/#string">string</a>, state S, step <a href="/pkg/builtin/#int">int</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveCheckpoint creates a named checkpoint (implements Store interface).
+<p>Checkpoints are stored in the workflow_checkpoints table.
+If a checkpoint with the same ID exists, it is updated.
+<p>Thread-safe for concurrent writes.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.SaveCheckpointV2">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=15671:15766#L536">SaveCheckpointV2</a>
+					<a class="permalink" href="#MySQLStore.SaveCheckpointV2">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) SaveCheckpointV2(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, checkpoint <a href="#CheckpointV2">CheckpointV2</a>[S]) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveCheckpointV2 persists an enhanced checkpoint with full execution context.
+<p>This method saves a complete checkpoint including:
+<ul>
+<li>Current state after all deltas applied
+<li>Frontier of pending work items
+<li>Recorded I/O for deterministic replay
+<li>RNG seed for random value consistency
+<li>Idempotency key to prevent duplicate commits
+</ul>
+<p>The operation is performed in a transaction to ensure atomicity.
+If the idempotency key already exists, returns an error (prevents duplicate saves).
+<p>Thread-safe for concurrent writes.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.SaveStep">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=6769:6876#L196">SaveStep</a>
+					<a class="permalink" href="#MySQLStore.SaveStep">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) SaveStep(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>, step <a href="/pkg/builtin/#int">int</a>, nodeID <a href="/pkg/builtin/#string">string</a>, state S) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveStep persists a workflow execution step (implements Store interface).
+<p>Steps are stored in the workflow_steps table with the current state.
+If a step with the same runID and step number already exists, it is replaced.
+<p>Thread-safe for concurrent writes.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.SaveStepBatch">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=12093:12182#L407">SaveStepBatch</a>
+					<a class="permalink" href="#MySQLStore.SaveStepBatch">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) SaveStepBatch(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, _ <a href="/pkg/builtin/#string">string</a>, _ interface{}) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveStepBatch atomically saves multiple workflow steps in a transaction.
+<p>All steps are saved atomically - either all succeed or all are rolled back.
+This is useful for saving multiple parallel branch results or recovery scenarios.
+<p>If any step fails to save, the entire batch is rolled back and an error is returned.
+<p>Note: This is a low-level API. For most use cases, use SaveStep directly.
+The Engine handles batch operations via individual SaveStep calls within
+its own transaction management.
+<p>Example:
+<pre>type StepData struct {
+    Step   int
+    NodeID string
+    State  MyState
+}
+steps := []StepData{
+    {1, &quot;node-a&quot;, stateA},
+    {2, &quot;node-b&quot;, stateB},
+}
+err := store.SaveStepBatch(ctx, &quot;run-001&quot;, steps)
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.Stats">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=11209:11252#L377">Stats</a>
+					<a class="permalink" href="#MySQLStore.Stats">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) Stats() <a href="/pkg/database/sql/">sql</a>.<a href="/pkg/database/sql/#DBStats">DBStats</a></pre>
+				<p>Stats returns database connection pool statistics.
+<p>Useful for monitoring connection usage and pool health.
+
+				
+				
+				
+			
+				
+				<h3 id="MySQLStore.WithTransaction">func (*MySQLStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/mysql.go?s=14297:14404#L485">WithTransaction</a>
+					<a class="permalink" href="#MySQLStore.WithTransaction">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MySQLStore">MySQLStore</a>[S]) WithTransaction(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, fn func(<a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, *<a href="/pkg/database/sql/">sql</a>.<a href="/pkg/database/sql/#Tx">Tx</a>) <a href="/pkg/builtin/#error">error</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>WithTransaction executes a function within a database transaction.
+<p>If the function returns an error, the transaction is rolled back.
+Otherwise, the transaction is committed.
+<p>This is useful for atomic multi-operation workflows.
+<p>Example:
+<pre>err := store.WithTransaction(ctx, func(ctx context.Context, tx *sql.Tx) error {
+    // Perform multiple operations
+    if err := saveStepInTx(tx, ...); err != nil {
+        return err
+    }
+    if err := saveCheckpointInTx(tx, ...); err != nil {
+        return err
+    }
+    return nil
+})
+</pre>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="SQLiteStore">type <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=1167:1266#L31">SQLiteStore</a>
+				<a class="permalink" href="#SQLiteStore">&#xb6;</a>
+				
+				
+			</h2>
+			<p>SQLiteStore is a SQLite implementation of Store[S].
+<p>It stores workflow state and checkpoints in a single-file database.
+Designed for:
+<ul>
+<li>Development and testing with zero setup
+<li>Single-process workflows
+<li>Local workflows requiring persistence
+<li>Prototyping before migrating to distributed store
+</ul>
+<p>SQLiteStore uses WAL mode for concurrent reads and proper transactions.
+<p>Features:
+<ul>
+<li>Single file database (e.g., &quot;./dev.db&quot;)
+<li>Auto-migration on first use
+<li>WAL mode for concurrent reads
+<li>Transactional writes for safety
+</ul>
+<p>Schema:
+<ul>
+<li>workflow_steps: Step-by-step execution history
+<li>workflow_checkpoints: Named checkpoints for resumption
+<li>workflow_checkpoints_v2: Enhanced checkpoints with full context
+<li>idempotency_keys: Duplicate prevention
+<li>events_outbox: Transactional event delivery
+</ul>
+<p>Type parameter S is the state type to persist (must be JSON-serializable).
+
+			<pre>type SQLiteStore[S <a href="/pkg/builtin/#any">any</a>] struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewSQLiteStore">func <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=2207:2271#L71">NewSQLiteStore</a>
+					<a class="permalink" href="#NewSQLiteStore">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewSQLiteStore[S <a href="/pkg/builtin/#any">any</a>](path <a href="/pkg/builtin/#string">string</a>) (*<a href="#SQLiteStore">SQLiteStore</a>[S], <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>NewSQLiteStore creates a new SQLite-backed store.
+<p>The path parameter specifies the database file location:
+<ul>
+<li>&quot;./dev.db&quot; - file in current directory
+<li>&quot;/tmp/workflow.db&quot; - absolute path
+<li>&quot;:memory:&quot; - in-memory database (data lost on close)
+</ul>
+<p>The store automatically:
+<ul>
+<li>Creates the database file if it doesn&apos;t exist
+<li>Creates required tables
+<li>Enables WAL mode for concurrent reads
+<li>Configures appropriate timeouts
+</ul>
+<p>WAL Mode Benefits:
+<ul>
+<li>Multiple readers can access database concurrently
+<li>Writers don&apos;t block readers
+<li>Better concurrency for read-heavy workloads
+</ul>
+<p>Example:
+<pre>store, err := NewSQLiteStore[MyState](&quot;./dev.db&quot;)
+if err != nil {
+    log.Fatal(err)
+}
+defer store.Close()
+</pre>
+<p>For testing with in-memory database:
+<pre>store, err := NewSQLiteStore[MyState](&quot;:memory:&quot;)
+if err != nil {
+    log.Fatal(err)
+}
+defer store.Close()
+</pre>
+
+				
+				
+			
+
+			
+				
+				<h3 id="SQLiteStore.CheckIdempotency">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=17607:17695#L567">CheckIdempotency</a>
+					<a class="permalink" href="#SQLiteStore.CheckIdempotency">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) CheckIdempotency(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, key <a href="/pkg/builtin/#string">string</a>) (<a href="/pkg/builtin/#bool">bool</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>CheckIdempotency verifies if an idempotency key has been used.
+<p>Returns true if the key exists in the idempotency_keys table.
+Returns false if the key doesn&apos;t exist (safe to use).
+Returns error only on database access failures.
+<p>This uses a unique constraint on the key for race-safe duplicate detection.
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.Close">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=20600:20638#L687">Close</a>
+					<a class="permalink" href="#SQLiteStore.Close">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) Close() <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Close closes the database connection.
+<p>After Close, all operations will return an error.
+Calling Close multiple times is safe (subsequent calls are no-ops).
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.LoadCheckpoint">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=11524:11628#L350">LoadCheckpoint</a>
+					<a class="permalink" href="#SQLiteStore.LoadCheckpoint">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) LoadCheckpoint(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, cpID <a href="/pkg/builtin/#string">string</a>) (state S, step <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>LoadCheckpoint retrieves a named checkpoint (implements Store interface).
+<p>Returns ErrNotFound if the checkpoint ID doesn&apos;t exist.
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.LoadCheckpointV2">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=15429:15542#L489">LoadCheckpointV2</a>
+					<a class="permalink" href="#SQLiteStore.LoadCheckpointV2">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) LoadCheckpointV2(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>, stepID <a href="/pkg/builtin/#int">int</a>) (<a href="#CheckpointV2">CheckpointV2</a>[S], <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>LoadCheckpointV2 retrieves an enhanced checkpoint by run ID and step ID.
+<p>This method can also load checkpoints by label if stepID is 0 and a label is stored.
+Returns ErrNotFound if no checkpoint exists for the given identifiers.
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.LoadLatest">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=9563:9664#L272">LoadLatest</a>
+					<a class="permalink" href="#SQLiteStore.LoadLatest">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) LoadLatest(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>) (state S, step <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>LoadLatest retrieves the most recent step for a run (implements Store interface).
+<p>Returns the step with the highest step number for the given runID.
+Returns ErrNotFound if no steps exist for the runID.
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.MarkEventsEmitted">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=19592:19680#L645">MarkEventsEmitted</a>
+					<a class="permalink" href="#SQLiteStore.MarkEventsEmitted">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) MarkEventsEmitted(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, eventIDs []<a href="/pkg/builtin/#string">string</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>MarkEventsEmitted marks events as successfully emitted to prevent re-delivery.
+<p>Updates the emitted_at timestamp for the specified event IDs.
+This ensures the events won&apos;t be returned by PendingEvents again.
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.Path">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=21170:21208#L716">Path</a>
+					<a class="permalink" href="#SQLiteStore.Path">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) Path() <a href="/pkg/builtin/#string">string</a></pre>
+				<p>Path returns the database file path.
+<p>This is useful for debugging and logging.
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.PendingEvents">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=18284:18376#L592">PendingEvents</a>
+					<a class="permalink" href="#SQLiteStore.PendingEvents">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) PendingEvents(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, limit <a href="/pkg/builtin/#int">int</a>) ([]<a href="/pkg/github.com/dshills/langgraph-go/graph/emit/">emit</a>.<a href="/pkg/github.com/dshills/langgraph-go/graph/emit/#Event">Event</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>PendingEvents retrieves events from the outbox that haven&apos;t been emitted yet.
+<p>Returns events where emitted_at IS NULL, ordered by created_at.
+Limited to the specified number of events for batching.
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.Ping">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=20885:20941#L702">Ping</a>
+					<a class="permalink" href="#SQLiteStore.Ping">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) Ping(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Ping verifies the database connection is alive.
+<p>Useful for health checks and connection validation.
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.SaveCheckpoint">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=10611:10709#L315">SaveCheckpoint</a>
+					<a class="permalink" href="#SQLiteStore.SaveCheckpoint">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) SaveCheckpoint(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, cpID <a href="/pkg/builtin/#string">string</a>, state S, step <a href="/pkg/builtin/#int">int</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveCheckpoint creates a named checkpoint (implements Store interface).
+<p>Checkpoints are stored in the workflow_checkpoints table.
+If a checkpoint with the same ID exists, it is updated.
+<p>Thread-safe for concurrent writes.
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.SaveCheckpointV2">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=12879:12975#L398">SaveCheckpointV2</a>
+					<a class="permalink" href="#SQLiteStore.SaveCheckpointV2">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) SaveCheckpointV2(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, checkpoint <a href="#CheckpointV2">CheckpointV2</a>[S]) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveCheckpointV2 persists an enhanced checkpoint with full execution context.
+<p>This method saves a complete checkpoint including:
+<ul>
+<li>Current state after all deltas applied
+<li>Frontier of pending work items
+<li>Recorded I/O for deterministic replay
+<li>RNG seed for random value consistency
+<li>Idempotency key to prevent duplicate commits
+</ul>
+<p>The operation is performed in a transaction to ensure atomicity.
+If the idempotency key already exists, returns an error (prevents duplicate saves).
+<p>Thread-safe for concurrent writes.
+
+				
+				
+				
+			
+				
+				<h3 id="SQLiteStore.SaveStep">func (*SQLiteStore[S]) <a href="/src/github.com/dshills/langgraph-go/graph/store/sqlite.go?s=8598:8706#L237">SaveStep</a>
+					<a class="permalink" href="#SQLiteStore.SaveStep">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#SQLiteStore">SQLiteStore</a>[S]) SaveStep(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>, step <a href="/pkg/builtin/#int">int</a>, nodeID <a href="/pkg/builtin/#string">string</a>, state S) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveStep persists a workflow execution step (implements Store interface).
+<p>Steps are stored in the workflow_steps table with the current state.
+If a step with the same runID and step number already exists, it is replaced.
+<p>Thread-safe for concurrent writes.
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="StepRecord">type <a href="/src/github.com/dshills/langgraph-go/graph/store/store.go?s=6926:7160#L160">StepRecord</a>
+				<a class="permalink" href="#StepRecord">&#xb6;</a>
+				
+				
+			</h2>
+			<p>StepRecord represents a single execution step in the workflow history.
+Used internally by Store implementations to track step-by-step progression.
+
+			<pre>type StepRecord[S <a href="/pkg/builtin/#any">any</a>] struct {
+<span id="StepRecord.Step"></span>    <span class="comment">// Step is the sequential step number (1-indexed).</span>
+    Step <a href="/pkg/builtin/#int">int</a>
+
+<span id="StepRecord.NodeID"></span>    <span class="comment">// NodeID identifies which node produced this state.</span>
+    NodeID <a href="/pkg/builtin/#string">string</a>
+
+<span id="StepRecord.State"></span>    <span class="comment">// State is the workflow state after this step completed.</span>
+    State S
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Store">type <a href="/src/github.com/dshills/langgraph-go/graph/store/store.go?s=796:6771#L19">Store</a>
+				<a class="permalink" href="#Store">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Store provides persistence for workflow state and checkpoints.
+<p>It enables:
+- Step-by-step state persistence during execution.
+- Latest state retrieval for resumption.
+- Named checkpoint save/load for branching workflows.
+<p>Implementations can use:
+- In-memory storage (for testing, see memory.go).
+- Relational databases (MySQL, PostgreSQL).
+- Key-value stores (Redis, DynamoDB).
+- Object storage (S3, GCS).
+<p>Type parameter S is the state type to persist.
+
+			<pre>type Store[S <a href="/pkg/builtin/#any">any</a>] interface {
+    <span class="comment">// SaveStep persists the state after a node execution step.</span>
+    <span class="comment">// Each step is identified by runID + step number.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - runID: Unique identifier for this workflow execution.</span>
+    <span class="comment">// - step: Sequential step number (starts at 1).</span>
+    <span class="comment">// - nodeID: ID of the node that produced this state.</span>
+    <span class="comment">// - state: The current workflow state after merging delta.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns error if persistence fails.</span>
+    SaveStep(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>, step <a href="/pkg/builtin/#int">int</a>, nodeID <a href="/pkg/builtin/#string">string</a>, state S) <a href="/pkg/builtin/#error">error</a>
+
+    <span class="comment">// LoadLatest retrieves the most recent state for a given run.</span>
+    <span class="comment">// Used to resume execution from the last saved step.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - runID: Unique identifier for the workflow execution.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns:</span>
+    <span class="comment">// - state: The most recent persisted state.</span>
+    <span class="comment">// - step: The step number of the returned state.</span>
+    <span class="comment">// - error: ErrNotFound if runID doesn&#39;t exist, or other persistence errors.</span>
+    LoadLatest(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>) (state S, step <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)
+
+    <span class="comment">// SaveCheckpoint creates a named snapshot of workflow state.</span>
+    <span class="comment">// Checkpoints enable branching workflows and manual resumption points.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - cpID: Unique checkpoint identifier (user-defined).</span>
+    <span class="comment">// - state: The workflow state to snapshot.</span>
+    <span class="comment">// - step: The step number at which this checkpoint was created.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns error if persistence fails.</span>
+    SaveCheckpoint(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, cpID <a href="/pkg/builtin/#string">string</a>, state S, step <a href="/pkg/builtin/#int">int</a>) <a href="/pkg/builtin/#error">error</a>
+
+    <span class="comment">// LoadCheckpoint retrieves a previously saved checkpoint.</span>
+    <span class="comment">// Used to restore workflow state from a named checkpoint.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - cpID: Unique checkpoint identifier.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns:</span>
+    <span class="comment">// - state: The checkpointed state.</span>
+    <span class="comment">// - step: The step number when checkpoint was created.</span>
+    <span class="comment">// - error: ErrNotFound if cpID doesn&#39;t exist, or other persistence errors.</span>
+    LoadCheckpoint(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, cpID <a href="/pkg/builtin/#string">string</a>) (state S, step <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)
+
+    <span class="comment">// SaveCheckpointV2 persists an enhanced checkpoint with full execution context.</span>
+    <span class="comment">// This includes frontier state, recorded I/O, RNG seed, and idempotency key.</span>
+    <span class="comment">//</span>
+    <span class="comment">// The checkpoint contains all information needed for deterministic replay:</span>
+    <span class="comment">// - Current state at the checkpoint.</span>
+    <span class="comment">// - Pending work items in the execution frontier.</span>
+    <span class="comment">// - Recorded I/O responses for replay.</span>
+    <span class="comment">// - RNG seed for deterministic random values.</span>
+    <span class="comment">// - Idempotency key to prevent duplicate commits.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - checkpoint: Complete checkpoint with all execution context (CheckpointV2 type).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns error if persistence fails or idempotency key already exists.</span>
+    <span class="comment">//</span>
+    <span class="comment">// This method extends SaveCheckpoint with support for concurrent execution.</span>
+    <span class="comment">// and deterministic replay. Use this for v0.2.0+ features, or use the original.</span>
+    <span class="comment">// SaveCheckpoint for simpler checkpointing needs.</span>
+    SaveCheckpointV2(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, checkpoint <a href="#CheckpointV2">CheckpointV2</a>[S]) <a href="/pkg/builtin/#error">error</a>
+
+    <span class="comment">// LoadCheckpointV2 retrieves an enhanced checkpoint by run ID and step ID.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Unlike LoadCheckpoint which uses a user-defined label, this method loads.</span>
+    <span class="comment">// checkpoints by their system-generated identifiers. This enables:</span>
+    <span class="comment">// - Resumption from any specific step in execution history.</span>
+    <span class="comment">// - Replay of partial execution segments.</span>
+    <span class="comment">// - Time-travel debugging through execution steps.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - runID: Unique workflow run identifier.</span>
+    <span class="comment">// - stepID: Step number to load checkpoint from.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns:</span>
+    <span class="comment">// - checkpoint: Complete checkpoint with execution context (CheckpointV2 type).</span>
+    <span class="comment">// - error: ErrNotFound if checkpoint doesn&#39;t exist.</span>
+    LoadCheckpointV2(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>, stepID <a href="/pkg/builtin/#int">int</a>) (<a href="#CheckpointV2">CheckpointV2</a>[S], <a href="/pkg/builtin/#error">error</a>)
+
+    <span class="comment">// CheckIdempotency verifies if an idempotency key has been used.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Idempotency keys prevent duplicate step commits during retries or crash recovery.</span>
+    <span class="comment">// The key is typically a hash of: runID + stepID + frontier state + node outputs.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - key: Idempotency key to check (SHA-256 hash string).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns:</span>
+    <span class="comment">// - exists: true if key was previously used.</span>
+    <span class="comment">// - error: Only on store access failure (not for &#34;key not found&#34;).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Implementation note: Store the key atomically when committing checkpoints.</span>
+    <span class="comment">// Keys should be indexed for fast lookup. Consider TTL-based cleanup for old keys.</span>
+    CheckIdempotency(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, key <a href="/pkg/builtin/#string">string</a>) (<a href="/pkg/builtin/#bool">bool</a>, <a href="/pkg/builtin/#error">error</a>)
+
+    <span class="comment">// PendingEvents retrieves events from the transactional outbox that haven&#39;t been emitted.</span>
+    <span class="comment">//</span>
+    <span class="comment">// This implements the &#34;transactional outbox pattern&#34; for exactly-once event delivery:</span>
+    <span class="comment">// 1. Events are persisted atomically with state changes.</span>
+    <span class="comment">// 2. Separate process reads pending events and emits them.</span>
+    <span class="comment">// 3. Successfully emitted events are marked via MarkEventsEmitted.</span>
+    <span class="comment">// 4. Crashed emitters can resume from pending events.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - limit: Maximum number of events to retrieve (for batching).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns:</span>
+    <span class="comment">// - events: Events pending emission, ordered by creation time.</span>
+    <span class="comment">// - error: Only on store access failure (empty list is not an error).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Use this with MarkEventsEmitted to implement reliable event delivery without.</span>
+    <span class="comment">// message broker dependencies.</span>
+    PendingEvents(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, limit <a href="/pkg/builtin/#int">int</a>) ([]<a href="/pkg/github.com/dshills/langgraph-go/graph/emit/">emit</a>.<a href="/pkg/github.com/dshills/langgraph-go/graph/emit/#Event">Event</a>, <a href="/pkg/builtin/#error">error</a>)
+
+    <span class="comment">// MarkEventsEmitted marks events as successfully emitted to prevent re-delivery.</span>
+    <span class="comment">//</span>
+    <span class="comment">// After successfully emitting events to external systems (logs, traces, metrics),</span>
+    <span class="comment">// call this method to record their emission. This ensures:</span>
+    <span class="comment">// - Events are emitted exactly once (not lost, not duplicated).</span>
+    <span class="comment">// - Crash recovery doesn&#39;t re-emit already-delivered events.</span>
+    <span class="comment">// - PendingEvents won&#39;t return these events again.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - eventIDs: List of event IDs that were successfully emitted.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns error if store update fails. On error, events may be re-emitted.</span>
+    <span class="comment">// (at-least-once semantics).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Implementation note: Mark as emitted in the same transaction/atomic operation.</span>
+    <span class="comment">// as the external emit when possible, or use idempotency keys on the receiving end.</span>
+    MarkEventsEmitted(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, eventIDs []<a href="/pkg/builtin/#string">string</a>) <a href="/pkg/builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.25.4.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="/LICENSE">BSD license</a>.<br>
+<a href="https://golang.org/doc/tos.html">Terms of Service</a> |
+<a href="https://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</body>
+</html>

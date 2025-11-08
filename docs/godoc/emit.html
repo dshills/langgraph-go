@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>emit - Go Documentation Server</title>
+
+<link type="text/css" rel="stylesheet" href="/lib/godoc/style.css">
+
+<script>window.initFuncs = [];</script>
+<script src="/lib/godoc/jquery.js" defer></script>
+
+
+
+<script>var goVersion = "go1.25.4";</script>
+<script src="/lib/godoc/godocs.js" defer></script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="/pkg/">Go Documentation Server</a></div>
+<div class="top-heading" id="heading-narrow"><a href="/pkg/">GoDoc</a></div>
+<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="/search">
+<div id="menu">
+
+<span class="search-box"><input type="search" id="search" name="q" placeholder="Search" aria-label="Search" required><button type="submit"><span><!-- magnifying glass: --><svg width="24" height="24" viewBox="0 0 24 24"><title>submit search</title><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M0 0h24v24H0z" fill="none"/></svg></span></button></span>
+</div>
+</form>
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package emit
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/dshills/langgraph-go/graph/emit"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package emit provides event emission and observability for graph execution.
+<p>Package emit provides event emission and observability for graph execution.
+<p>Package emit provides event emission and observability for graph execution.
+<p>Package emit provides event emission and observability for graph execution.
+<p>Package emit provides event emission and observability for graph execution.
+
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#BufferedEmitter">type BufferedEmitter</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewBufferedEmitter">func NewBufferedEmitter() *BufferedEmitter</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#BufferedEmitter.Clear">func (b *BufferedEmitter) Clear(runID string)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#BufferedEmitter.Emit">func (b *BufferedEmitter) Emit(event Event)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#BufferedEmitter.EmitBatch">func (b *BufferedEmitter) EmitBatch(_ context.Context, events []Event) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#BufferedEmitter.Flush">func (b *BufferedEmitter) Flush(_ context.Context) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#BufferedEmitter.GetHistory">func (b *BufferedEmitter) GetHistory(runID string) []Event</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#BufferedEmitter.GetHistoryWithFilter">func (b *BufferedEmitter) GetHistoryWithFilter(runID string, filter HistoryFilter) []Event</a></dd>
+				
+			
+				
+				<dd><a href="#Emitter">type Emitter</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Event">type Event</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Event.WithDuration">func (e Event) WithDuration(d time.Duration) Event</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Event.WithError">func (e Event) WithError(err error) Event</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Event.WithMeta">func (e Event) WithMeta(key string, value interface{}) Event</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Event.WithNodeType">func (e Event) WithNodeType(nodeType string) Event</a></dd>
+				
+			
+				
+				<dd><a href="#HistoryFilter">type HistoryFilter</a></dd>
+				
+				
+			
+				
+				<dd><a href="#LogEmitter">type LogEmitter</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewLogEmitter">func NewLogEmitter(writer io.Writer, jsonMode bool) *LogEmitter</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#LogEmitter.Emit">func (l *LogEmitter) Emit(event Event)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#LogEmitter.EmitBatch">func (l *LogEmitter) EmitBatch(_ context.Context, events []Event) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#LogEmitter.Flush">func (l *LogEmitter) Flush(_ context.Context) error</a></dd>
+				
+			
+				
+				<dd><a href="#NullEmitter">type NullEmitter</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewNullEmitter">func NewNullEmitter() *NullEmitter</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NullEmitter.Emit">func (n *NullEmitter) Emit(_ Event)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NullEmitter.EmitBatch">func (n *NullEmitter) EmitBatch(_ context.Context, _ []Event) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NullEmitter.Flush">func (n *NullEmitter) Flush(_ context.Context) error</a></dd>
+				
+			
+				
+				<dd><a href="#OTelEmitter">type OTelEmitter</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewOTelEmitter">func NewOTelEmitter(tracer trace.Tracer) *OTelEmitter</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#OTelEmitter.Emit">func (o *OTelEmitter) Emit(event Event)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#OTelEmitter.EmitBatch">func (o *OTelEmitter) EmitBatch(ctx context.Context, events []Event) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#OTelEmitter.Flush">func (o *OTelEmitter) Flush(ctx context.Context) error</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/emit/buffered.go">buffered.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/emit/emitter.go">emitter.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/emit/event.go">event.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/emit/log.go">log.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/emit/null.go">null.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/emit/otel.go">otel.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="BufferedEmitter">type <a href="/src/github.com/dshills/langgraph-go/graph/emit/buffered.go?s=1397:1495#L36">BufferedEmitter</a>
+				<a class="permalink" href="#BufferedEmitter">&#xb6;</a>
+				
+				
+			</h2>
+			<p>BufferedEmitter implements Emitter by storing events in memory (T169-T172).
+<p>This emitter captures all events and provides query capabilities for.
+execution history analysis. Events are organized by runID for efficient.
+retrieval and filtering.
+<p>Features:
+- Thread-safe concurrent access.
+- Query by runID with optional filtering.
+- Filter by nodeID, message, step range.
+- Clear events by runID or all events.
+<p>Use cases:
+- Development and debugging.
+- Testing and validation.
+- Real-time monitoring dashboards.
+- Post-execution analysis.
+<p>Warning: This emitter stores all events in memory. For production.
+deployments with long-running workflows or high event volume, consider.
+using a persistent storage backend or implement event rotation/cleanup.
+<p>Example usage:
+<p>// Create buffered emitter for testing.
+emitter := emit.NewBufferedEmitter().
+engine := graph.New(reducer, store, emitter, opts).
+<p>// Run workflow.
+engine.Run(ctx, &quot;run-001&quot;, initialState).
+<p>// Query execution history.
+allEvents := emitter.GetHistory(&quot;run-001&quot;).
+errorEvents := emitter.GetHistoryWithFilter(&quot;run-001&quot;, emit.HistoryFilter{Msg: &quot;error&quot;}).
+<p>// Clean up old runs.
+emitter.Clear(&quot;run-001&quot;).
+
+			<pre>type BufferedEmitter struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewBufferedEmitter">func <a href="/src/github.com/dshills/langgraph-go/graph/emit/buffered.go?s=2871:2913#L83">NewBufferedEmitter</a>
+					<a class="permalink" href="#NewBufferedEmitter">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewBufferedEmitter() *<a href="#BufferedEmitter">BufferedEmitter</a></pre>
+				<p>NewBufferedEmitter creates a new BufferedEmitter (T169).
+<p>Returns a BufferedEmitter that stores all events in memory and provides.
+query capabilities. Safe for concurrent use.
+
+				
+				
+			
+
+			
+				
+				<h3 id="BufferedEmitter.Clear">func (*BufferedEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/buffered.go?s=6606:6651#L229">Clear</a>
+					<a class="permalink" href="#BufferedEmitter.Clear">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (b *<a href="#BufferedEmitter">BufferedEmitter</a>) Clear(runID <a href="/pkg/builtin/#string">string</a>)</pre>
+				<p>Clear removes stored events (T170).
+<p>If runID is non-empty, clears only events for that specific run.
+If runID is empty, clears all stored events across all runs.
+<p>This method is thread-safe and can be called concurrently.
+<p>Example:
+<p>// Clear specific run.
+emitter.Clear(&quot;run-001&quot;).
+<p>// Clear all runs.
+emitter.Clear(&quot;&quot;).
+
+				
+				
+				
+			
+				
+				<h3 id="BufferedEmitter.Emit">func (*BufferedEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/buffered.go?s=3179:3222#L93">Emit</a>
+					<a class="permalink" href="#BufferedEmitter.Emit">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (b *<a href="#BufferedEmitter">BufferedEmitter</a>) Emit(event <a href="#Event">Event</a>)</pre>
+				<p>Emit stores an event in the buffer (T169).
+<p>Events are organized by runID for efficient retrieval. This method is.
+thread-safe and can be called concurrently from multiple goroutines.
+
+				
+				
+				
+			
+				
+				<h3 id="BufferedEmitter.EmitBatch">func (*BufferedEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/buffered.go?s=6910:6986#L243">EmitBatch</a>
+					<a class="permalink" href="#BufferedEmitter.EmitBatch">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (b *<a href="#BufferedEmitter">BufferedEmitter</a>) EmitBatch(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, events []<a href="#Event">Event</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>EmitBatch stores multiple events in the buffer in a single operation.
+
+				
+				
+				
+			
+				
+				<h3 id="BufferedEmitter.Flush">func (*BufferedEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/buffered.go?s=7135:7191#L251">Flush</a>
+					<a class="permalink" href="#BufferedEmitter.Flush">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (b *<a href="#BufferedEmitter">BufferedEmitter</a>) Flush(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Flush is a no-op for buffered emitter (events are already stored in memory).
+
+				
+				
+				
+			
+				
+				<h3 id="BufferedEmitter.GetHistory">func (*BufferedEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/buffered.go?s=3795:3853#L114">GetHistory</a>
+					<a class="permalink" href="#BufferedEmitter.GetHistory">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (b *<a href="#BufferedEmitter">BufferedEmitter</a>) GetHistory(runID <a href="/pkg/builtin/#string">string</a>) []<a href="#Event">Event</a></pre>
+				<p>GetHistory retrieves all events for a specific runID (T170).
+<p>Returns events in the order they were emitted. Returns an empty slice.
+if no events exist for the given runID.
+<p>This method is thread-safe and returns a copy of the events to prevent.
+concurrent modification issues.
+<p>Example:
+<p>events := emitter.GetHistory(&quot;run-001&quot;).
+for _, event := range events {.
+fmt.Printf(&quot;[%s] %s: %s\n&quot;, event.RunID, event.NodeID, event.Msg).
+}.
+
+				
+				
+				
+			
+				
+				<h3 id="BufferedEmitter.GetHistoryWithFilter">func (*BufferedEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/buffered.go?s=4990:5080#L159">GetHistoryWithFilter</a>
+					<a class="permalink" href="#BufferedEmitter.GetHistoryWithFilter">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (b *<a href="#BufferedEmitter">BufferedEmitter</a>) GetHistoryWithFilter(runID <a href="/pkg/builtin/#string">string</a>, filter <a href="#HistoryFilter">HistoryFilter</a>) []<a href="#Event">Event</a></pre>
+				<p>GetHistoryWithFilter retrieves filtered events for a specific runID (T171, T172).
+<p>Applies the provided filter criteria to select matching events. All filter.
+conditions must match for an event to be included (AND logic).
+<p>Returns events in the order they were emitted. Returns an empty slice if.
+no events match the filter.
+<p>This method is thread-safe and returns a copy of the events.
+<p>Example:
+<p>// Get error events from &quot;validator&quot; node.
+filter := emit.HistoryFilter{.
+<pre>		NodeID: &quot;validator&quot;,
+		Msg:    &quot;error&quot;,
+}.
+</pre>
+<p>errors := emitter.GetHistoryWithFilter(&quot;run-001&quot;, filter).
+<p>// Get events from steps 10-20.
+minStep, maxStep := 10, 20.
+filter := emit.HistoryFilter{.
+<pre>		MinStep: &amp;minStep,
+		MaxStep: &amp;maxStep,
+}.
+</pre>
+<p>stepEvents := emitter.GetHistoryWithFilter(&quot;run-001&quot;, filter).
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="Emitter">type <a href="/src/github.com/dshills/langgraph-go/graph/emit/emitter.go?s=905:3636#L14">Emitter</a>
+				<a class="permalink" href="#Emitter">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Emitter receives and processes observability events from workflow execution.
+<p>Emitters enable pluggable observability backends:
+- Logging: stdout, files, syslog.
+- Distributed tracing: OpenTelemetry, Jaeger, Zipkin.
+- Metrics: Prometheus, StatsD.
+- Analytics: DataDog, New Relic.
+<p>Implementations should be:
+- Non-blocking: Avoid slowing down workflow execution.
+- Thread-safe: May be called concurrently from multiple nodes.
+- Resilient: Handle failures gracefully (don&apos;t crash workflow).
+<p>Common patterns:
+- Buffering: Collect events and flush in batches.
+- Filtering: Only emit events matching criteria (e.g., errors only).
+- Multi-emit: Fan out to multiple backends.
+- Sampling: Emit only a percentage of events for high-volume workflows.
+
+			<pre>type Emitter interface {
+    <span class="comment">// Emit sends an observability event to the configured backend.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Implementations should not block workflow execution.</span>
+    <span class="comment">// If the backend is unavailable or slow, events should be:</span>
+    <span class="comment">// - Buffered for later delivery.</span>
+    <span class="comment">// - Dropped with error logging.</span>
+    <span class="comment">// - Sent asynchronously.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Emit should not panic. Errors should be logged internally.</span>
+    Emit(event <a href="#Event">Event</a>)
+
+    <span class="comment">// EmitBatch sends multiple events in a single operation for improved performance.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Batching reduces overhead when emitting high volumes of events by:</span>
+    <span class="comment">// - Amortizing network round-trips across multiple events.</span>
+    <span class="comment">// - Reducing serialization overhead.</span>
+    <span class="comment">// - Enabling backend bulk insert optimizations.</span>
+    <span class="comment">// - Improving throughput for high-concurrency workflows.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Implementations should:</span>
+    <span class="comment">// - Process events in order (maintain happened-before relationships).</span>
+    <span class="comment">// - Not block workflow execution (buffer or process asynchronously).</span>
+    <span class="comment">// - Handle partial failures gracefully (log and continue).</span>
+    <span class="comment">// - Not panic on errors.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - ctx: Context for cancellation and timeouts.</span>
+    <span class="comment">// - events: Events to emit, ordered by creation time.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns error only on catastrophic failures (e.g., configuration errors).</span>
+    <span class="comment">// Individual event failures should be logged but not returned.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example usage:</span>
+    <span class="comment">//</span>
+    <span class="comment">// events := []Event{.</span>
+    <span class="comment">//	    {RunID: &#34;run-001&#34;, Msg: &#34;step_start&#34;, ...},</span>
+    <span class="comment">//	    {RunID: &#34;run-001&#34;, Msg: &#34;step_complete&#34;, ...},</span>
+    <span class="comment">// }.</span>
+    <span class="comment">// if err := emitter.EmitBatch(ctx, events); err != nil {.</span>
+    <span class="comment">// log.Errorf(&#34;batch emit failed: %v&#34;, err).</span>
+    <span class="comment">// }.</span>
+    EmitBatch(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, events []<a href="#Event">Event</a>) <a href="/pkg/builtin/#error">error</a>
+
+    <span class="comment">// Flush ensures all buffered events are sent to the backend.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Call this method:</span>
+    <span class="comment">// - Before application shutdown to prevent event loss.</span>
+    <span class="comment">// - At workflow completion to ensure all events are delivered.</span>
+    <span class="comment">// - After critical operations requiring immediate visibility.</span>
+    <span class="comment">// - During testing to verify event emission.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Implementations should:</span>
+    <span class="comment">// - Block until all buffered events are sent or timeout occurs.</span>
+    <span class="comment">// - Respect context cancellation and deadlines.</span>
+    <span class="comment">// - Return error if events cannot be delivered.</span>
+    <span class="comment">// - Be safe to call multiple times (idempotent).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - ctx: Context for cancellation and timeout.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns error if flush fails or times out. Implementations should attempt.</span>
+    <span class="comment">// best-effort delivery even on error (e.g., flush partial buffers).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example usage:</span>
+    <span class="comment">//</span>
+    <span class="comment">// defer func() {.</span>
+    <span class="comment">// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second).</span>
+    <span class="comment">// defer cancel().</span>
+    <span class="comment">// if err := emitter.Flush(ctx); err != nil {.</span>
+    <span class="comment">// log.Errorf(&#34;failed to flush events on shutdown: %v&#34;, err).</span>
+    <span class="comment">// }.</span>
+    <span class="comment">// }().</span>
+    Flush(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>) <a href="/pkg/builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Event">type <a href="/src/github.com/dshills/langgraph-go/graph/emit/event.go?s=563:3714#L10">Event</a>
+				<a class="permalink" href="#Event">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Event represents an observability event emitted during workflow execution.
+<p>Events provide detailed insight into workflow behavior:
+- Node execution start/complete.
+- State changes and transitions.
+- Errors and warnings.
+- Performance metrics.
+- Checkpoint operations.
+<p>Events are emitted to an Emitter which can:
+- Log to stdout/stderr.
+- Send to OpenTelemetry.
+- Store in time-series databases.
+- Trigger alerts.
+
+			<pre>type Event struct {
+<span id="Event.RunID"></span>    <span class="comment">// RunID identifies the workflow execution that emitted this event.</span>
+    RunID <a href="/pkg/builtin/#string">string</a>
+
+<span id="Event.Step"></span>    <span class="comment">// Step is the sequential step number in the workflow (1-indexed).</span>
+    <span class="comment">// Zero for workflow-level events (start, complete, error).</span>
+    Step <a href="/pkg/builtin/#int">int</a>
+
+<span id="Event.NodeID"></span>    <span class="comment">// NodeID identifies which node emitted this event.</span>
+    <span class="comment">// Empty string for workflow-level events.</span>
+    NodeID <a href="/pkg/builtin/#string">string</a>
+
+<span id="Event.Msg"></span>    <span class="comment">// Msg is a human-readable description of the event.</span>
+    Msg <a href="/pkg/builtin/#string">string</a>
+
+<span id="Event.Meta"></span>    <span class="comment">// Meta contains additional structured data specific to this event (T168).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Standard Metadata Conventions:</span>
+    <span class="comment">//</span>
+    <span class="comment">// Performance Metrics:</span>
+    <span class="comment">// - &#34;duration_ms&#34; (int64): Execution duration in milliseconds.</span>
+    <span class="comment">// - &#34;memory_bytes&#34; (int64): Memory usage in bytes.</span>
+    <span class="comment">// - &#34;cpu_percent&#34; (float64): CPU utilization percentage.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Error Context:</span>
+    <span class="comment">// - &#34;error&#34; (string): Error message from error.Error().</span>
+    <span class="comment">// - &#34;error_type&#34; (string): Error type or classification (e.g., &#34;validation&#34;, &#34;timeout&#34;).</span>
+    <span class="comment">// - &#34;retryable&#34; (bool): Whether the error can be retried.</span>
+    <span class="comment">// - &#34;retry_attempt&#34; (int): Current retry attempt number (1-indexed).</span>
+    <span class="comment">// - &#34;stack_trace&#34; (string): Optional stack trace for debugging.</span>
+    <span class="comment">//</span>
+    <span class="comment">// LLM-Specific:</span>
+    <span class="comment">// - &#34;tokens&#34; (int): Total token count (input + output).</span>
+    <span class="comment">// - &#34;input_tokens&#34; (int): Input token count.</span>
+    <span class="comment">// - &#34;output_tokens&#34; (int): Output token count.</span>
+    <span class="comment">// - &#34;cost&#34; (float64): Estimated cost in USD.</span>
+    <span class="comment">// - &#34;model&#34; (string): Model identifier (e.g., &#34;gpt-4&#34;, &#34;claude-3-opus&#34;).</span>
+    <span class="comment">// - &#34;temperature&#34; (float64): Temperature parameter used.</span>
+    <span class="comment">// - &#34;max_tokens&#34; (int): Max tokens parameter used.</span>
+    <span class="comment">// - &#34;finish_reason&#34; (string): Completion reason (e.g., &#34;stop&#34;, &#34;length&#34;, &#34;tool_calls&#34;).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Node Classification:</span>
+    <span class="comment">// - &#34;node_type&#34; (string): Node category (e.g., &#34;llm&#34;, &#34;tool&#34;, &#34;processor&#34;, &#34;validator&#34;).</span>
+    <span class="comment">// - &#34;node_version&#34; (string): Node implementation version.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Checkpoint Context:</span>
+    <span class="comment">// - &#34;checkpoint_id&#34; (string): Checkpoint identifier.</span>
+    <span class="comment">// - &#34;checkpoint_label&#34; (string): Human-readable checkpoint label.</span>
+    <span class="comment">// - &#34;state_size&#34; (int): Serialized state size in bytes.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Tool Execution:</span>
+    <span class="comment">// - &#34;tool_name&#34; (string): Name of the tool being executed.</span>
+    <span class="comment">// - &#34;tool_input&#34; (any): Tool input parameters (if serializable).</span>
+    <span class="comment">// - &#34;tool_output&#34; (any): Tool output result (if serializable).</span>
+    <span class="comment">//</span>
+    <span class="comment">// State Changes:</span>
+    <span class="comment">// - &#34;delta&#34; (any): State change applied by the node.</span>
+    <span class="comment">// - &#34;state_version&#34; (int): State version number.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Routing Decisions:</span>
+    <span class="comment">// - &#34;next_node&#34; (string): Next node ID for routing decisions.</span>
+    <span class="comment">// - &#34;next_nodes&#34; ([]string): Multiple next nodes for fan-out.</span>
+    <span class="comment">// - &#34;routing_reason&#34; (string): Explanation of routing decision.</span>
+    <span class="comment">// - &#34;condition&#34; (string): Condition that triggered the route.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Custom Application Data:</span>
+    <span class="comment">// Applications can add domain-specific metadata using their own keys.</span>
+    <span class="comment">// Use namespaced keys to avoid conflicts (e.g., &#34;app_user_id&#34;, &#34;app_request_id&#34;).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Usage with helper methods:</span>
+    <span class="comment">//</span>
+    <span class="comment">// event := Event{RunID: &#34;run-001&#34;, NodeID: &#34;llm-node&#34;, Msg: &#34;node_end&#34;}.</span>
+    <span class="comment">//	enriched := event.</span>
+    <span class="comment">//		WithDuration(250 * time.Millisecond).</span>
+    <span class="comment">//		WithNodeType(&#34;llm&#34;).</span>
+    <span class="comment">//		WithMeta(&#34;tokens&#34;, 150).</span>
+    <span class="comment">//		WithMeta(&#34;cost&#34;, 0.003).</span>
+    <span class="comment">// WithMeta(&#34;model&#34;, &#34;gpt-4&#34;).</span>
+    Meta map[<a href="/pkg/builtin/#string">string</a>]interface{}
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="Event.WithDuration">func (Event) <a href="/src/github.com/dshills/langgraph-go/graph/emit/event.go?s=4091:4141#L101">WithDuration</a>
+					<a class="permalink" href="#Event.WithDuration">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e <a href="#Event">Event</a>) WithDuration(d <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>) <a href="#Event">Event</a></pre>
+				<p>WithDuration returns a copy of the event with duration_ms metadata (T166).
+<p>Sets the &quot;duration_ms&quot; field to the duration in milliseconds as an int64.
+Preserves all existing metadata fields.
+<p>Example:
+<p>event := Event{RunID: &quot;run-001&quot;, Msg: &quot;node_end&quot;}.
+enriched := event.WithDuration(250 * time.Millisecond).
+// enriched.Meta[&quot;duration_ms&quot;] == 250.
+
+				
+				
+				
+			
+				
+				<h3 id="Event.WithError">func (Event) <a href="/src/github.com/dshills/langgraph-go/graph/emit/event.go?s=4630:4671#L119">WithError</a>
+					<a class="permalink" href="#Event.WithError">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e <a href="#Event">Event</a>) WithError(err <a href="/pkg/builtin/#error">error</a>) <a href="#Event">Event</a></pre>
+				<p>WithError returns a copy of the event with error metadata (T166).
+<p>Sets the &quot;error&quot; field to the error message string.
+Preserves all existing metadata fields.
+<p>Example:
+<p>event := Event{RunID: &quot;run-001&quot;, Msg: &quot;error&quot;}.
+enriched := event.WithError(errors.New(&quot;validation failed&quot;)).
+// enriched.Meta[&quot;error&quot;] == &quot;validation failed&quot;.
+
+				
+				
+				
+			
+				
+				<h3 id="Event.WithMeta">func (Event) <a href="/src/github.com/dshills/langgraph-go/graph/emit/event.go?s=6109:6169#L173">WithMeta</a>
+					<a class="permalink" href="#Event.WithMeta">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e <a href="#Event">Event</a>) WithMeta(key <a href="/pkg/builtin/#string">string</a>, value interface{}) <a href="#Event">Event</a></pre>
+				<p>WithMeta returns a copy of the event with an additional metadata field (T167).
+<p>Sets the specified key-value pair in the metadata map.
+Preserves all existing metadata fields.
+If the key already exists, it will be overwritten.
+<p>This method supports chaining for fluent API usage:
+<p>event := Event{RunID: &quot;run-001&quot;}.
+<pre>enriched := event.
+	WithMeta(&quot;tokens&quot;, 150).
+	WithMeta(&quot;cost&quot;, 0.003).
+</pre>
+<p>WithMeta(&quot;model&quot;, &quot;gpt-4&quot;).
+<p>Example:
+<p>event := Event{RunID: &quot;run-001&quot;, Msg: &quot;llm_call&quot;}.
+enriched := event.WithMeta(&quot;tokens&quot;, 150).
+// enriched.Meta[&quot;tokens&quot;] == 150.
+
+				
+				
+				
+			
+				
+				<h3 id="Event.WithNodeType">func (Event) <a href="/src/github.com/dshills/langgraph-go/graph/emit/event.go?s=5337:5387#L144">WithNodeType</a>
+					<a class="permalink" href="#Event.WithNodeType">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e <a href="#Event">Event</a>) WithNodeType(nodeType <a href="/pkg/builtin/#string">string</a>) <a href="#Event">Event</a></pre>
+				<p>WithNodeType returns a copy of the event with node_type metadata (T167).
+<p>Sets the &quot;node_type&quot; field to the provided node type string.
+Preserves all existing metadata fields.
+<p>Common node types:
+- &quot;llm&quot;: LLM call nodes.
+- &quot;tool&quot;: Tool execution nodes.
+- &quot;processor&quot;: Data processing nodes.
+- &quot;validator&quot;: Validation nodes.
+- &quot;aggregator&quot;: Result aggregation nodes.
+<p>Example:
+<p>event := Event{RunID: &quot;run-001&quot;, NodeID: &quot;llm-node&quot;}.
+enriched := event.WithNodeType(&quot;llm&quot;).
+// enriched.Meta[&quot;node_type&quot;] == &quot;llm&quot;.
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="HistoryFilter">type <a href="/src/github.com/dshills/langgraph-go/graph/emit/buffered.go?s=2425:2682#L72">HistoryFilter</a>
+				<a class="permalink" href="#HistoryFilter">&#xb6;</a>
+				
+				
+			</h2>
+			<p>HistoryFilter specifies criteria for filtering execution history (T171, T172).
+<p>All filter fields are optional. When multiple fields are set, they are.
+combined with AND logic (all conditions must match).
+<p>Fields:
+- NodeID: Filter by specific node.
+- Msg: Filter by message type (e.g., &quot;node_start&quot;, &quot;error&quot;).
+- MinStep: Filter events with step &gt;= MinStep (nil = no lower bound).
+- MaxStep: Filter events with step &lt;= MaxStep (nil = no upper bound).
+<p>Example usage:
+<p>// Get all errors from a specific node.
+filter := emit.HistoryFilter{.
+<pre>		NodeID: &quot;validator&quot;,
+		Msg:    &quot;error&quot;,
+}.
+</pre>
+<p>errors := emitter.GetHistoryWithFilter(&quot;run-001&quot;, filter).
+<p>// Get events from steps 5-10.
+minStep, maxStep := 5, 10.
+filter := emit.HistoryFilter{.
+<pre>		MinStep: &amp;minStep,
+		MaxStep: &amp;maxStep,
+}.
+</pre>
+<p>stepEvents := emitter.GetHistoryWithFilter(&quot;run-001&quot;, filter).
+
+			<pre>type HistoryFilter struct {
+<span id="HistoryFilter.NodeID"></span>    NodeID  <a href="/pkg/builtin/#string">string</a> <span class="comment">// Filter by node ID (empty = no filter)</span>
+<span id="HistoryFilter.Msg"></span>    Msg     <a href="/pkg/builtin/#string">string</a> <span class="comment">// Filter by message (empty = no filter)</span>
+<span id="HistoryFilter.MinStep"></span>    MinStep *<a href="/pkg/builtin/#int">int</a>   <span class="comment">// Minimum step number (nil = no filter)</span>
+<span id="HistoryFilter.MaxStep"></span>    MaxStep *<a href="/pkg/builtin/#int">int</a>   <span class="comment">// Maximum step number (nil = no filter)</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="LogEmitter">type <a href="/src/github.com/dshills/langgraph-go/graph/emit/log.go?s=844:905#L25">LogEmitter</a>
+				<a class="permalink" href="#LogEmitter">&#xb6;</a>
+				
+				
+			</h2>
+			<p>LogEmitter implements Emitter by writing structured log output to a writer (T161).
+<p>Supports two output modes:
+- Text mode (default): Human-readable format with key=value pairs.
+- JSON mode: Machine-readable JSON format, one event per line.
+<p>Example text output:
+<p>[node_start] runID=run-001 step=0 nodeID=nodeA.
+<p>Example JSON output:
+<p>{&quot;runID&quot;:&quot;run-001&quot;,&quot;step&quot;:0,&quot;nodeID&quot;:&quot;nodeA&quot;,&quot;msg&quot;:&quot;node_start&quot;,&quot;meta&quot;:null}.
+<p>Usage:
+<p>// Text output to stdout.
+emitter := emit.NewLogEmitter(os.Stdout, false).
+<p>// JSON output to file.
+f, _ := os.Create(&quot;events.jsonl&quot;).
+defer func() { _ = f.Close() }().
+emitter := emit.NewLogEmitter(f, true).
+
+			<pre>type LogEmitter struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewLogEmitter">func <a href="/src/github.com/dshills/langgraph-go/graph/emit/log.go?s=1204:1267#L37">NewLogEmitter</a>
+					<a class="permalink" href="#NewLogEmitter">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewLogEmitter(writer <a href="/pkg/io/">io</a>.<a href="/pkg/io/#Writer">Writer</a>, jsonMode <a href="/pkg/builtin/#bool">bool</a>) *<a href="#LogEmitter">LogEmitter</a></pre>
+				<p>NewLogEmitter creates a new LogEmitter (T161, T163).
+<p>Parameters:
+- writer: Where to write the log output (e.g., os.Stdout, file).
+- jsonMode: If true, emit JSON format; if false, emit text format.
+<p>Returns a LogEmitter that writes structured event data to the provided writer.
+
+				
+				
+			
+
+			
+				
+				<h3 id="LogEmitter.Emit">func (*LogEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/log.go?s=1963:2001#L62">Emit</a>
+					<a class="permalink" href="#LogEmitter.Emit">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#LogEmitter">LogEmitter</a>) Emit(event <a href="#Event">Event</a>)</pre>
+				<p>Emit writes an event to the configured writer (T161).
+<p>Format depends on jsonMode:
+- JSON mode: Writes event as single-line JSON object.
+- Text mode: Writes human-readable format with [msg] prefix.
+<p>Example text output:
+<p>[node_start] runID=run-001 step=0 nodeID=nodeA.
+[node_end] runID=run-001 step=0 nodeID=nodeA meta={&quot;delta&quot;:{&quot;counter&quot;:5}}.
+<p>Example JSON output:
+<p>{&quot;runID&quot;:&quot;run-001&quot;,&quot;step&quot;:0,&quot;nodeID&quot;:&quot;nodeA&quot;,&quot;msg&quot;:&quot;node_start&quot;,&quot;meta&quot;:null}.
+{&quot;runID&quot;:&quot;run-001&quot;,&quot;step&quot;:0,&quot;nodeID&quot;:&quot;nodeA&quot;,&quot;msg&quot;:&quot;node_end&quot;,&quot;meta&quot;:{&quot;delta&quot;:{&quot;counter&quot;:5}}}.
+
+				
+				
+				
+			
+				
+				<h3 id="LogEmitter.EmitBatch">func (*LogEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/log.go?s=4942:5013#L148">EmitBatch</a>
+					<a class="permalink" href="#LogEmitter.EmitBatch">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#LogEmitter">LogEmitter</a>) EmitBatch(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, events []<a href="#Event">Event</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>EmitBatch sends multiple events in a single operation for improved performance (T107).
+<p>For LogEmitter, batching provides efficiency by:
+- Reducing write syscalls (one write per batch vs per event).
+- Better formatting when viewing multiple related events.
+- Maintaining chronological order within the batch.
+<p>In text mode, events are written with blank lines between them for readability.
+In JSON mode, events are written as JSONL (one per line) for easy parsing.
+<p>Example text output:
+<p>[node_start] runID=run-001 step=0 nodeID=nodeA.
+[node_end] runID=run-001 step=0 nodeID=nodeA.
+[node_start] runID=run-001 step=1 nodeID=nodeB.
+<p>Example JSON output:
+<p>{&quot;runID&quot;:&quot;run-001&quot;,&quot;step&quot;:0,&quot;nodeID&quot;:&quot;nodeA&quot;,&quot;msg&quot;:&quot;node_start&quot;,&quot;meta&quot;:null}.
+{&quot;runID&quot;:&quot;run-001&quot;,&quot;step&quot;:0,&quot;nodeID&quot;:&quot;nodeA&quot;,&quot;msg&quot;:&quot;node_end&quot;,&quot;meta&quot;:{&quot;delta&quot;:{&quot;counter&quot;:5}}}.
+{&quot;runID&quot;:&quot;run-001&quot;,&quot;step&quot;:1,&quot;nodeID&quot;:&quot;nodeB&quot;,&quot;msg&quot;:&quot;node_start&quot;,&quot;meta&quot;:null}.
+<p>This implementation is more efficient than calling Emit repeatedly because:
+1. It can batch multiple events into fewer write operations.
+2. It can optimize formatting across the entire batch.
+3. It reduces locking overhead if the writer is synchronized.
+<p>Parameters:
+- ctx: Context for cancellation (currently unused but reserved for future enhancements).
+- events: Slice of events to emit in order.
+<p>Returns error only if writing fails. Always attempts to write all events.
+
+				
+				
+				
+			
+				
+				<h3 id="LogEmitter.Flush">func (*LogEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/log.go?s=6310:6361#L193">Flush</a>
+					<a class="permalink" href="#LogEmitter.Flush">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#LogEmitter">LogEmitter</a>) Flush(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Flush ensures all buffered events are sent to the backend (T108).
+<p>For LogEmitter, this is a no-op because:
+- All writes go directly to the underlying io.Writer.
+- No internal buffering is maintained by LogEmitter.
+- The writer itself handles its own buffering (e.g., os.Stdout, bufio.Writer).
+<p>If you need flush control, wrap the writer with bufio.Writer and call Flush on it directly:
+<p>buf := bufio.NewWriter(os.Stdout).
+emitter := emit.NewLogEmitter(buf, false).
+<pre>// ... emit events ...
+</pre>
+<p>buf.Flush() // Flush the underlying buffer.
+emitter.Flush(ctx) // No-op for LogEmitter.
+<p>This method is provided to satisfy the Emitter interface and enable polymorphic usage.
+with other emitters (e.g., OTelEmitter) that do require flushing.
+<p>Parameters:
+- ctx: Context for cancellation (unused, LogEmitter writes are synchronous).
+<p>Returns nil (always succeeds).
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="NullEmitter">type <a href="/src/github.com/dshills/langgraph-go/graph/emit/null.go?s=701:726#L12">NullEmitter</a>
+				<a class="permalink" href="#NullEmitter">&#xb6;</a>
+				
+				
+			</h2>
+			<p>NullEmitter implements Emitter by discarding all events (T165).
+<p>This is a no-op emitter for production environments where event.
+logging is not desired. It implements the Emitter interface but.
+does nothing with emitted events.
+<p>Use cases:
+- Production deployments where observability overhead is unwanted.
+- Testing scenarios where event capture is not needed.
+- Disabling event emission without changing code.
+<p>Example usage:
+<p>// Disable all event logging.
+emitter := emit.NewNullEmitter().
+engine := graph.New(reducer, store, emitter, opts).
+
+			<pre>type NullEmitter struct{}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewNullEmitter">func <a href="/src/github.com/dshills/langgraph-go/graph/emit/null.go?s=915:949#L18">NewNullEmitter</a>
+					<a class="permalink" href="#NewNullEmitter">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewNullEmitter() *<a href="#NullEmitter">NullEmitter</a></pre>
+				<p>NewNullEmitter creates a new NullEmitter (T165).
+<p>Returns a NullEmitter that discards all events without any processing.
+This is safe for concurrent use and has zero overhead.
+
+				
+				
+			
+
+			
+				
+				<h3 id="NullEmitter.Emit">func (*NullEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/null.go?s=1146:1181#L26">Emit</a>
+					<a class="permalink" href="#NullEmitter.Emit">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (n *<a href="#NullEmitter">NullEmitter</a>) Emit(_ <a href="#Event">Event</a>)</pre>
+				<p>Emit discards the event without any processing (T165).
+<p>This method is a no-op that immediately returns. It never errors.
+and performs no I/O or processing.
+
+				
+				
+				
+			
+				
+				<h3 id="NullEmitter.EmitBatch">func (*NullEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/null.go?s=1278:1345#L31">EmitBatch</a>
+					<a class="permalink" href="#NullEmitter.EmitBatch">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (n *<a href="#NullEmitter">NullEmitter</a>) EmitBatch(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, _ []<a href="#Event">Event</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>EmitBatch discards multiple events in a single operation.
+
+				
+				
+				
+			
+				
+				<h3 id="NullEmitter.Flush">func (*NullEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/null.go?s=1432:1484#L37">Flush</a>
+					<a class="permalink" href="#NullEmitter.Flush">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (n *<a href="#NullEmitter">NullEmitter</a>) Flush(_ <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Flush is a no-op for null emitter.
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="OTelEmitter">type <a href="/src/github.com/dshills/langgraph-go/graph/emit/otel.go?s=1874:1971#L59">OTelEmitter</a>
+				<a class="permalink" href="#OTelEmitter">&#xb6;</a>
+				
+				
+			</h2>
+			<p>OTelEmitter implements Emitter by creating OpenTelemetry spans (T109-T111).
+<p>Each event becomes a span with:
+<ul>
+<li>Span name: event.Msg (e.g., &quot;node_start&quot;, &quot;node_end&quot;)
+<li>Attributes: runID, step, nodeID, and all event.Meta fields
+<li>Timestamps: Derived from span creation
+<li>Status: Set to error if event.Meta[&quot;error&quot;] exists
+</ul>
+<p>Supports distributed tracing by:
+<ul>
+<li>Creating child spans for node execution
+<li>Propagating trace context across service boundaries
+<li>Recording performance metrics as span attributes
+<li>Capturing errors with stack traces
+</ul>
+<p>Concurrency attributes (T111):
+<ul>
+<li>step_id: Unique identifier for the execution step
+<li>order_key: Deterministic ordering key for replay
+<li>attempt: Retry attempt number (0 for first attempt)
+</ul>
+<p>Usage:
+<pre>// Create tracer from OpenTelemetry provider
+tracer := otel.Tracer(&quot;langgraph-go&quot;)
+emitter := emit.NewOTelEmitter(tracer)
+
+// Emit events that become spans
+emitter.Emit(Event{
+    RunID: &quot;run-001&quot;,
+    Step: 1,
+    NodeID: &quot;nodeA&quot;,
+    Msg: &quot;node_start&quot;,
+})
+</pre>
+<p>Integration with OpenTelemetry:
+<pre>// Setup OpenTelemetry provider (application code)
+import (
+    &quot;go.opentelemetry.io/otel&quot;
+    sdktrace &quot;go.opentelemetry.io/otel/sdk/trace&quot;
+)
+
+// Create trace provider with exporter (Jaeger, Zipkin, etc.)
+tp := sdktrace.NewTracerProvider(
+    sdktrace.WithBatcher(exporter),
+)
+otel.SetTracerProvider(tp)
+
+// Create emitter
+tracer := otel.Tracer(&quot;langgraph-go&quot;)
+emitter := emit.NewOTelEmitter(tracer)
+
+// Use in engine
+engine := graph.New[MyState](
+    graph.WithEmitter(emitter),
+)
+</pre>
+
+			<pre>type OTelEmitter struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewOTelEmitter">func <a href="/src/github.com/dshills/langgraph-go/graph/emit/otel.go?s=2277:2330#L75">NewOTelEmitter</a>
+					<a class="permalink" href="#NewOTelEmitter">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewOTelEmitter(tracer <a href="/pkg/go.opentelemetry.io/otel/trace/">trace</a>.<a href="/pkg/go.opentelemetry.io/otel/trace/#Tracer">Tracer</a>) *<a href="#OTelEmitter">OTelEmitter</a></pre>
+				<p>NewOTelEmitter creates a new OTelEmitter (T109).
+<p>Parameters:
+<ul>
+<li>tracer: OpenTelemetry tracer from otel.Tracer(&quot;service-name&quot;)
+</ul>
+<p>Returns an OTelEmitter that creates spans for each event.
+<p>Example:
+<pre>tracer := otel.Tracer(&quot;langgraph-go&quot;)
+emitter := emit.NewOTelEmitter(tracer)
+</pre>
+
+				
+				
+			
+
+			
+				
+				<h3 id="OTelEmitter.Emit">func (*OTelEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/otel.go?s=3015:3054#L95">Emit</a>
+					<a class="permalink" href="#OTelEmitter.Emit">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (o *<a href="#OTelEmitter">OTelEmitter</a>) Emit(event <a href="#Event">Event</a>)</pre>
+				<p>Emit creates an OpenTelemetry span for the event (T109).
+<p>The span includes:
+<ul>
+<li>Name: event.Msg (e.g., &quot;node_start&quot;, &quot;node_end&quot;)
+<li>Attributes: All event fields and metadata
+<li>Status: Error if event contains error metadata
+<li>Timestamps: Start time (now), end time (immediate for instant events)
+</ul>
+<p>For performance, the span is immediately ended (not left open).
+This is appropriate for events representing points in time rather than durations.
+<p>If the event contains a &quot;duration_ms&quot; metadata field, the span&apos;s end time
+is adjusted to reflect the actual duration.
+
+				
+				
+				
+			
+				
+				<h3 id="OTelEmitter.EmitBatch">func (*OTelEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/otel.go?s=4244:4318#L133">EmitBatch</a>
+					<a class="permalink" href="#OTelEmitter.EmitBatch">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (o *<a href="#OTelEmitter">OTelEmitter</a>) EmitBatch(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, events []<a href="#Event">Event</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>EmitBatch creates multiple spans efficiently (T109).
+<p>Batching provides performance benefits by:
+<ul>
+<li>Amortizing tracer overhead across multiple spans
+<li>Enabling span processor batch optimizations
+<li>Reducing context switching overhead
+<li>Maintaining temporal locality for related events
+</ul>
+<p>All spans are created and ended immediately. They are recorded in the
+OpenTelemetry batch span processor for efficient export.
+<p>Parameters:
+<ul>
+<li>ctx: Context for cancellation and trace propagation
+<li>events: Events to emit as spans
+</ul>
+<p>Returns error if span creation fails (rare, usually indicates misconfiguration).
+
+				
+				
+				
+			
+				
+				<h3 id="OTelEmitter.Flush">func (*OTelEmitter) <a href="/src/github.com/dshills/langgraph-go/graph/emit/otel.go?s=5886:5940#L191">Flush</a>
+					<a class="permalink" href="#OTelEmitter.Flush">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (o *<a href="#OTelEmitter">OTelEmitter</a>) Flush(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Flush forces export of all pending spans (T110).
+<p>This method:
+<ul>
+<li>Calls ForceFlush on the tracer provider if available
+<li>Blocks until all spans are exported or timeout occurs
+<li>Should be called before application shutdown
+<li>Respects context cancellation and deadlines
+</ul>
+<p>OpenTelemetry typically buffers spans in a batch span processor for efficiency.
+Flush ensures these buffered spans are sent to the backend (Jaeger, Zipkin, etc.)
+before the application exits.
+<p>Usage:
+<pre>defer func() {
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+    if err := emitter.Flush(ctx); err != nil {
+        log.Printf(&quot;failed to flush spans: %v&quot;, err)
+    }
+}()
+</pre>
+<p>Parameters:
+<ul>
+<li>ctx: Context with timeout/cancellation
+</ul>
+<p>Returns error if flush fails or times out.
+
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.25.4.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="/LICENSE">BSD license</a>.<br>
+<a href="https://golang.org/doc/tos.html">Terms of Service</a> |
+<a href="https://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</body>
+</html>

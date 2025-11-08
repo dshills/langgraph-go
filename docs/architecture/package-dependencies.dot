@@ -1,0 +1,126 @@
+digraph PackageDependencies {
+    // Graph attributes
+    rankdir=LR;
+    fontname="Arial";
+    fontsize=14;
+    node [fontname="Arial", fontsize=11, shape=box, style=rounded];
+    edge [fontname="Arial", fontsize=10];
+
+    // Title
+    label="LangGraph-Go Package Dependencies";
+    labelloc="t";
+    fontsize=18;
+
+    // External Dependencies
+    subgraph cluster_external {
+        label="External Dependencies";
+        style=filled;
+        color=lightgray;
+
+        stdlib [label="Go Standard Library\n• context\n• sync\n• time\n• errors", shape=folder];
+        otel [label="OpenTelemetry\n(optional)\n• go.opentelemetry.io/otel", shape=folder];
+        llm_sdks [label="LLM SDKs\n(optional)\n• OpenAI Go SDK\n• Anthropic Go SDK\n• Google AI Go SDK", shape=folder];
+        db_drivers [label="Database Drivers\n(optional)\n• github.com/mattn/go-sqlite3\n• github.com/go-sql-driver/mysql", shape=folder];
+    }
+
+    // Core Package
+    subgraph cluster_graph {
+        label="graph (Core Package)";
+        style=filled;
+        color=lightblue;
+
+        graph_core [label="graph/\n• engine.go (Engine)\n• node.go (Node, NodeResult)\n• edge.go (Edge, Predicate)\n• state.go (Reducer)\n• scheduler.go (Frontier)\n• checkpoint.go\n• replay.go\n• options.go\n• errors.go\n• metrics.go\n• cost.go\n• policy.go\n• timeout.go", shape=component];
+    }
+
+    // Sub-packages
+    subgraph cluster_emit {
+        label="graph/emit";
+        style=filled;
+        color=lightcoral;
+
+        emit_pkg [label="emit/\n• emitter.go (Emitter interface)\n• event.go (Event struct)\n• log.go (LogEmitter)\n• otel.go (OTelEmitter)\n• buffered.go (BufferedEmitter)\n• null.go (NullEmitter)", shape=component];
+    }
+
+    subgraph cluster_store {
+        label="graph/store";
+        style=filled;
+        color=lightyellow;
+
+        store_pkg [label="store/\n• store.go (Store interface)\n• memory.go (MemStore)\n• sqlite.go (SQLiteStore)\n• mysql.go (MySQLStore)", shape=component];
+        store_mysql [label="store/mysql/\n• schema.go\n• queries.go\n• pool.go", shape=component];
+    }
+
+    subgraph cluster_model {
+        label="graph/model";
+        style=filled;
+        color=lightgreen;
+
+        model_pkg [label="model/\n• chat.go (ChatModel interface)\n• message.go\n• tool.go (ToolSpec)", shape=component];
+        model_openai [label="model/openai/\n• client.go (OpenAI adapter)", shape=component];
+        model_anthropic [label="model/anthropic/\n• client.go (Anthropic adapter)", shape=component];
+        model_google [label="model/google/\n• client.go (Google adapter)", shape=component];
+    }
+
+    subgraph cluster_tool {
+        label="graph/tool";
+        style=filled;
+        color=lavender;
+
+        tool_pkg [label="tool/\n• tool.go (Tool interface)\n• http.go (HTTPTool)\n• mock.go (MockTool)", shape=component];
+    }
+
+    // Dependency relationships - Core to stdlib
+    graph_core -> stdlib [label="uses"];
+
+    // Dependency relationships - Core to sub-packages
+    graph_core -> emit_pkg [label="depends on"];
+    graph_core -> store_pkg [label="depends on"];
+    graph_core -> model_pkg [label="imports\n(for types)", style=dashed];
+    graph_core -> tool_pkg [label="imports\n(for types)", style=dashed];
+
+    // Sub-package to stdlib
+    emit_pkg -> stdlib;
+    store_pkg -> stdlib;
+    model_pkg -> stdlib;
+    tool_pkg -> stdlib;
+
+    // Sub-package internal dependencies
+    store_mysql -> store_pkg [label="implements"];
+
+    model_openai -> model_pkg [label="implements"];
+    model_anthropic -> model_pkg [label="implements"];
+    model_google -> model_pkg [label="implements"];
+
+    // External dependencies
+    emit_pkg -> otel [label="optional", style=dashed];
+    store_pkg -> db_drivers [label="optional", style=dashed];
+    model_openai -> llm_sdks [label="uses"];
+    model_anthropic -> llm_sdks [label="uses"];
+    model_google -> llm_sdks [label="uses"];
+    tool_pkg -> stdlib [label="net/http"];
+
+    // User application
+    user_app [label="User Application", shape=component, style=filled, color=lightblue];
+    user_app -> graph_core [label="imports"];
+    user_app -> emit_pkg [label="imports\n(optional)", style=dashed];
+    user_app -> store_pkg [label="imports\n(optional)", style=dashed];
+    user_app -> model_pkg [label="imports\n(optional)", style=dashed];
+    user_app -> tool_pkg [label="imports\n(optional)", style=dashed];
+
+    // Legend
+    subgraph cluster_legend {
+        label="Legend";
+        style=filled;
+        color=white;
+
+        leg_required [label="Required Dependency", style=solid];
+        leg_optional [label="Optional Dependency", style=dashed];
+        leg_implements [label="Implements Interface"];
+
+        leg_required -> leg_optional [style=invis];
+        leg_optional -> leg_implements [style=invis];
+    }
+
+    // Design principles note
+    principles [label="Design Principles:\n\n• Core framework has ZERO external dependencies\n• Sub-packages are optional (use only what you need)\n• Interface-first design enables swappable implementations\n• Adapters isolate external SDKs\n• Pure Go core for maximum portability", shape=note, style=filled, color=lightyellow];
+}

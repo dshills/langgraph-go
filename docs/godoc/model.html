@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>model - Go Documentation Server</title>
+
+<link type="text/css" rel="stylesheet" href="/lib/godoc/style.css">
+
+<script>window.initFuncs = [];</script>
+<script src="/lib/godoc/jquery.js" defer></script>
+
+
+
+<script>var goVersion = "go1.25.4";</script>
+<script src="/lib/godoc/godocs.js" defer></script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="/pkg/">Go Documentation Server</a></div>
+<div class="top-heading" id="heading-narrow"><a href="/pkg/">GoDoc</a></div>
+<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="/search">
+<div id="menu">
+
+<span class="search-box"><input type="search" id="search" name="q" placeholder="Search" aria-label="Search" required><button type="submit"><span><!-- magnifying glass: --><svg width="24" height="24" viewBox="0 0 24 24"><title>submit search</title><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M0 0h24v24H0z" fill="none"/></svg></span></button></span>
+</div>
+</form>
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package model
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/dshills/langgraph-go/graph/model"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package model provides LLM integration adapters.
+<p>Package model provides LLM integration adapters.
+
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+			
+			
+				
+				<dd><a href="#ChatModel">type ChatModel</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ChatOut">type ChatOut</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Message">type Message</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MockChatCall">type MockChatCall</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MockChatModel">type MockChatModel</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MockChatModel.CallCount">func (m *MockChatModel) CallCount() int</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MockChatModel.Chat">func (m *MockChatModel) Chat(ctx context.Context, messages []Message, tools []ToolSpec) (ChatOut, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#MockChatModel.Reset">func (m *MockChatModel) Reset()</a></dd>
+				
+			
+				
+				<dd><a href="#ToolCall">type ToolCall</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ToolSpec">type ToolSpec</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/model/chat.go">chat.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/model/mock.go">mock.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				<p>Standard role constants for LLM conversations.
+These align with the conventions used by major LLM providers.
+
+				<pre>const (
+    <span class="comment">// RoleSystem indicates a system message that sets context or instructions.</span>
+    <span class="comment">// System messages typically appear first in a conversation.</span>
+    <span id="RoleSystem">RoleSystem</span> = &#34;system&#34;
+
+    <span class="comment">// RoleUser indicates a message from the human user.</span>
+    <span class="comment">// User messages contain questions, requests, or input data.</span>
+    <span id="RoleUser">RoleUser</span> = &#34;user&#34;
+
+    <span class="comment">// RoleAssistant indicates a response from the LLM.</span>
+    <span class="comment">// Assistant messages contain generated text or tool calls.</span>
+    <span id="RoleAssistant">RoleAssistant</span> = &#34;assistant&#34;
+)</pre>
+			
+		
+		
+		
+		
+			
+			
+			<h2 id="ChatModel">type <a href="/src/github.com/dshills/langgraph-go/graph/model/chat.go?s=1639:2386#L53">ChatModel</a>
+				<a class="permalink" href="#ChatModel">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ChatModel defines the interface for LLM chat providers.
+<p>This interface abstracts the differences between various LLM providers.
+(OpenAI, Anthropic, Google, local models) providing a unified API for.
+chat-based interactions.
+<p>Implementations should:
+- Handle provider-specific authentication.
+- Convert standard Message format to provider-specific format.
+- Parse provider responses back to standard ChatOut format.
+- Respect context cancellation and timeouts.
+- Handle retries and rate limiting appropriately.
+<p>Example usage:
+<p>model := openai.NewChatModel(apiKey).
+messages := []Message{.
+<pre>	    {Role: RoleUser, Content: &quot;What is the capital of France?&quot;},
+}.
+</pre>
+<p>out, err := model.Chat(ctx, messages, nil).
+if err != nil {.
+log.Fatal(err).
+}.
+fmt.Println(out.Text) // &quot;The capital of France is Paris.&quot;.
+<p>Example with tools:
+<p>tools := []ToolSpec{.
+{.
+<pre>Name:        &quot;get_weather&quot;,
+Description: &quot;Get current weather for a location&quot;,
+</pre>
+<p>Schema: map[string]interface{}{.
+<pre>&quot;type&quot;: &quot;object&quot;,
+</pre>
+<p>&quot;properties&quot;: map[string]interface{}{.
+&quot;location&quot;: map[string]interface{}{.
+<pre>	                    &quot;type&quot;:        &quot;string&quot;,
+	                    &quot;description&quot;: &quot;City name&quot;,
+	                },
+	            },
+	        },
+	    },
+}.
+</pre>
+<p>out, err := model.Chat(ctx, messages, tools).
+if err != nil {.
+log.Fatal(err).
+}.
+for _, call := range out.ToolCalls {.
+fmt.Printf(&quot;Tool: %s, Input: %v\n&quot;, call.Name, call.Input).
+}.
+
+			<pre>type ChatModel interface {
+    <span class="comment">// Chat sends messages to the LLM and returns the response.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Parameters:</span>
+    <span class="comment">// - ctx: Context for cancellation and timeout control.</span>
+    <span class="comment">// - messages: Conversation history (system, user, assistant messages).</span>
+    <span class="comment">// - tools: Optional tool specifications the LLM can use (nil if no tools).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Returns:</span>
+    <span class="comment">// - ChatOut: LLM response containing text and/or tool calls.</span>
+    <span class="comment">// - error: Provider errors, network errors, or context cancellation.</span>
+    <span class="comment">//</span>
+    <span class="comment">// The LLM may respond with:</span>
+    <span class="comment">// - Text only: Direct answer to the user&#39;s question.</span>
+    <span class="comment">// - Tool calls only: Request to invoke external tools.</span>
+    <span class="comment">// - Both: Text explanation plus tool invocations.</span>
+    Chat(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, messages []<a href="#Message">Message</a>, tools []<a href="#ToolSpec">ToolSpec</a>) (<a href="#ChatOut">ChatOut</a>, <a href="/pkg/builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ChatOut">type <a href="/src/github.com/dshills/langgraph-go/graph/model/chat.go?s=5697:5966#L187">ChatOut</a>
+				<a class="permalink" href="#ChatOut">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ChatOut represents the output from an LLM chat completion.
+<p>LLMs can respond with:
+- Text only: A direct answer.
+- Tool calls only: Request to invoke external tools.
+- Both: Text explanation plus tool invocations.
+<p>Example text response:
+<p>out := ChatOut{.
+<pre>	    Text: &quot;The capital of France is Paris.&quot;,
+}.
+</pre>
+<p>Example tool call response:
+<p>out := ChatOut{.
+ToolCalls: []ToolCall{.
+{.
+<pre>	            Name:  &quot;search_web&quot;,
+	            Input: map[string]interface{}{&quot;query&quot;: &quot;Paris landmarks&quot;},
+	        },
+	    },
+}.
+</pre>
+
+			<pre>type ChatOut struct {
+<span id="ChatOut.Text"></span>    <span class="comment">// Text contains the LLM&#39;s generated response.</span>
+    <span class="comment">// May be empty if the LLM only wants to call tools.</span>
+    Text <a href="/pkg/builtin/#string">string</a>
+
+<span id="ChatOut.ToolCalls"></span>    <span class="comment">// ToolCalls contains tools the LLM wants to invoke.</span>
+    <span class="comment">// Empty if the LLM provided a direct text response.</span>
+    ToolCalls []<a href="#ToolCall">ToolCall</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Message">type <a href="/src/github.com/dshills/langgraph-go/graph/model/chat.go?s=3075:3363#L90">Message</a>
+				<a class="permalink" href="#Message">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Message represents a single message in an LLM conversation.
+<p>Messages are the fundamental unit of communication with LLM providers.
+They follow the common chat format used by OpenAI, Anthropic, Google, and other providers.
+<p>Typical conversation structure:
+- System message (optional): Sets context and behavior.
+- User messages: User input or questions.
+- Assistant messages: LLM responses.
+<p>Example:
+<p>conversation := []Message{.
+<pre>	    {Role: RoleSystem, Content: &quot;You are a helpful assistant.&quot;},
+	    {Role: RoleUser, Content: &quot;What is the capital of France?&quot;},
+	    {Role: RoleAssistant, Content: &quot;The capital of France is Paris.&quot;},
+}.
+</pre>
+
+			<pre>type Message struct {
+<span id="Message.Role"></span>    <span class="comment">// Role identifies the message sender.</span>
+    <span class="comment">// Standard roles: &#34;system&#34;, &#34;user&#34;, &#34;assistant&#34;.</span>
+    <span class="comment">// Use the Role* constants for consistency.</span>
+    Role <a href="/pkg/builtin/#string">string</a>
+
+<span id="Message.Content"></span>    <span class="comment">// Content contains the message text.</span>
+    <span class="comment">// May be empty for messages that only contain tool calls.</span>
+    Content <a href="/pkg/builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="MockChatCall">type <a href="/src/github.com/dshills/langgraph-go/graph/model/mock.go?s=1538:1607#L48">MockChatCall</a>
+				<a class="permalink" href="#MockChatCall">&#xb6;</a>
+				
+				
+			</h2>
+			<p>MockChatCall records a single invocation of Chat().
+
+			<pre>type MockChatCall struct {
+<span id="MockChatCall.Messages"></span>    Messages []<a href="#Message">Message</a>
+<span id="MockChatCall.Tools"></span>    Tools    []<a href="#ToolSpec">ToolSpec</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="MockChatModel">type <a href="/src/github.com/dshills/langgraph-go/graph/model/mock.go?s=873:1481#L30">MockChatModel</a>
+				<a class="permalink" href="#MockChatModel">&#xb6;</a>
+				
+				
+			</h2>
+			<p>MockChatModel is a test implementation of ChatModel.
+<p>Use MockChatModel in tests to verify workflow behavior without.
+making actual LLM API calls. It provides:
+- Configurable responses.
+- Call history tracking.
+- Error injection.
+- Thread-safe operation.
+<p>Example usage:
+<p>mock := &amp;MockChatModel{.
+Responses: []ChatOut{.
+<pre>	        {Text: &quot;First response&quot;},
+	        {Text: &quot;Second response&quot;},
+	    },
+}.
+</pre>
+<p>out, err := mock.Chat(ctx, messages, nil).
+// Returns &quot;First response&quot;, then &quot;Second response&quot; on subsequent calls.
+<p>Example with error injection:
+<p>mock := &amp;MockChatModel{.
+<pre>	    Err: errors.New(&quot;API error&quot;),
+}.
+</pre>
+<p>_, err := mock.Chat(ctx, messages, nil).
+// Returns the configured error.
+
+			<pre>type MockChatModel struct {
+<span id="MockChatModel.Responses"></span>    <span class="comment">// Responses contains the sequence of responses to return.</span>
+    <span class="comment">// Each call to Chat() returns the next response in order.</span>
+    <span class="comment">// If all responses are consumed, the last response repeats.</span>
+    Responses []<a href="#ChatOut">ChatOut</a>
+
+<span id="MockChatModel.Err"></span>    <span class="comment">// Err, if set, will be returned by Chat() instead of a response.</span>
+    Err <a href="/pkg/builtin/#error">error</a>
+
+<span id="MockChatModel.Calls"></span>    <span class="comment">// Calls tracks the history of all Chat() invocations.</span>
+    <span class="comment">// Useful for verifying that nodes called the model with expected inputs.</span>
+    Calls []<a href="#MockChatCall">MockChatCall</a>
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockChatModel.CallCount">func (*MockChatModel) <a href="/src/github.com/dshills/langgraph-go/graph/model/mock.go?s=3224:3263#L122">CallCount</a>
+					<a class="permalink" href="#MockChatModel.CallCount">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockChatModel">MockChatModel</a>) CallCount() <a href="/pkg/builtin/#int">int</a></pre>
+				<p>CallCount returns the number of times Chat() has been called.
+<p>Thread-safe convenience method:
+<p>if mock.CallCount() != 3 {.
+t.Errorf(&quot;expected 3 calls, got %d&quot;, mock.CallCount()).
+}.
+
+				
+				
+				
+			
+				
+				<h3 id="MockChatModel.Chat">func (*MockChatModel) <a href="/src/github.com/dshills/langgraph-go/graph/model/mock.go?s=1843:1947#L60">Chat</a>
+					<a class="permalink" href="#MockChatModel.Chat">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockChatModel">MockChatModel</a>) Chat(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, messages []<a href="#Message">Message</a>, tools []<a href="#ToolSpec">ToolSpec</a>) (<a href="#ChatOut">ChatOut</a>, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>Chat implements the ChatModel interface.
+<p>Returns:
+- The next response from Responses (or repeats the last response).
+- Or Err if configured.
+<p>Always records the call in Calls history regardless of success/failure.
+
+				
+				
+				
+			
+				
+				<h3 id="MockChatModel.Reset">func (*MockChatModel) <a href="/src/github.com/dshills/langgraph-go/graph/model/mock.go?s=2918:2949#L107">Reset</a>
+					<a class="permalink" href="#MockChatModel.Reset">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockChatModel">MockChatModel</a>) Reset()</pre>
+				<p>Reset clears the call history and resets the response index.
+<p>Useful when reusing the same mock across multiple test cases:
+<p>mock := &amp;MockChatModel{Responses: []ChatOut{{Text: &quot;OK&quot;}}}.
+<pre>// ... run test 1 ...
+</pre>
+<p>mock.Reset().
+<pre>// ... run test 2 with clean state ...
+</pre>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="ToolCall">type <a href="/src/github.com/dshills/langgraph-go/graph/model/chat.go?s=6372:6697#L211">ToolCall</a>
+				<a class="permalink" href="#ToolCall">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ToolCall represents a request from the LLM to invoke a specific tool.
+<p>After the LLM requests tool calls, the application should:
+1. Execute each tool with the provided Input.
+2. Collect the results.
+3. Send results back to the LLM in a new message.
+<p>Example:
+<p>call := ToolCall{.
+<pre>	    Name:  &quot;calculate&quot;,
+	    Input: map[string]interface{}{&quot;expression&quot;: &quot;2+2&quot;},
+}.
+</pre>
+
+			<pre>type ToolCall struct {
+<span id="ToolCall.Name"></span>    <span class="comment">// Name identifies which tool to call.</span>
+    <span class="comment">// Must match a ToolSpec.Name from the available tools.</span>
+    Name <a href="/pkg/builtin/#string">string</a>
+
+<span id="ToolCall.Input"></span>    <span class="comment">// Input contains the parameters for the tool call.</span>
+    <span class="comment">// Structure matches the ToolSpec.Schema for this tool.</span>
+    <span class="comment">// May be nil for tools that take no parameters.</span>
+    Input map[<a href="/pkg/builtin/#string">string</a>]interface{}
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ToolSpec">type <a href="/src/github.com/dshills/langgraph-go/graph/model/chat.go?s=4708:5117#L148">ToolSpec</a>
+				<a class="permalink" href="#ToolSpec">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ToolSpec describes a tool that an LLM can call.
+<p>Tools enable LLMs to interact with external systems:
+- Web searches.
+- Database queries.
+- API calls.
+- Code execution.
+<p>The Schema field follows JSON Schema format and describes the expected input parameters.
+<p>Example:
+<p>weatherTool := ToolSpec{.
+<pre>Name:        &quot;get_weather&quot;,
+Description: &quot;Get current weather for a location&quot;,
+</pre>
+<p>Schema: map[string]interface{}{.
+<pre>&quot;type&quot;: &quot;object&quot;,
+</pre>
+<p>&quot;properties&quot;: map[string]interface{}{.
+&quot;location&quot;: map[string]interface{}{.
+<pre>	                &quot;type&quot;:        &quot;string&quot;,
+	                &quot;description&quot;: &quot;City name or coordinates&quot;,
+	            },
+	        },
+	        &quot;required&quot;: []string{&quot;location&quot;},
+	    },
+}.
+</pre>
+
+			<pre>type ToolSpec struct {
+<span id="ToolSpec.Name"></span>    <span class="comment">// Name uniquely identifies the tool.</span>
+    <span class="comment">// Must be a valid function name (alphanumeric + underscores).</span>
+    Name <a href="/pkg/builtin/#string">string</a>
+
+<span id="ToolSpec.Description"></span>    <span class="comment">// Description explains what the tool does.</span>
+    <span class="comment">// The LLM uses this to decide when to call the tool.</span>
+    Description <a href="/pkg/builtin/#string">string</a>
+
+<span id="ToolSpec.Schema"></span>    <span class="comment">// Schema defines the tool&#39;s input parameters using JSON Schema format.</span>
+    <span class="comment">// Optional for tools with no parameters.</span>
+    Schema map[<a href="/pkg/builtin/#string">string</a>]interface{}
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+				<tr>
+				
+					<td class="pkg-name" style="padding-left: 0px;">
+						<a href="anthropic/">anthropic</a>
+					</td>
+				
+					<td class="pkg-synopsis">
+						Package anthropic provides ChatModel adapter for Anthropic Claude API.
+					</td>
+				</tr>
+			
+				<tr>
+				
+					<td class="pkg-name" style="padding-left: 0px;">
+						<a href="google/">google</a>
+					</td>
+				
+					<td class="pkg-synopsis">
+						Package google provides ChatModel adapter for Google Gemini API.
+					</td>
+				</tr>
+			
+				<tr>
+				
+					<td class="pkg-name" style="padding-left: 0px;">
+						<a href="openai/">openai</a>
+					</td>
+				
+					<td class="pkg-synopsis">
+						Package openai provides ChatModel adapter for OpenAI GPT API.
+					</td>
+				</tr>
+			
+		</table>
+	</div>
+
+
+
+<div id="footer">
+Build version go1.25.4.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="/LICENSE">BSD license</a>.<br>
+<a href="https://golang.org/doc/tos.html">Terms of Service</a> |
+<a href="https://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</body>
+</html>

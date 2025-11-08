@@ -1,0 +1,218 @@
+digraph LangGraphGo {
+    // Graph attributes
+    rankdir=TB;
+    compound=true;
+    fontname="Arial";
+    fontsize=14;
+    node [fontname="Arial", fontsize=11, shape=box, style=rounded];
+    edge [fontname="Arial", fontsize=10];
+
+    // Title
+    label="LangGraph-Go System Architecture";
+    labelloc="t";
+    fontsize=18;
+
+    // User Application Layer
+    subgraph cluster_user {
+        label="User Application";
+        style=filled;
+        color=lightblue;
+
+        app [label="Application Code\n(Nodes, Reducers, State)", shape=component];
+    }
+
+    // Core Framework Layer
+    subgraph cluster_core {
+        label="Core Framework (graph package)";
+        style=filled;
+        color=lightgreen;
+
+        subgraph cluster_engine {
+            label="Execution Engine";
+            style=filled;
+            color="#e6f3e6";
+
+            engine [label="Engine\n(Orchestrator)", shape=ellipse];
+            scheduler [label="Scheduler\n(Concurrency)", shape=ellipse];
+            frontier [label="Frontier Queue\n(Work Queue)", shape=cylinder];
+        }
+
+        subgraph cluster_state {
+            label="State Management";
+            style=filled;
+            color="#e6f3e6";
+
+            reducer [label="Reducer\n(State Merger)", shape=ellipse];
+            checkpoint [label="Checkpoint\n(Snapshots)", shape=ellipse];
+            replay [label="Replay\n(Determinism)", shape=ellipse];
+        }
+
+        subgraph cluster_routing {
+            label="Routing & Control Flow";
+            style=filled;
+            color="#e6f3e6";
+
+            edges [label="Edges\n(Connections)", shape=ellipse];
+            predicates [label="Predicates\n(Conditions)", shape=ellipse];
+        }
+
+        subgraph cluster_execution {
+            label="Node Execution";
+            style=filled;
+            color="#e6f3e6";
+
+            nodes [label="Node Interface\n(Run method)", shape=ellipse];
+            timeout [label="Timeout Handler", shape=ellipse];
+            retry [label="Retry Logic", shape=ellipse];
+        }
+    }
+
+    // Persistence Layer
+    subgraph cluster_persistence {
+        label="Persistence Layer (store package)";
+        style=filled;
+        color=lightyellow;
+
+        store_iface [label="Store Interface", shape=hexagon];
+
+        subgraph cluster_stores {
+            label="Store Implementations";
+            style=filled;
+            color="#fffacd";
+
+            mem_store [label="MemStore\n(Testing)", shape=cylinder];
+            sqlite_store [label="SQLiteStore\n(Dev/Small)", shape=cylinder];
+            mysql_store [label="MySQLStore\n(Production)", shape=cylinder];
+        }
+    }
+
+    // Observability Layer
+    subgraph cluster_observability {
+        label="Observability Layer (emit package)";
+        style=filled;
+        color=lightcoral;
+
+        emitter_iface [label="Emitter Interface", shape=hexagon];
+
+        subgraph cluster_emitters {
+            label="Emitter Implementations";
+            style=filled;
+            color="#ffcccb";
+
+            log_emitter [label="LogEmitter\n(Stdout/File)", shape=note];
+            otel_emitter [label="OTelEmitter\n(Tracing)", shape=note];
+            buffered_emitter [label="BufferedEmitter\n(In-Memory)", shape=note];
+            null_emitter [label="NullEmitter\n(No-op)", shape=note];
+        }
+    }
+
+    // Integration Layer
+    subgraph cluster_integrations {
+        label="Integration Layer";
+        style=filled;
+        color=lavender;
+
+        subgraph cluster_llm {
+            label="LLM Integration (model package)";
+            style=filled;
+            color="#e6e6fa";
+
+            chat_iface [label="ChatModel Interface", shape=hexagon];
+            openai [label="OpenAI\nAdapter", shape=component];
+            anthropic [label="Anthropic\nAdapter", shape=component];
+            google [label="Google\nAdapter", shape=component];
+        }
+
+        subgraph cluster_tools {
+            label="Tool System (tool package)";
+            style=filled;
+            color="#e6e6fa";
+
+            tool_iface [label="Tool Interface", shape=hexagon];
+            http_tool [label="HTTP Tool", shape=component];
+        }
+    }
+
+    // External Systems
+    subgraph cluster_external {
+        label="External Systems";
+        style=filled;
+        color=lightgray;
+
+        llm_providers [label="LLM Providers\n(OpenAI, Anthropic, Google)", shape=cloud];
+        databases [label="Databases\n(SQLite, MySQL)", shape=cylinder];
+        tracing [label="Tracing Systems\n(Jaeger, Zipkin)", shape=cloud];
+        apis [label="External APIs\n(HTTP)", shape=cloud];
+    }
+
+    // Relationships - User to Core
+    app -> engine [label="configure & run"];
+    app -> nodes [label="implement"];
+    app -> reducer [label="provide"];
+
+    // Relationships - Engine internals
+    engine -> scheduler [label="delegates work"];
+    scheduler -> frontier [label="manages queue"];
+    frontier -> nodes [label="schedules execution"];
+    nodes -> timeout [label="enforces limits"];
+    nodes -> retry [label="on failure"];
+
+    // State flow
+    nodes -> reducer [label="emit state delta"];
+    reducer -> checkpoint [label="persist state"];
+    checkpoint -> replay [label="enable replay"];
+
+    // Routing
+    engine -> edges [label="follows edges"];
+    edges -> predicates [label="evaluates conditions"];
+    predicates -> scheduler [label="determines next nodes"];
+
+    // Persistence
+    engine -> store_iface [label="uses"];
+    store_iface -> mem_store [style=dashed];
+    store_iface -> sqlite_store [style=dashed];
+    store_iface -> mysql_store [style=dashed];
+    mysql_store -> databases;
+    sqlite_store -> databases;
+
+    // Observability
+    engine -> emitter_iface [label="emits events"];
+    nodes -> emitter_iface [label="emit events"];
+    emitter_iface -> log_emitter [style=dashed];
+    emitter_iface -> otel_emitter [style=dashed];
+    emitter_iface -> buffered_emitter [style=dashed];
+    emitter_iface -> null_emitter [style=dashed];
+    otel_emitter -> tracing;
+
+    // LLM Integration
+    nodes -> chat_iface [label="call LLMs"];
+    chat_iface -> openai [style=dashed];
+    chat_iface -> anthropic [style=dashed];
+    chat_iface -> google [style=dashed];
+    openai -> llm_providers;
+    anthropic -> llm_providers;
+    google -> llm_providers;
+
+    // Tool Integration
+    nodes -> tool_iface [label="use tools"];
+    tool_iface -> http_tool [style=dashed];
+    http_tool -> apis;
+
+    // Legend
+    subgraph cluster_legend {
+        label="Legend";
+        style=filled;
+        color=white;
+
+        leg_iface [label="Interface", shape=hexagon];
+        leg_impl [label="Implementation", shape=box, style=rounded];
+        leg_data [label="Data Storage", shape=cylinder];
+        leg_external [label="External System", shape=cloud];
+        leg_solid [label="Direct Dependency", style=solid];
+        leg_dashed [label="Implementation Choice", style=dashed];
+
+        leg_solid -> leg_dashed [style=invis];
+        leg_iface -> leg_impl [style=invis];
+        leg_data -> leg_external [style=invis];
+    }
+}
