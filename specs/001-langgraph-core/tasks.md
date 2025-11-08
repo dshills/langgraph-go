@@ -321,7 +321,7 @@
 
 ### Documentation ✅ COMPLETE
 
-- [ ] T201 Generate godoc for all exported types and functions (DEFERRED)
+- [X] T201 Generate godoc for all exported types and functions in docs/godoc/
 - [ ] T202 Create architecture diagram (DOT/PNG) in docs/architecture/ (DEFERRED)
 - [X] T203 Write user guide: Getting Started in docs/guides/01-getting-started.md
 - [X] T204 Write user guide: Building Workflows in docs/guides/02-building-workflows.md
@@ -346,8 +346,8 @@
 **Task IDs Planned**: T001-T215 (215 task IDs allocated)
 **Tasks Executed**: 157 actual task items (consolidation during implementation)
 **Status Breakdown**:
-- ✅ **Completed**: 154 tasks (98.1% of executed tasks)
-- ⏸️ **Deferred**: 2 tasks (1.3%) - T201 (Godoc HTML), T202 (Architecture diagram)
+- ✅ **Completed**: 155 tasks (98.7% of executed tasks)
+- ⏸️ **Deferred**: 1 task (0.6%) - T202 (Architecture diagram)
 - ⏭️ **Skipped**: 1 task (0.6%) - T213 (Migration guide - N/A for initial release)
 
 **v1.0 Release Readiness**: 100% of functional features complete (all core + optional enhancements done)
@@ -360,7 +360,7 @@
 - Phase 5 (US3 - Parallel): 24/24 ✅ 100%
 - Phase 6 (US4 - LLM): 3/3 ✅ 100%
 - Phase 7 (US5 - Events): 24/24 ✅ 100%
-- Phase 8 (Polish): 23/26 ✅ 88% (3 deferred/skipped: T201, T202, T213)
+- Phase 8 (Polish): 24/26 ✅ 92% (2 deferred/skipped: T202, T213)
 
 **Phase 8 Subsystem Status**:
 - Error Handling & Retry: ✅ COMPLETE (6 tasks)
@@ -422,13 +422,13 @@
 - ✅ 110+ unit and integration tests
 - ✅ Performance benchmarks and profiling support
 - ✅ 9,000+ lines of user-facing documentation
-- ⏸️ Auto-generated documentation deferred (Godoc HTML, architecture diagrams)
+- ⏸️ Auto-generated architecture diagram deferred (post-v1.0)
 
 **v1.0 Release Status**:
 
 **✅ Core Features** (US1-US5):
 - All 5 user stories implemented and tested
-- 154 completed tasks across 8 phases
+- 155 completed tasks across 8 phases
 
 **✅ Optional Feature Enhancements**:
 - OpenTelemetry integration (T192-T195) - **COMPLETE**
@@ -438,8 +438,14 @@
   - T195: Documentation → `graph/emit/README.md` (comprehensive OTel guide)
   - Evidence: Run `go test -v -cover ./graph/emit` to verify
 
-**⏸️ Deferred** (post-v1.0 documentation):
-- T201: Godoc HTML generation (auto-generated from code comments via `godoc`)
+**✅ Documentation Enhancements**:
+- T201: Godoc HTML generation - **COMPLETE**
+  - Generated comprehensive HTML documentation for all packages
+  - Output: `docs/godoc/` with 6 HTML files (index, graph, emit, store, model, tool)
+  - Includes README with viewing instructions
+  - Evidence: See `docs/godoc/README.md` for generated documentation
+
+**⏸️ Deferred** (post-v1.0):
 - T202: Architecture diagram (can generate from codebase with `go-callvis` or manually)
 
 **⏭️ Skipped**:

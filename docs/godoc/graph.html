@@ -1,0 +1,3311 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>graph - Go Documentation Server</title>
+
+<link type="text/css" rel="stylesheet" href="/lib/godoc/style.css">
+
+<script>window.initFuncs = [];</script>
+<script src="/lib/godoc/jquery.js" defer></script>
+
+
+
+<script>var goVersion = "go1.25.4";</script>
+<script src="/lib/godoc/godocs.js" defer></script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="/pkg/">Go Documentation Server</a></div>
+<div class="top-heading" id="heading-narrow"><a href="/pkg/">GoDoc</a></div>
+<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="/search">
+<div id="menu">
+
+<span class="search-box"><input type="search" id="search" name="q" placeholder="Search" aria-label="Search" required><button type="submit"><span><!-- magnifying glass: --><svg width="24" height="24" viewBox="0 0 24 24"><title>submit search</title><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M0 0h24v24H0z" fill="none"/></svg></span></button></span>
+</div>
+</form>
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package graph
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/dshills/langgraph-go/graph"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package graph provides the core graph execution engine for LangGraph-Go.
+<p>Package graph provides the core graph execution engine for LangGraph-Go.
+<p>Package graph provides the core graph execution engine for LangGraph-Go.
+<p>Package graph provides the core graph execution engine for LangGraph-Go.
+<p>Package graph provides the core graph execution engine for LangGraph-Go.
+<p>Package graph provides the core graph execution engine for LangGraph-Go.
+<p>Package graph provides the core graph execution engine for LangGraph-Go.
+<p>Package graph provides the core graph execution engine for LangGraph-Go.
+<p>Package graph provides the core graph execution engine for LangGraph-Go.
+
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+				
+				<dd><a href="#ComputeOrderKey">func ComputeOrderKey(parentNodeID string, edgeIndex int) uint64</a></dd>
+			
+			
+				
+				<dd><a href="#Checkpoint">type Checkpoint</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ConflictPolicy">type ConflictPolicy</a></dd>
+				
+				
+			
+				
+				<dd><a href="#CostTracker">type CostTracker</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewCostTracker">func NewCostTracker(runID, currency string) *CostTracker</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#CostTracker.Disable">func (ct *CostTracker) Disable()</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#CostTracker.Enable">func (ct *CostTracker) Enable()</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#CostTracker.GetCallHistory">func (ct *CostTracker) GetCallHistory() []LLMCall</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#CostTracker.GetCostByModel">func (ct *CostTracker) GetCostByModel() map[string]float64</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#CostTracker.GetTokenUsage">func (ct *CostTracker) GetTokenUsage() (inputTokens, outputTokens int64)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#CostTracker.GetTotalCost">func (ct *CostTracker) GetTotalCost() float64</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#CostTracker.RecordLLMCall">func (ct *CostTracker) RecordLLMCall(model string, inputTokens, outputTokens int, nodeID string) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#CostTracker.Reset">func (ct *CostTracker) Reset()</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#CostTracker.SetCustomPricing">func (ct *CostTracker) SetCustomPricing(model string, inputPer1M, outputPer1M float64)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#CostTracker.String">func (ct *CostTracker) String() string</a></dd>
+				
+			
+				
+				<dd><a href="#Edge">type Edge</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Engine">type Engine</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#New">func New[S any](reducer Reducer[S], st store.Store[S], emitter emit.Emitter, options ...interface{}) *Engine[S]</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Engine.Add">func (e *Engine[S]) Add(nodeID string, node Node[S]) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Engine.Connect">func (e *Engine[S]) Connect(from, to string, predicate Predicate[S]) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Engine.ReplayRun">func (e *Engine[S]) ReplayRun(ctx context.Context, runID string) (S, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Engine.ResumeFromCheckpoint">func (e *Engine[S]) ResumeFromCheckpoint(ctx context.Context, cpID string, newRunID string, startNode string) (S, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Engine.Run">func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Engine.RunWithCheckpoint">func (e *Engine[S]) RunWithCheckpoint(ctx context.Context, checkpoint store.CheckpointV2[S]) (S, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Engine.SaveCheckpoint">func (e *Engine[S]) SaveCheckpoint(ctx context.Context, runID string, cpID string) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Engine.StartAt">func (e *Engine[S]) StartAt(nodeID string) error</a></dd>
+				
+			
+				
+				<dd><a href="#EngineError">type EngineError</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#EngineError.Error">func (e *EngineError) Error() string</a></dd>
+				
+			
+				
+				<dd><a href="#Frontier">type Frontier</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewFrontier">func NewFrontier[S any](ctx context.Context, capacity int, runID string, metrics *PrometheusMetrics, emitter emit.Emitter) *Frontier[S]</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Frontier.Dequeue">func (f *Frontier[S]) Dequeue(ctx context.Context) (WorkItem[S], error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Frontier.Enqueue">func (f *Frontier[S]) Enqueue(ctx context.Context, item WorkItem[S]) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Frontier.Len">func (f *Frontier[S]) Len() int</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Frontier.Metrics">func (f *Frontier[S]) Metrics() SchedulerMetrics</a></dd>
+				
+			
+				
+				<dd><a href="#LLMCall">type LLMCall</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ModelPricing">type ModelPricing</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Next">type Next</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Goto">func Goto(nodeID string) Next</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Many">func Many(nodeIDs []string) Next</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Stop">func Stop() Next</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Node">type Node</a></dd>
+				
+				
+			
+				
+				<dd><a href="#NodeError">type NodeError</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NodeError.Error">func (e *NodeError) Error() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NodeError.Unwrap">func (e *NodeError) Unwrap() error</a></dd>
+				
+			
+				
+				<dd><a href="#NodeFunc">type NodeFunc</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NodeFunc.Run">func (f NodeFunc[S]) Run(ctx context.Context, state S) NodeResult[S]</a></dd>
+				
+			
+				
+				<dd><a href="#NodePolicy">type NodePolicy</a></dd>
+				
+				
+			
+				
+				<dd><a href="#NodeResult">type NodeResult</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Option">type Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithBackpressureTimeout">func WithBackpressureTimeout(d time.Duration) Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithConflictPolicy">func WithConflictPolicy(policy ConflictPolicy) Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithCostTracker">func WithCostTracker(tracker *CostTracker) Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithDefaultNodeTimeout">func WithDefaultNodeTimeout(d time.Duration) Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithMaxConcurrent">func WithMaxConcurrent(n int) Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithMaxSteps">func WithMaxSteps(n int) Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithMetrics">func WithMetrics(metrics *PrometheusMetrics) Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithQueueDepth">func WithQueueDepth(n int) Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithReplayMode">func WithReplayMode(enabled bool) Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithRunWallClockBudget">func WithRunWallClockBudget(d time.Duration) Option</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#WithStrictReplay">func WithStrictReplay(enabled bool) Option</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Options">type Options</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Predicate">type Predicate</a></dd>
+				
+				
+			
+				
+				<dd><a href="#PrometheusMetrics">type PrometheusMetrics</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#NewPrometheusMetrics">func NewPrometheusMetrics(registry prometheus.Registerer) *PrometheusMetrics</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PrometheusMetrics.Disable">func (pm *PrometheusMetrics) Disable()</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PrometheusMetrics.Enable">func (pm *PrometheusMetrics) Enable()</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PrometheusMetrics.IncrementBackpressure">func (pm *PrometheusMetrics) IncrementBackpressure(runID, reason string)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PrometheusMetrics.IncrementMergeConflicts">func (pm *PrometheusMetrics) IncrementMergeConflicts(runID, conflictType string)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PrometheusMetrics.IncrementRetries">func (pm *PrometheusMetrics) IncrementRetries(runID, nodeID, reason string)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PrometheusMetrics.RecordStepLatency">func (pm *PrometheusMetrics) RecordStepLatency(runID, nodeID string, latency time.Duration, status string)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PrometheusMetrics.Reset">func (pm *PrometheusMetrics) Reset()</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PrometheusMetrics.UpdateInflightNodes">func (pm *PrometheusMetrics) UpdateInflightNodes(count int)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#PrometheusMetrics.UpdateQueueDepth">func (pm *PrometheusMetrics) UpdateQueueDepth(depth int)</a></dd>
+				
+			
+				
+				<dd><a href="#RecordedIO">type RecordedIO</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Reducer">type Reducer</a></dd>
+				
+				
+			
+				
+				<dd><a href="#RetryPolicy">type RetryPolicy</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#RetryPolicy.Validate">func (rp *RetryPolicy) Validate() error</a></dd>
+				
+			
+				
+				<dd><a href="#SchedulerMetrics">type SchedulerMetrics</a></dd>
+				
+				
+			
+				
+				<dd><a href="#SideEffectPolicy">type SideEffectPolicy</a></dd>
+				
+				
+			
+				
+				<dd><a href="#WorkItem">type WorkItem</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/checkpoint.go">checkpoint.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/cost.go">cost.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/edge.go">edge.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/engine.go">engine.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/errors.go">errors.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/metrics.go">metrics.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/node.go">node.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/norace.go">norace.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/options.go">options.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/policy.go">policy.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/replay.go">replay.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/scheduler.go">scheduler.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/state.go">state.go</a>
+			
+				<a href="/src/github.com/dshills/langgraph-go/graph/timeout.go">timeout.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				<p>Context keys for propagating execution metadata to nodes.
+These values are injected into the context passed to Node.Run() and can be
+retrieved by nodes to access execution metadata such as the current run ID,
+step number, and node ID.
+<p>Example usage in a node:
+<pre>func (n *MyNode) Run(ctx context.Context, state MyState) NodeResult[MyState] {
+    runID := ctx.Value(RunIDKey).(string)
+    stepID := ctx.Value(StepIDKey).(int)
+    // Use metadata for logging, tracing, etc.
+}
+</pre>
+
+				<pre>const (
+    <span class="comment">// RunIDKey is the context key for the unique workflow run identifier.</span>
+    <span id="RunIDKey">RunIDKey</span> contextKey = &#34;langgraph.run_id&#34;
+
+    <span class="comment">// StepIDKey is the context key for the current execution step number.</span>
+    <span id="StepIDKey">StepIDKey</span> contextKey = &#34;langgraph.step_id&#34;
+
+    <span class="comment">// NodeIDKey is the context key for the current node identifier.</span>
+    <span id="NodeIDKey">NodeIDKey</span> contextKey = &#34;langgraph.node_id&#34;
+
+    <span class="comment">// OrderKeyKey is the context key for the deterministic ordering key.</span>
+    <span class="comment">// This hash determines the order in which concurrent node results are merged.</span>
+    <span id="OrderKeyKey">OrderKeyKey</span> contextKey = &#34;langgraph.order_key&#34;
+
+    <span class="comment">// AttemptKey is the context key for the current retry attempt number (0-based).</span>
+    <span class="comment">// Value is 0 for first execution, incremented on each retry.</span>
+    <span id="AttemptKey">AttemptKey</span> contextKey = &#34;langgraph.attempt&#34;
+
+    <span class="comment">// RNGKey is the context key for the seeded random number generator.</span>
+    <span class="comment">// Provides deterministic randomness for replay scenarios.</span>
+    <span class="comment">// Type: *rand.Rand (from math/rand package)</span>
+    <span id="RNGKey">RNGKey</span> contextKey = &#34;langgraph.rng&#34;
+
+    <span class="comment">// RecordedIOsKey is the context key for storing recorded I/O during replay.</span>
+    <span id="RecordedIOsKey">RecordedIOsKey</span> contextKey = &#34;langgraph.recordedIOs&#34;
+)</pre>
+			
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>ErrBackpressure indicates that downstream processing cannot keep up with.
+the current execution rate. This typically occurs when output buffers are.
+full or rate limits are exceeded. This is distinct from ErrBackpressureTimeout.
+which is specifically for frontier queue overflow.
+
+				<pre>var <span id="ErrBackpressure">ErrBackpressure</span> = <a href="/pkg/errors/">errors</a>.<a href="/pkg/errors/#New">New</a>(&#34;downstream backpressure exceeded threshold&#34;)</pre>
+			
+				<p>ErrBackpressureTimeout is returned when the frontier queue remains full beyond the configured timeout.
+This indicates nodes are being enqueued faster than they can be executed.
+The engine checkpoints state and pauses execution to prevent memory exhaustion.
+Resume execution after reducing load or increasing MaxConcurrentNodes.
+
+				<pre>var <span id="ErrBackpressureTimeout">ErrBackpressureTimeout</span> = <a href="/pkg/errors/">errors</a>.<a href="/pkg/errors/#New">New</a>(&#34;backpressure timeout: frontier queue full&#34;)</pre>
+			
+				<p>ErrIdempotencyViolation is returned when attempting to commit a checkpoint with a duplicate idempotency key.
+This prevents duplicate execution of non-idempotent operations (e.g., charging payment twice).
+Idempotency keys are computed from runID, stepID, frontier state, and accumulated state.
+If this error occurs, the checkpoint was already successfully committed in a previous execution.
+
+				<pre>var <span id="ErrIdempotencyViolation">ErrIdempotencyViolation</span> = <a href="/pkg/errors/">errors</a>.<a href="/pkg/errors/#New">New</a>(&#34;idempotency violation: checkpoint already committed&#34;)</pre>
+			
+				<p>ErrInvalidRetryPolicy indicates that a RetryPolicy configuration is invalid.
+This occurs when:
+- MaxAttempts &lt; 1 (at least one attempt is required)
+- MaxDelay &gt; 0 and MaxDelay &lt; BaseDelay (cap cannot be less than base)
+
+				<pre>var <span id="ErrInvalidRetryPolicy">ErrInvalidRetryPolicy</span> = <a href="/pkg/errors/">errors</a>.<a href="/pkg/errors/#New">New</a>(&#34;invalid retry policy configuration&#34;)</pre>
+			
+				<p>ErrMaxAttemptsExceeded is returned when a node fails more times than allowed by its retry policy.
+The node&apos;s MaxAttempts limit has been reached, and the error is considered non-recoverable.
+Check the node&apos;s error logs to diagnose the root cause of repeated failures.
+
+				<pre>var <span id="ErrMaxAttemptsExceeded">ErrMaxAttemptsExceeded</span> = <a href="/pkg/errors/">errors</a>.<a href="/pkg/errors/#New">New</a>(&#34;max retry attempts exceeded&#34;)</pre>
+			
+				<p>ErrMaxStepsExceeded indicates that the graph execution reached the maximum.
+allowed step count without completing. This prevents infinite loops and.
+runaway executions.
+
+				<pre>var <span id="ErrMaxStepsExceeded">ErrMaxStepsExceeded</span> = <a href="/pkg/errors/">errors</a>.<a href="/pkg/errors/#New">New</a>(&#34;execution exceeded maximum steps limit&#34;)</pre>
+			
+				<p>ErrNoProgress is returned when the scheduler detects a deadlock condition.
+This occurs when the frontier queue is empty but no nodes are actively running,
+meaning the workflow cannot make forward progress. Common causes:
+- All nodes waiting on conditions that will never be satisfied.
+- Circular dependencies without conditional break.
+- Missing edges or routing logic.
+
+				<pre>var <span id="ErrNoProgress">ErrNoProgress</span> = <a href="/pkg/errors/">errors</a>.<a href="/pkg/errors/#New">New</a>(&#34;no progress: no runnable nodes in frontier&#34;)</pre>
+			
+				<p>ErrReplayMismatch is returned when recorded I/O hash does not match current execution during replay.
+This indicates non-deterministic behavior in a node (e.g., random values, system time, or external state).
+Replay mode expects nodes to produce identical outputs given identical inputs.
+
+				<pre>var <span id="ErrReplayMismatch">ErrReplayMismatch</span> = <a href="/pkg/errors/">errors</a>.<a href="/pkg/errors/#New">New</a>(&#34;replay mismatch: recorded I/O hash mismatch&#34;)</pre>
+			
+		
+		
+			
+			
+			<h2 id="ComputeOrderKey">func <a href="/src/github.com/dshills/langgraph-go/graph/scheduler.go?s=2506:2569#L56">ComputeOrderKey</a>
+				<a class="permalink" href="#ComputeOrderKey">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func ComputeOrderKey(parentNodeID <a href="/pkg/builtin/#string">string</a>, edgeIndex <a href="/pkg/builtin/#int">int</a>) <a href="/pkg/builtin/#uint64">uint64</a></pre>
+			<p>ComputeOrderKey generates a deterministic sort key from the parent node ID and edge index.
+This key ensures consistent execution ordering across replays, regardless of runtime
+scheduling variations or goroutine completion order.
+<p>The key is computed as follows:
+<ol>
+<li>Hash the concatenation of parentNodeID + edgeIndex (as 4-byte big-endian int)
+<li>Extract the first 8 bytes of the SHA-256 hash
+<li>Interpret as uint64 (big-endian)
+</ol>
+<p>This approach guarantees:
+<ul>
+<li>Determinism: Same inputs always produce the same order key
+<li>Low collision probability: SHA-256 provides cryptographic collision resistance
+<li>Total ordering: uint64 keys can be consistently sorted
+<li>Path awareness: Keys capture the execution path context
+</ul>
+<p>The order key enables the frontier queue to maintain deterministic work item
+priority even when nodes execute concurrently and complete out of order.
+
+			
+			
+
+		
+		
+			
+			
+			<h2 id="Checkpoint">type <a href="/src/github.com/dshills/langgraph-go/graph/checkpoint.go?s=3005:4545#L49">Checkpoint</a>
+				<a class="permalink" href="#Checkpoint">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Checkpoint represents a durable snapshot of execution state, enabling.
+resumption and deterministic replay of graph executions.
+<p>Checkpoints are created atomically after each execution step and contain.
+all the information needed to resume from that point:
+- Current accumulated state.
+- Work items ready to execute (frontier).
+- Recorded I/O for replay.
+- RNG seed for deterministic random number generation.
+- Idempotency key for preventing duplicate commits.
+<p>Checkpoints support both automatic resumption after failures and.
+user-initiated labeled snapshots for debugging or branching workflows.
+
+			<pre>type Checkpoint[S <a href="/pkg/builtin/#any">any</a>] struct {
+<span id="Checkpoint.RunID"></span>    <span class="comment">// RunID uniquely identifies the execution this checkpoint belongs to.</span>
+    RunID <a href="/pkg/builtin/#string">string</a> `json:&#34;run_id&#34;`
+
+<span id="Checkpoint.StepID"></span>    <span class="comment">// StepID is the execution step number at checkpoint time.</span>
+    <span class="comment">// Monotonically increasing within a run.</span>
+    StepID <a href="/pkg/builtin/#int">int</a> `json:&#34;step_id&#34;`
+
+<span id="Checkpoint.State"></span>    <span class="comment">// State is the current accumulated state after applying all deltas up to StepID.</span>
+    <span class="comment">// Must be JSON-serializable for persistence.</span>
+    State S `json:&#34;state&#34;`
+
+<span id="Checkpoint.Frontier"></span>    <span class="comment">// Frontier contains the work items ready to execute at this checkpoint.</span>
+    <span class="comment">// These represent the nodes queued for execution when resuming from this checkpoint.</span>
+    Frontier []<a href="#WorkItem">WorkItem</a>[S] `json:&#34;frontier&#34;`
+
+<span id="Checkpoint.RNGSeed"></span>    <span class="comment">// RNGSeed is the seed for deterministic random number generation.</span>
+    <span class="comment">// Computed from RunID to ensure consistent random values across replays.</span>
+    RNGSeed <a href="/pkg/builtin/#int64">int64</a> `json:&#34;rng_seed&#34;`
+
+<span id="Checkpoint.RecordedIOs"></span>    <span class="comment">// RecordedIOs contains all captured external interactions up to this checkpoint.</span>
+    <span class="comment">// Indexed by (NodeID, Attempt) for lookup during replay.</span>
+    RecordedIOs []<a href="#RecordedIO">RecordedIO</a> `json:&#34;recorded_ios&#34;`
+
+<span id="Checkpoint.IdempotencyKey"></span>    <span class="comment">// IdempotencyKey is a hash of (RunID, StepID, State, Frontier) that prevents.</span>
+    <span class="comment">// duplicate checkpoint commits. Format: &#34;sha256:hex_encoded_hash&#34;.</span>
+    IdempotencyKey <a href="/pkg/builtin/#string">string</a> `json:&#34;idempotency_key&#34;`
+
+<span id="Checkpoint.Timestamp"></span>    <span class="comment">// Timestamp records when this checkpoint was created.</span>
+    Timestamp <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Time">Time</a> `json:&#34;timestamp&#34;`
+
+<span id="Checkpoint.Label"></span>    <span class="comment">// Label is an optional user-defined name for this checkpoint, useful for.</span>
+    <span class="comment">// debugging or creating named save points (e.g., &#34;before_summary&#34;, &#34;after_validation&#34;).</span>
+    <span class="comment">// Empty string for automatic checkpoints.</span>
+    Label <a href="/pkg/builtin/#string">string</a> `json:&#34;label,omitempty&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ConflictPolicy">type <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=8196:8219#L256">ConflictPolicy</a>
+				<a class="permalink" href="#ConflictPolicy">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ConflictPolicy defines how concurrent state updates are handled when multiple branches.
+modify the same state fields.
+<p>This is a placeholder for future CRDT (Conflict-free Replicated Data Type) support.
+Currently only ConflictFail is supported, which returns an error on detected conflicts.
+<p>Planned policies:
+- ConflictFail: Return error on conflict (default, implemented).
+- LastWriterWins: Last merge wins based on OrderKey.
+- CRDT: Use conflict-free replicated data types for automatic resolution.
+
+			<pre>type ConflictPolicy <a href="/pkg/builtin/#int">int</a></pre>
+
+			
+				
+				<pre>const (
+    <span class="comment">// ConflictFail returns an error when concurrent branches modify the same state field.</span>
+    <span class="comment">// This is the safest default, requiring explicit conflict resolution.</span>
+    <span id="ConflictFail">ConflictFail</span> <a href="#ConflictPolicy">ConflictPolicy</a> = <a href="/pkg/builtin/#iota">iota</a>
+
+    <span class="comment">// LastWriterWins uses the delta with the highest OrderKey when conflicts occur.</span>
+    <span class="comment">// WARNING: Not yet implemented. Will return error if specified.</span>
+    <span id="LastWriterWins">LastWriterWins</span>
+
+    <span class="comment">// ConflictCRDT uses CRDT semantics for automatic conflict resolution.</span>
+    <span class="comment">// WARNING: Not yet implemented. Will return error if specified.</span>
+    <span id="ConflictCRDT">ConflictCRDT</span>
+)</pre>
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="CostTracker">type <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=4894:5777#L157">CostTracker</a>
+				<a class="permalink" href="#CostTracker">&#xb6;</a>
+				
+				
+			</h2>
+			<p>CostTracker (T040) tracks financial costs associated with LLM API calls,
+providing detailed token usage and cost attribution for production monitoring.
+<p>Features:
+- Per-model token counting (input/output separate).
+- Accurate cost calculation using static pricing tables.
+- Cumulative cost tracking across multiple calls.
+- Per-model cost breakdown for attribution.
+- Thread-safe concurrent recording.
+<p>Pricing is based on static tables (defaultModelPricing) for major providers:
+- OpenAI: GPT-4o, GPT-4o-mini, GPT-4-turbo, GPT-3.5-turbo.
+- Anthropic: Claude 3.5 Sonnet, Claude 3 Opus/Sonnet/Haiku.
+- Google: Gemini 1.5 Pro/Flash, Gemini 1.0 Pro.
+<p>Usage:
+<p>// Create tracker for a run.
+tracker := NewCostTracker(&quot;run-123&quot;, &quot;USD&quot;).
+<p>// Record LLM calls.
+tracker.RecordLLMCall(&quot;gpt-4o&quot;, 1000, 500, &quot;nodeA&quot;).
+tracker.RecordLLMCall(&quot;claude-3-sonnet&quot;, 2000, 800, &quot;nodeB&quot;).
+<p>// Get total cost.
+total := tracker.GetTotalCost() // e.g., $0.0345.
+<p>// Get per-model breakdown.
+costs := tracker.GetCostByModel() // map[string]float64{&quot;gpt-4o&quot;: 0.0125, &quot;claude-3-sonnet&quot;: 0.0220}.
+<p>Thread-safe: All methods use mutex protection for concurrent access.
+
+			<pre>type CostTracker struct {
+<span id="CostTracker.RunID"></span>    <span class="comment">// RunID associates costs with a specific workflow execution.</span>
+    RunID <a href="/pkg/builtin/#string">string</a>
+
+<span id="CostTracker.Currency"></span>    <span class="comment">// Currency is the cost unit (e.g., &#34;USD&#34;).</span>
+    Currency <a href="/pkg/builtin/#string">string</a>
+
+<span id="CostTracker.Pricing"></span>    <span class="comment">// Pricing maps model names to their input/output token costs.</span>
+    Pricing map[<a href="/pkg/builtin/#string">string</a>]<a href="#ModelPricing">ModelPricing</a>
+
+<span id="CostTracker.Calls"></span>    <span class="comment">// Calls records all LLM invocations with full details.</span>
+    Calls []<a href="#LLMCall">LLMCall</a>
+
+<span id="CostTracker.TotalCost"></span>    <span class="comment">// TotalCost accumulates all costs in the specified currency.</span>
+    TotalCost <a href="/pkg/builtin/#float64">float64</a>
+
+<span id="CostTracker.ModelCosts"></span>    <span class="comment">// ModelCosts tracks costs per model for attribution.</span>
+    ModelCosts map[<a href="/pkg/builtin/#string">string</a>]<a href="/pkg/builtin/#float64">float64</a>
+
+<span id="CostTracker.InputTokens"></span>    <span class="comment">// InputTokens counts total input tokens across all calls.</span>
+    InputTokens <a href="/pkg/builtin/#int64">int64</a>
+
+<span id="CostTracker.OutputTokens"></span>    <span class="comment">// OutputTokens counts total output tokens across all calls.</span>
+    OutputTokens <a href="/pkg/builtin/#int64">int64</a>
+
+<span id="CostTracker.CreatedAt"></span>    <span class="comment">// CreatedAt marks when cost tracking began.</span>
+    CreatedAt <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Time">Time</a>
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewCostTracker">func <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=6127:6183#L204">NewCostTracker</a>
+					<a class="permalink" href="#NewCostTracker">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewCostTracker(runID, currency <a href="/pkg/builtin/#string">string</a>) *<a href="#CostTracker">CostTracker</a></pre>
+				<p>NewCostTracker (T040) creates a new cost tracker with default pricing tables.
+<p>Parameters:
+- runID: Unique workflow execution identifier.
+- currency: Cost unit (e.g., &quot;USD&quot;).
+<p>Returns:
+- *CostTracker: Fully initialized cost tracker with default model pricing.
+<p>Example:
+<p>tracker := NewCostTracker(&quot;run-123&quot;, &quot;USD&quot;).
+
+				
+				
+			
+
+			
+				
+				<h3 id="CostTracker.Disable">func (*CostTracker) <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=11327:11359#L384">Disable</a>
+					<a class="permalink" href="#CostTracker.Disable">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (ct *<a href="#CostTracker">CostTracker</a>) Disable()</pre>
+				<p>Disable temporarily disables cost tracking (useful for testing).
+
+				
+				
+				
+			
+				
+				<h3 id="CostTracker.Enable">func (*CostTracker) <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=11473:11504#L391">Enable</a>
+					<a class="permalink" href="#CostTracker.Enable">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (ct *<a href="#CostTracker">CostTracker</a>) Enable()</pre>
+				<p>Enable re-enables cost tracking after Disable().
+
+				
+				
+				
+			
+				
+				<h3 id="CostTracker.GetCallHistory">func (*CostTracker) <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=9948:9997#L335">GetCallHistory</a>
+					<a class="permalink" href="#CostTracker.GetCallHistory">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (ct *<a href="#CostTracker">CostTracker</a>) GetCallHistory() []<a href="#LLMCall">LLMCall</a></pre>
+				<p>GetCallHistory returns all recorded LLM calls with full metadata.
+<p>Returns:
+- []LLMCall: Slice of all calls in chronological order.
+<p>Thread-safe: Uses read lock and returns a copy.
+
+				
+				
+				
+			
+				
+				<h3 id="CostTracker.GetCostByModel">func (*CostTracker) <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=9464:9522#L317">GetCostByModel</a>
+					<a class="permalink" href="#CostTracker.GetCostByModel">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (ct *<a href="#CostTracker">CostTracker</a>) GetCostByModel() map[<a href="/pkg/builtin/#string">string</a>]<a href="/pkg/builtin/#float64">float64</a></pre>
+				<p>GetCostByModel (T043) returns a breakdown of costs attributed to each model.
+<p>Returns:
+- map[string]float64: Map of model name to cumulative cost in tracker&apos;s currency.
+<p>Example:
+<p>costs := tracker.GetCostByModel().
+for model, cost := range costs {.
+fmt.Printf(&quot;%s: $%.4f\n&quot;, model, cost).
+}.
+<pre>// Output:
+</pre>
+<p>// gpt-4o: $0.0125.
+// claude-3-sonnet: $0.0220.
+<p>Thread-safe: Uses read lock and returns a copy to prevent mutation.
+
+				
+				
+				
+			
+				
+				<h3 id="CostTracker.GetTokenUsage">func (*CostTracker) <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=10392:10464#L352">GetTokenUsage</a>
+					<a class="permalink" href="#CostTracker.GetTokenUsage">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (ct *<a href="#CostTracker">CostTracker</a>) GetTokenUsage() (inputTokens, outputTokens <a href="/pkg/builtin/#int64">int64</a>)</pre>
+				<p>GetTokenUsage returns total input and output token counts.
+<p>Returns:
+- inputTokens: Total input tokens across all calls.
+- outputTokens: Total output tokens across all calls.
+<p>Thread-safe: Uses read lock.
+
+				
+				
+				
+			
+				
+				<h3 id="CostTracker.GetTotalCost">func (*CostTracker) <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=8883:8928#L293">GetTotalCost</a>
+					<a class="permalink" href="#CostTracker.GetTotalCost">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (ct *<a href="#CostTracker">CostTracker</a>) GetTotalCost() <a href="/pkg/builtin/#float64">float64</a></pre>
+				<p>GetTotalCost (T042) returns the cumulative cost across all recorded LLM calls.
+<p>Returns:
+- float64: Total cost in the tracker&apos;s currency (e.g., USD).
+<p>Example:
+<p>total := tracker.GetTotalCost().
+fmt.Printf(&quot;Total LLM cost: $%.4f\n&quot;, total).
+<p>Thread-safe: Uses read lock for concurrent access.
+
+				
+				
+				
+			
+				
+				<h3 id="CostTracker.RecordLLMCall">func (*CostTracker) <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=7519:7621#L242">RecordLLMCall</a>
+					<a class="permalink" href="#CostTracker.RecordLLMCall">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (ct *<a href="#CostTracker">CostTracker</a>) RecordLLMCall(model <a href="/pkg/builtin/#string">string</a>, inputTokens, outputTokens <a href="/pkg/builtin/#int">int</a>, nodeID <a href="/pkg/builtin/#string">string</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>RecordLLMCall (T041) records a single LLM API invocation with token usage and calculates cost.
+<p>This method:
+1. Looks up model pricing from the static pricing table.
+2. Calculates cost: (inputTokens * inputPrice + outputTokens * outputPrice) / 1M.
+3. Records the call with full metadata.
+4. Updates cumulative totals (TotalCost, ModelCosts, InputTokens, OutputTokens).
+<p>Parameters:
+- model: Model identifier (must exist in pricing table, e.g., &quot;gpt-4o&quot;, &quot;claude-3-sonnet&quot;).
+- inputTokens: Number of input tokens consumed.
+- outputTokens: Number of output tokens generated.
+- nodeID: Node that made the call (optional, use &quot;&quot; if not applicable).
+<p>Returns:
+- error: ErrUnknownModel if model not found in pricing table, nil otherwise.
+<p>Example:
+<p>// Record a GPT-4o call: 1000 input tokens, 500 output tokens.
+err := tracker.RecordLLMCall(&quot;gpt-4o&quot;, 1000, 500, &quot;research_node&quot;).
+if err != nil {.
+log.Printf(&quot;Cost tracking error: %v&quot;, err).
+}.
+<p>Thread-safe: Uses mutex protection for concurrent recording.
+
+				
+				
+				
+			
+				
+				<h3 id="CostTracker.Reset">func (*CostTracker) <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=11665:11695#L399">Reset</a>
+					<a class="permalink" href="#CostTracker.Reset">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (ct *<a href="#CostTracker">CostTracker</a>) Reset()</pre>
+				<p>Reset clears all recorded data and resets cumulative totals.
+Preserves pricing configuration.
+
+				
+				
+				
+			
+				
+				<h3 id="CostTracker.SetCustomPricing">func (*CostTracker) <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=10965:11051#L370">SetCustomPricing</a>
+					<a class="permalink" href="#CostTracker.SetCustomPricing">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (ct *<a href="#CostTracker">CostTracker</a>) SetCustomPricing(model <a href="/pkg/builtin/#string">string</a>, inputPer1M, outputPer1M <a href="/pkg/builtin/#float64">float64</a>)</pre>
+				<p>SetCustomPricing allows overriding default pricing for specific models.
+Useful for custom deployments, enterprise pricing, or price updates.
+<p>Parameters:
+- model: Model identifier.
+- inputPer1M: Cost per 1M input tokens in USD.
+- outputPer1M: Cost per 1M output tokens in USD.
+<p>Example:
+<p>// Override GPT-4o pricing for enterprise rate.
+tracker.SetCustomPricing(&quot;gpt-4o&quot;, 2.00, 8.00).
+
+				
+				
+				
+			
+				
+				<h3 id="CostTracker.String">func (*CostTracker) <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=11936:11974#L411">String</a>
+					<a class="permalink" href="#CostTracker.String">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (ct *<a href="#CostTracker">CostTracker</a>) String() <a href="/pkg/builtin/#string">string</a></pre>
+				<p>String returns a human-readable summary of cost tracking.
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="Edge">type <a href="/src/github.com/dshills/langgraph-go/graph/edge.go?s=688:1042#L7">Edge</a>
+				<a class="permalink" href="#Edge">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Edge represents a connection between two nodes in the workflow graph.
+<p>Edges define the control flow between nodes. They can be:
+- Unconditional: Always traverse (When = nil).
+- Conditional: Only traverse if predicate returns true (When != nil).
+<p>Edges are used during graph construction to define possible transitions.
+At runtime, the Engine evaluates predicates to determine which edge to follow.
+<p>For explicit routing, nodes can return Next in NodeResult which overrides.
+edge-based routing.
+<p>Type parameter S is the state type used for predicate evaluation.
+
+			<pre>type Edge[S <a href="/pkg/builtin/#any">any</a>] struct {
+<span id="Edge.From"></span>    <span class="comment">// From is the source node ID.</span>
+    From <a href="/pkg/builtin/#string">string</a>
+
+<span id="Edge.To"></span>    <span class="comment">// To is the destination node ID.</span>
+    To <a href="/pkg/builtin/#string">string</a>
+
+<span id="Edge.When"></span>    <span class="comment">// When is an optional predicate that determines if this edge should be traversed.</span>
+    <span class="comment">// If nil, the edge is unconditional (always traverse).</span>
+    <span class="comment">// If non-nil, the edge is only traversed when When(state) returns true.</span>
+    When <a href="#Predicate">Predicate</a>[S]
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Engine">type <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=6108:7384#L160">Engine</a>
+				<a class="permalink" href="#Engine">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Engine orchestrates stateful workflow execution with checkpointing support.
+<p>The Engine is the core runtime that:
+<ul>
+<li>Manages workflow graph topology (nodes and edges)
+<li>Executes nodes in sequence or parallel
+<li>Merges state updates via the reducer
+<li>Persists state at each step via the store
+<li>Emits observability events via the emitter
+<li>Enforces execution limits (MaxSteps, Retries)
+<li>Supports checkpoint save/resume
+</ul>
+<p>Type parameter S is the state type shared across the workflow.
+<p>Example:
+<pre>reducer := func(prev, delta MyState) MyState {
+    if delta.Query != &quot;&quot; {
+        prev.Query = delta.Query
+    }
+    prev.Steps++
+    return prev
+}
+
+store := store.NewMemStore[MyState]()
+emitter := emit.NewLogEmitter()
+opts := Options{MaxSteps: 100}
+
+engine := New(reducer, store, emitter, opts)
+engine.Add(&quot;process&quot;, processNode)
+engine.StartAt(&quot;process&quot;)
+
+final, err := engine.Run(ctx, &quot;run-001&quot;, MyState{Query: &quot;hello&quot;})
+</pre>
+
+			<pre>type Engine[S <a href="/pkg/builtin/#any">any</a>] struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="New">func <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=14109:14220#L364">New</a>
+					<a class="permalink" href="#New">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func New[S <a href="/pkg/builtin/#any">any</a>](reducer <a href="#Reducer">Reducer</a>[S], st <a href="/pkg/github.com/dshills/langgraph-go/graph/store/">store</a>.<a href="/pkg/github.com/dshills/langgraph-go/graph/store/#Store">Store</a>[S], emitter <a href="/pkg/github.com/dshills/langgraph-go/graph/emit/">emit</a>.<a href="/pkg/github.com/dshills/langgraph-go/graph/emit/#Emitter">Emitter</a>, options ...interface{}) *<a href="#Engine">Engine</a>[S]</pre>
+				<p>New creates a new Engine with the given configuration.
+<p>Supports two configuration patterns for backward compatibility:
+<p>1. Options struct (legacy):
+<pre>engine := New(reducer, store, emitter, Options{MaxSteps: 100})
+</pre>
+<p>2. Functional options (recommended):
+<pre>engine := New(
+    reducer, store, emitter,
+    WithMaxConcurrent(16),
+    WithQueueDepth(2048),
+    WithDefaultNodeTimeout(10*time.Second),
+)
+</pre>
+<p>3. Mixed (Options struct + functional options):
+<pre>baseOpts := Options{MaxSteps: 100}
+engine := New(
+    reducer, store, emitter,
+    baseOpts,
+    WithMaxConcurrent(8), // Overrides baseOpts if specified
+)
+</pre>
+<p>Parameters:
+<ul>
+<li>reducer: Function to merge partial state updates (required for Run)
+<li>store: Persistence backend for state and checkpoints (required for Run)
+<li>emitter: Observability event receiver (optional, can be nil)
+<li>options: Configuration via Options struct or variadic Option functions
+</ul>
+<p>The constructor does not validate all parameters to allow flexible initialization.
+Validation occurs when Run() is called.
+<p>Functional options (recommended):
+<ul>
+<li>WithMaxConcurrent(n): Set max concurrent nodes
+<li>WithQueueDepth(n): Set frontier queue capacity
+<li>WithBackpressureTimeout(d): Set queue full timeout
+<li>WithDefaultNodeTimeout(d): Set default node timeout
+<li>WithRunWallClockBudget(d): Set total execution timeout
+<li>WithReplayMode(bool): Enable replay mode
+<li>WithStrictReplay(bool): Enable strict replay validation
+<li>WithConflictPolicy(policy): Set conflict resolution policy
+</ul>
+
+				
+				
+			
+
+			
+				
+				<h3 id="Engine.Add">func (*Engine[S]) <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=15758:15816#L421">Add</a>
+					<a class="permalink" href="#Engine.Add">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#Engine">Engine</a>[S]) Add(nodeID <a href="/pkg/builtin/#string">string</a>, node <a href="#Node">Node</a>[S]) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Add registers a node in the workflow graph.
+<p>Nodes must be added before calling StartAt or Run.
+Node IDs must be unique within the workflow.
+<p>Parameters:
+<ul>
+<li>nodeID: Unique identifier for this node (cannot be empty)
+<li>node: Node implementation (cannot be nil)
+</ul>
+<p>Returns error if:
+<ul>
+<li>nodeID is empty
+<li>node is nil
+<li>a node with this ID already exists
+</ul>
+<p>Example:
+<pre>processNode := NodeFunc[MyState](func(ctx context.Context, s MyState) NodeResult[MyState] {
+    return NodeResult[MyState]{
+        Delta: MyState{Result: &quot;processed&quot;},
+        Route: Stop(),
+    }
+})
+
+err := engine.Add(&quot;process&quot;, processNode)
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="Engine.Connect">func (*Engine[S]) <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=18116:18190#L515">Connect</a>
+					<a class="permalink" href="#Engine.Connect">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#Engine">Engine</a>[S]) Connect(from, to <a href="/pkg/builtin/#string">string</a>, predicate <a href="#Predicate">Predicate</a>[S]) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Connect creates an edge between two nodes.
+<p>Edges define possible transitions in the workflow graph.
+They can be:
+<ul>
+<li>Unconditional: Always traverse (predicate = nil)
+<li>Conditional: Only traverse if predicate returns true
+</ul>
+<p>Node explicit routing via NodeResult.Route takes precedence over edges.
+<p>Parameters:
+<ul>
+<li>from: Source node ID (cannot be empty)
+<li>to: Destination node ID (cannot be empty)
+<li>predicate: Optional condition for traversal (nil = unconditional)
+</ul>
+<p>Returns error if:
+<ul>
+<li>from or to is empty
+</ul>
+<p>Note: Node existence is not validated (lazy validation) to allow
+flexible graph construction order.
+<p>Example:
+<pre>// Unconditional edge
+engine.Connect(&quot;nodeA&quot;, &quot;nodeB&quot;, nil)
+
+// Conditional edge
+engine.Connect(&quot;router&quot;, &quot;pathA&quot;, func(s MyState) bool {
+    return s.Score &gt; 0.8
+})
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="Engine.ReplayRun">func (*Engine[S]) <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=75666:75741#L2395">ReplayRun</a>
+					<a class="permalink" href="#Engine.ReplayRun">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#Engine">Engine</a>[S]) ReplayRun(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>) (S, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>ReplayRun replays a previous execution using recorded I/O without re-invoking external services.
+<p>This method enables exact replay of executions for debugging, auditing, or testing.
+It loads the latest checkpoint for the given runID and replays the execution using
+recorded I/O responses instead of making live external calls.
+<p>The replay process:
+<ol>
+<li>Loads the latest checkpoint containing recorded I/O and state
+<li>Configures engine in replay mode (Options.ReplayMode=true)
+<li>Executes nodes using recorded responses instead of live calls
+<li>Verifies execution matches original via hash comparison (if StrictReplay=true)
+</ol>
+<p>Parameters:
+<ul>
+<li>ctx: Context for cancellation and request-scoped values
+<li>runID: Unique identifier of the run to replay
+</ul>
+<p>Returns:
+<ul>
+<li>Final state after replayed execution completes
+<li>Error if replay fails, checkpoint not found, or mismatch detected
+</ul>
+<p>Example:
+<pre>// Original execution with I/O recording
+opts := Options{ReplayMode: false} // Record mode
+engine := New(reducer, store, emitter, opts)
+_, err := engine.Run(ctx, &quot;run-001&quot;, initialState)
+
+// Later: replay execution for debugging
+replayOpts := Options{ReplayMode: true, StrictReplay: true}
+replayEngine := New(reducer, store, emitter, replayOpts)
+replayedState, err := replayEngine.ReplayRun(ctx, &quot;run-001&quot;)
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf(&quot;Replayed state: %+v\n&quot;, replayedState)
+</pre>
+<p>Use Cases:
+<ul>
+<li>Debugging: Replay production issues locally without external dependencies
+<li>Testing: Verify workflow logic without mocking external services
+<li>Auditing: Reconstruct exact execution flow for compliance
+<li>Development: Test changes against recorded production data
+</ul>
+<p>Requirements:
+<ul>
+<li>Original run must have been executed with recordable nodes
+<li>Checkpoint must contain recorded I/O (RecordedIOs field populated)
+<li>Engine must be configured with ReplayMode=true
+</ul>
+<p>Thread-safety: This method is safe for concurrent use with different runIDs.
+
+				
+				
+				
+			
+				
+				<h3 id="Engine.ResumeFromCheckpoint">func (*Engine[S]) <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=51454:51574#L1574">ResumeFromCheckpoint</a>
+					<a class="permalink" href="#Engine.ResumeFromCheckpoint">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#Engine">Engine</a>[S]) ResumeFromCheckpoint(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, cpID <a href="/pkg/builtin/#string">string</a>, newRunID <a href="/pkg/builtin/#string">string</a>, startNode <a href="/pkg/builtin/#string">string</a>) (S, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>ResumeFromCheckpoint resumes workflow execution from a saved checkpoint.
+<p>This enables:
+<ul>
+<li>Crash recovery (save checkpoints, resume after failure)
+<li>Branching workflows (checkpoint, try path A, resume from checkpoint, try path B)
+<li>Manual intervention (pause at checkpoint, human review, resume)
+<li>A/B testing (checkpoint before experiment, resume multiple times with variants)
+</ul>
+<p>The resume operation:
+<ol>
+<li>Loads the checkpoint state
+<li>Starts a new workflow run with the checkpoint state as initial state
+<li>Begins execution at the specified node (typically the next node after checkpoint)
+<li>Continues until workflow completes or errors
+</ol>
+<p>Parameters:
+<ul>
+<li>ctx: Context for cancellation
+<li>cpID: Checkpoint identifier to resume from
+<li>newRunID: New unique run ID for the resumed execution
+<li>startNode: Node to begin execution at (typically next node after checkpoint)
+</ul>
+<p>Returns:
+<ul>
+<li>Final state after resumed execution completes
+<li>Error if checkpoint doesn&apos;t exist, startNode invalid, or execution fails
+</ul>
+<p>Example:
+<pre>// Original run with checkpoint
+_, _ = engine.Run(ctx, &quot;run-001&quot;, initial)
+_ = engine.SaveCheckpoint(ctx, &quot;run-001&quot;, &quot;after-validation&quot;)
+
+// Resume from checkpoint (e.g., after crash or for A/B test)
+finalA, _ := engine.ResumeFromCheckpoint(ctx, &quot;after-validation&quot;, &quot;run-002-pathA&quot;, &quot;pathA&quot;)
+finalB, _ := engine.ResumeFromCheckpoint(ctx, &quot;after-validation&quot;, &quot;run-003-pathB&quot;, &quot;pathB&quot;)
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="Engine.Run">func (*Engine[S]) <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=19640:19720#L570">Run</a>
+					<a class="permalink" href="#Engine.Run">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#Engine">Engine</a>[S]) Run(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>, initial S) (S, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>Run executes the workflow from start to completion or error.
+<p>Workflow execution:
+<ol>
+<li>Validates engine configuration (reducer, store, startNode)
+<li>Initializes state with initial value
+<li>Executes nodes starting from startNode
+<li>Follows routing decisions (Stop, Goto, Many)
+<li>Applies reducer to merge state updates
+<li>Persists state after each node
+<li>Emits observability events
+<li>Enforces MaxSteps limit
+<li>Respects context cancellation
+</ol>
+<p>Parameters:
+<ul>
+<li>ctx: Context for cancellation and request-scoped values
+<li>runID: Unique identifier for this workflow execution
+<li>initial: Starting state value
+</ul>
+<p>Returns:
+<ul>
+<li>Final state after workflow completion
+<li>Error if validation fails, node execution fails, or limits exceeded
+</ul>
+<p>Example:
+<pre>ctx := context.Background()
+final, err := engine.Run(ctx, &quot;run-001&quot;, MyState{Query: &quot;hello&quot;})
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf(&quot;Final state: %+v\n&quot;, final)
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="Engine.RunWithCheckpoint">func (*Engine[S]) <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=62737:62840#L1942">RunWithCheckpoint</a>
+					<a class="permalink" href="#Engine.RunWithCheckpoint">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#Engine">Engine</a>[S]) RunWithCheckpoint(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, checkpoint <a href="/pkg/github.com/dshills/langgraph-go/graph/store/">store</a>.<a href="/pkg/github.com/dshills/langgraph-go/graph/store/#CheckpointV2">CheckpointV2</a>[S]) (S, <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>RunWithCheckpoint resumes execution from a saved checkpoint.
+<p>This method enables crash recovery and branching workflows by resuming execution
+from a previously saved checkpoint. It restores the complete execution context:
+<ul>
+<li>Accumulated state
+<li>Execution frontier (pending work items)
+<li>RNG seed for deterministic random values
+<li>Recorded I/O for replay
+</ul>
+<p>The resumed execution continues from where the checkpoint was created, processing
+all work items in the frontier until the workflow completes or encounters an error.
+<p>Parameters:
+<ul>
+<li>ctx: Context for cancellation and request-scoped values
+<li>checkpoint: Complete checkpoint containing execution state and context
+</ul>
+<p>Returns:
+<ul>
+<li>Final state after resumed execution completes
+<li>Error if validation fails, node execution fails, or limits exceeded
+</ul>
+<p>Example:
+<pre>// Original execution with checkpoint
+_, _ = engine.Run(ctx, &quot;run-001&quot;, initialState)
+
+// Load checkpoint from store
+checkpoint, err := store.LoadCheckpointV2(ctx, &quot;run-001&quot;, 5)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Resume execution from checkpoint
+final, err := engine.RunWithCheckpoint(ctx, checkpoint)
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf(&quot;Resumed execution completed: %+v\n&quot;, final)
+</pre>
+<p>Use Cases:
+<ul>
+<li>Crash recovery: Resume after application restart
+<li>Debugging: Replay execution from specific checkpoint
+<li>Branching: Try different paths from same checkpoint
+<li>Long-running workflows: Checkpoint and resume across restarts
+</ul>
+<p>Thread-safety: This method is safe for concurrent use with different checkpoints.
+
+				
+				
+				
+			
+				
+				<h3 id="Engine.SaveCheckpoint">func (*Engine[S]) <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=49090:49178#L1507">SaveCheckpoint</a>
+					<a class="permalink" href="#Engine.SaveCheckpoint">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#Engine">Engine</a>[S]) SaveCheckpoint(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, runID <a href="/pkg/builtin/#string">string</a>, cpID <a href="/pkg/builtin/#string">string</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>SaveCheckpoint creates a named checkpoint for the most recent state of a run.
+<p>Checkpoints enable:
+<ul>
+<li>Branching workflows (save checkpoint, try different paths)
+<li>Manual resumption points
+<li>Rollback to known-good states
+<li>A/B testing (checkpoint before experiment)
+</ul>
+<p>The checkpoint captures the latest persisted state from the specified run.
+Multiple checkpoints can be created for the same run with different labels.
+<p>Parameters:
+<ul>
+<li>ctx: Context for cancellation
+<li>runID: The workflow run to checkpoint
+<li>cpID: Unique identifier for this checkpoint (e.g., &quot;after-validation&quot;, &quot;before-deploy&quot;)
+</ul>
+<p>Returns error if:
+<ul>
+<li>runID doesn&apos;t exist or has no persisted state
+<li>Store operation fails
+</ul>
+<p>Example:
+<pre>// Run workflow
+final, _ := engine.Run(ctx, &quot;run-001&quot;, initial)
+
+// Save checkpoint at completion
+err := engine.SaveCheckpoint(ctx, &quot;run-001&quot;, &quot;before-deploy&quot;)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Later, can resume from this checkpoint
+resumed, _ := engine.ResumeFromCheckpoint(ctx, &quot;before-deploy&quot;, &quot;run-002&quot;)
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="Engine.StartAt">func (*Engine[S]) <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=16750:16798#L463">StartAt</a>
+					<a class="permalink" href="#Engine.StartAt">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#Engine">Engine</a>[S]) StartAt(nodeID <a href="/pkg/builtin/#string">string</a>) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>StartAt sets the entry point for workflow execution.
+<p>The start node is executed first when Run() is called.
+The node must have been registered via Add() before calling StartAt.
+<p>Parameters:
+<ul>
+<li>nodeID: ID of the node to start execution at
+</ul>
+<p>Returns error if:
+<ul>
+<li>nodeID is empty
+<li>node with this ID doesn&apos;t exist
+</ul>
+<p>Example:
+<pre>engine.Add(&quot;start&quot;, startNode)
+engine.StartAt(&quot;start&quot;)
+</pre>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="EngineError">type <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=78122:78181#L2470">EngineError</a>
+				<a class="permalink" href="#EngineError">&#xb6;</a>
+				
+				
+			</h2>
+			<p>EngineError represents an error from Engine operations.
+
+			<pre>type EngineError struct {
+<span id="EngineError.Message"></span>    Message <a href="/pkg/builtin/#string">string</a>
+<span id="EngineError.Code"></span>    Code    <a href="/pkg/builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="EngineError.Error">func (*EngineError) <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=78183:78219#L2475">Error</a>
+					<a class="permalink" href="#EngineError.Error">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#EngineError">EngineError</a>) Error() <a href="/pkg/builtin/#string">string</a></pre>
+				
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="Frontier">type <a href="/src/github.com/dshills/langgraph-go/graph/scheduler.go?s=5104:6064#L127">Frontier</a>
+				<a class="permalink" href="#Frontier">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Frontier manages the work queue for concurrent graph execution with bounded capacity
+and deterministic ordering. It combines a priority queue (heap) for ordering with a
+buffered channel for bounded queue depth and backpressure.
+<p>The Frontier ensures that work items are dequeued in deterministic order (by OrderKey)
+even when they are enqueued concurrently from multiple goroutines. This is critical
+for deterministic replay of graph executions.
+<p>Architecture (BUG-003 fix):
+- Heap is the single source of truth for work item storage and ordering
+- Channel carries empty struct notifications only (not data)
+- Enqueue: Push to heap THEN send notification to channel
+- Dequeue: Wait for notification from channel THEN pop from heap
+This prevents heap/channel desynchronization and reduces memory usage.
+<p>The bounded channel provides backpressure: when the queue is full, Enqueue will block
+until capacity becomes available or the context is cancelled. This prevents unbounded
+memory growth when nodes produce work faster than it can be consumed.
+<p>Thread-safety: All methods are safe for concurrent use by multiple goroutines.
+
+			<pre>type Frontier[S <a href="/pkg/builtin/#any">any</a>] struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewFrontier">func <a href="/src/github.com/dshills/langgraph-go/graph/scheduler.go?s=6645:6780#L156">NewFrontier</a>
+					<a class="permalink" href="#NewFrontier">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewFrontier[S <a href="/pkg/builtin/#any">any</a>](ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, capacity <a href="/pkg/builtin/#int">int</a>, runID <a href="/pkg/builtin/#string">string</a>, metrics *<a href="#PrometheusMetrics">PrometheusMetrics</a>, emitter <a href="/pkg/github.com/dshills/langgraph-go/graph/emit/">emit</a>.<a href="/pkg/github.com/dshills/langgraph-go/graph/emit/#Emitter">Emitter</a>) *<a href="#Frontier">Frontier</a>[S]</pre>
+				<p>NewFrontier creates a new Frontier with the specified capacity and context.
+The capacity determines the maximum number of work items that can be queued.
+The context is used for cancellation propagation.
+<p>US3: Optional observability parameters enable backpressure monitoring:
+<ul>
+<li>runID: Run identifier for event/metric attribution
+<li>metrics: Prometheus metrics collector for backpressure_events_total
+<li>emitter: Event emitter for backpressure events with metadata
+</ul>
+<p>BUG-003 fix (T019): Channel is notification-only (empty struct), not data carrier.
+
+				
+				
+			
+
+			
+				
+				<h3 id="Frontier.Dequeue">func (*Frontier[S]) <a href="/src/github.com/dshills/langgraph-go/graph/scheduler.go?s=10396:10467#L252">Dequeue</a>
+					<a class="permalink" href="#Frontier.Dequeue">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (f *<a href="#Frontier">Frontier</a>[S]) Dequeue(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>) (<a href="#WorkItem">WorkItem</a>[S], <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>Dequeue retrieves the work item with the smallest OrderKey from the frontier.
+This method blocks until:
+<ul>
+<li>A work item becomes available, or
+<li>The context is cancelled
+</ul>
+<p>Returns the work item with the minimum OrderKey and nil error on success.
+Returns a zero-value work item and context error if the context is cancelled.
+<p>BUG-003 fix (T021): Dequeue waits for notification, then pops from heap.
+This ensures deterministic ordering: heap is the single source of truth for
+work item storage and ordering. The channel provides notification only.
+
+				
+				
+				
+			
+				
+				<h3 id="Frontier.Enqueue">func (*Frontier[S]) <a href="/src/github.com/dshills/langgraph-go/graph/scheduler.go?s=8138:8212#L190">Enqueue</a>
+					<a class="permalink" href="#Frontier.Enqueue">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (f *<a href="#Frontier">Frontier</a>[S]) Enqueue(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, item <a href="#WorkItem">WorkItem</a>[S]) <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Enqueue adds a work item to the frontier queue. The item is first added to the
+internal heap (sorted by OrderKey), then sent to the buffered channel.
+<p>If the channel is full, this method blocks until:
+<ul>
+<li>Space becomes available in the channel (backpressure), or
+<li>The context is cancelled
+</ul>
+<p>Returns an error if the context is cancelled before the item can be enqueued.
+This blocking behavior provides natural backpressure when nodes produce work
+faster than the system can process it.
+<p>Backpressure Implementation (T063):
+The buffered channel f.queue enforces capacity limits. When the channel reaches
+its configured capacity (set via NewFrontier), the send operation on line 172
+blocks until a receiver (Dequeue) consumes an item, freeing up space. This
+implements FR-011: System MUST implement backpressure by blocking admission
+when frontier queue reaches QueueDepth capacity.
+<p>The select statement ensures that context cancellation is respected even while
+blocked on channel send, providing graceful shutdown during backpressure.
+
+				
+				
+				
+			
+				
+				<h3 id="Frontier.Len">func (*Frontier[S]) <a href="/src/github.com/dshills/langgraph-go/graph/scheduler.go?s=11346:11377#L286">Len</a>
+					<a class="permalink" href="#Frontier.Len">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (f *<a href="#Frontier">Frontier</a>[S]) Len() <a href="/pkg/builtin/#int">int</a></pre>
+				<p>Len returns the current number of work items in the frontier queue.
+This method is thread-safe and can be called concurrently with Enqueue/Dequeue.
+
+				
+				
+				
+			
+				
+				<h3 id="Frontier.Metrics">func (*Frontier[S]) <a href="/src/github.com/dshills/langgraph-go/graph/scheduler.go?s=13986:14034#L352">Metrics</a>
+					<a class="permalink" href="#Frontier.Metrics">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (f *<a href="#Frontier">Frontier</a>[S]) Metrics() <a href="#SchedulerMetrics">SchedulerMetrics</a></pre>
+				<p>Metrics returns a snapshot of current scheduler metrics (T068).
+<p>The returned SchedulerMetrics is a point-in-time snapshot and may be stale
+immediately after return if execution is ongoing. For consistent reads,
+call this method when execution is paused or completed.
+<p>This method is thread-safe and uses atomic operations to read metric values.
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="LLMCall">type <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=3284:3669#L117">LLMCall</a>
+				<a class="permalink" href="#LLMCall">&#xb6;</a>
+				
+				
+			</h2>
+			<p>LLMCall represents a single LLM API invocation with token usage and cost.
+
+			<pre>type LLMCall struct {
+<span id="LLMCall.Model"></span>    Model        <a href="/pkg/builtin/#string">string</a>    <span class="comment">// Model identifier (e.g., &#34;gpt-4o&#34;, &#34;claude-3-sonnet&#34;)</span>
+<span id="LLMCall.InputTokens"></span>    InputTokens  <a href="/pkg/builtin/#int">int</a>       <span class="comment">// Number of input tokens consumed</span>
+<span id="LLMCall.OutputTokens"></span>    OutputTokens <a href="/pkg/builtin/#int">int</a>       <span class="comment">// Number of output tokens generated</span>
+<span id="LLMCall.CostUSD"></span>    CostUSD      <a href="/pkg/builtin/#float64">float64</a>   <span class="comment">// Calculated cost in USD</span>
+<span id="LLMCall.Timestamp"></span>    Timestamp    <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Time">Time</a> <span class="comment">// When the call was made</span>
+<span id="LLMCall.NodeID"></span>    NodeID       <a href="/pkg/builtin/#string">string</a>    <span class="comment">// Node that made the call (optional)</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ModelPricing">type <a href="/src/github.com/dshills/langgraph-go/graph/cost.go?s=252:393#L2">ModelPricing</a>
+				<a class="permalink" href="#ModelPricing">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ModelPricing defines input and output token costs for LLM models.
+Prices are in USD per 1M tokens (per million tokens).
+
+			<pre>type ModelPricing struct {
+<span id="ModelPricing.InputPer1M"></span>    InputPer1M  <a href="/pkg/builtin/#float64">float64</a> <span class="comment">// Cost per 1M input tokens in USD</span>
+<span id="ModelPricing.OutputPer1M"></span>    OutputPer1M <a href="/pkg/builtin/#float64">float64</a> <span class="comment">// Cost per 1M output tokens in USD</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Next">type <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=3472:3841#L84">Next</a>
+				<a class="permalink" href="#Next">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Next specifies the next step(s) in workflow execution after a node completes.
+<p>It supports three routing modes:
+<ul>
+<li>Terminal: Stop execution (Route.Terminal = true)
+<li>Single: Go to a specific node (Route.To = &quot;nodeID&quot;)
+<li>Fan-out: Go to multiple nodes in parallel (Route.Many = []string{&quot;node1&quot;, &quot;node2&quot;})
+</ul>
+
+			<pre>type Next struct {
+<span id="Next.To"></span>    <span class="comment">// To specifies the next single node to execute.</span>
+    <span class="comment">// Mutually exclusive with Many and Terminal.</span>
+    To <a href="/pkg/builtin/#string">string</a>
+
+<span id="Next.Many"></span>    <span class="comment">// Many specifies multiple nodes to execute in parallel (fan-out).</span>
+    <span class="comment">// Mutually exclusive with To and Terminal.</span>
+    Many []<a href="/pkg/builtin/#string">string</a>
+
+<span id="Next.Terminal"></span>    <span class="comment">// Terminal indicates workflow execution should stop.</span>
+    <span class="comment">// Mutually exclusive with To and Many.</span>
+    Terminal <a href="/pkg/builtin/#bool">bool</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="Goto">func <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=4011:4040#L104">Goto</a>
+					<a class="permalink" href="#Goto">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func Goto(nodeID <a href="/pkg/builtin/#string">string</a>) <a href="#Next">Next</a></pre>
+				<p>Goto returns a Next that routes to the specified node.
+
+				
+				
+			
+				
+				<h3 id="Many">func <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=4224:4256#L110">Many</a>
+					<a class="permalink" href="#Many">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func Many(nodeIDs []<a href="/pkg/builtin/#string">string</a>) <a href="#Next">Next</a></pre>
+				<p>Many returns a Next that routes to multiple nodes in parallel (fan-out).
+All specified nodes will execute concurrently with isolated state copies.
+
+				
+				
+			
+				
+				<h3 id="Stop">func <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=3902:3918#L99">Stop</a>
+					<a class="permalink" href="#Stop">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func Stop() <a href="#Next">Next</a></pre>
+				<p>Stop returns a Next that terminates workflow execution.
+
+				
+				
+			
+
+			
+		
+			
+			
+			<h2 id="Node">type <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=1950:2210#L47">Node</a>
+				<a class="permalink" href="#Node">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Node represents a processing unit in the workflow graph.
+It receives state of type S, performs computation, and returns a NodeResult.
+<p>Nodes are the fundamental building blocks of LangGraph workflows.
+Each node can:
+<ul>
+<li>Access the current state
+<li>Perform computation (call LLMs, tools, or custom logic)
+<li>Return state modifications via Delta
+<li>Control routing via Route
+<li>Emit observability events
+<li>Handle errors
+</ul>
+<p>Type parameter S is the state type shared across the workflow.
+<p>Optional Methods:
+<p>Nodes can optionally implement Policy() NodePolicy to configure execution behavior
+such as timeouts, retry policies, and idempotency keys. If not implemented, the
+engine uses default settings from Options.
+<p>To maintain backward compatibility, embed DefaultPolicy in your node struct to
+get a zero-value Policy() implementation:
+<pre>type MyNode struct {
+    DefaultPolicy  // Provides Policy() returning zero value
+    // ... your fields
+}
+</pre>
+<p>For custom policies, implement the method directly:
+<pre>func (n *MyNode) Policy() NodePolicy {
+    return NodePolicy{
+        Timeout: 30 * time.Second,
+        RetryPolicy: &amp;RetryPolicy{MaxAttempts: 3},
+    }
+}
+</pre>
+<p>Nodes can also optionally implement Effects() SideEffectPolicy to declare their
+I/O characteristics for deterministic replay. If not implemented, the node is
+assumed to be pure (no external side effects).
+<p>For nodes with external I/O (LLM calls, API requests, database queries):
+<pre>func (n *MyNode) Effects() SideEffectPolicy {
+    return SideEffectPolicy{
+        Recordable:          true,  // I/O can be captured for replay
+        RequiresIdempotency: true,  // Use idempotency keys
+    }
+}
+</pre>
+<p>Pure nodes (computation only, no I/O) don&apos;t need to implement Effects() - the
+default zero value indicates no side effects.
+
+			<pre>type Node[S <a href="/pkg/builtin/#any">any</a>] interface {
+    <span class="comment">// Run executes the node&#39;s logic with the given context and state.</span>
+    <span class="comment">// It returns a NodeResult containing state changes, routing decisions,</span>
+    <span class="comment">// events, and any errors encountered.</span>
+    Run(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, state S) <a href="#NodeResult">NodeResult</a>[S]
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="NodeError">type <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=5044:5367#L134">NodeError</a>
+				<a class="permalink" href="#NodeError">&#xb6;</a>
+				
+				
+			</h2>
+			<p>NodeError represents an error that occurred during node execution.
+It provides structured error information for better observability and debugging.
+
+			<pre>type NodeError struct {
+<span id="NodeError.Message"></span>    <span class="comment">// Message is the human-readable error description.</span>
+    Message <a href="/pkg/builtin/#string">string</a>
+
+<span id="NodeError.Code"></span>    <span class="comment">// Code is a machine-readable error code for programmatic handling.</span>
+    Code <a href="/pkg/builtin/#string">string</a>
+
+<span id="NodeError.NodeID"></span>    <span class="comment">// NodeID identifies which node produced this error.</span>
+    NodeID <a href="/pkg/builtin/#string">string</a>
+
+<span id="NodeError.Cause"></span>    <span class="comment">// Cause is the underlying error that caused this NodeError.</span>
+    Cause <a href="/pkg/builtin/#error">error</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="NodeError.Error">func (*NodeError) <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=5410:5444#L149">Error</a>
+					<a class="permalink" href="#NodeError.Error">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#NodeError">NodeError</a>) Error() <a href="/pkg/builtin/#string">string</a></pre>
+				<p>Error implements the error interface.
+
+				
+				
+				
+			
+				
+				<h3 id="NodeError.Unwrap">func (*NodeError) <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=5612:5646#L157">Unwrap</a>
+					<a class="permalink" href="#NodeError.Unwrap">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#NodeError">NodeError</a>) Unwrap() <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Unwrap returns the underlying cause error for error wrapping support.
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="NodeFunc">type <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=4672:4741#L125">NodeFunc</a>
+				<a class="permalink" href="#NodeFunc">&#xb6;</a>
+				
+				
+			</h2>
+			<p>NodeFunc is a function adapter that implements the Node interface.
+It allows using plain functions as nodes without creating custom types.
+<p>Example:
+<pre>processNode := NodeFunc[MyState](func(ctx context.Context, s MyState) NodeResult[MyState] {
+    return NodeResult[MyState]{
+        Delta: MyState{Result: &quot;processed&quot;},
+        Route: Stop(),
+    }
+})
+</pre>
+
+			<pre>type NodeFunc[S <a href="/pkg/builtin/#any">any</a>] func(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, state S) <a href="#NodeResult">NodeResult</a>[S]</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="NodeFunc.Run">func (NodeFunc[S]) <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=4794:4862#L128">Run</a>
+					<a class="permalink" href="#NodeFunc.Run">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (f <a href="#NodeFunc">NodeFunc</a>[S]) Run(ctx <a href="/pkg/context/">context</a>.<a href="/pkg/context/#Context">Context</a>, state S) <a href="#NodeResult">NodeResult</a>[S]</pre>
+				<p>Run implements the Node interface for NodeFunc.
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="NodePolicy">type <a href="/src/github.com/dshills/langgraph-go/graph/policy.go?s=454:1017#L6">NodePolicy</a>
+				<a class="permalink" href="#NodePolicy">&#xb6;</a>
+				
+				
+			</h2>
+			<p>NodePolicy configures the execution behavior for a specific node, including.
+timeouts, retry logic, and idempotency key generation.
+<p>Policies are attached to nodes and enforced by the scheduler. If not specified,
+default values from Options are used.
+
+			<pre>type NodePolicy struct {
+<span id="NodePolicy.Timeout"></span>    <span class="comment">// Timeout is the maximum execution time allowed for this node.</span>
+    <span class="comment">// If zero, Options.DefaultNodeTimeout is used.</span>
+    Timeout <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>
+
+<span id="NodePolicy.RetryPolicy"></span>    <span class="comment">// RetryPolicy specifies automatic retry behavior for transient failures.</span>
+    <span class="comment">// If nil, no retries are attempted.</span>
+    RetryPolicy *<a href="#RetryPolicy">RetryPolicy</a>
+
+<span id="NodePolicy.IdempotencyKeyFunc"></span>    <span class="comment">// IdempotencyKeyFunc generates a custom idempotency key from the state.</span>
+    <span class="comment">// If nil, a default key based on node ID and step ID is used.</span>
+    <span class="comment">// This is useful for side-effecting nodes that need exactly-once semantics.</span>
+    IdempotencyKeyFunc func(state <a href="/pkg/builtin/#any">any</a>) <a href="/pkg/builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="NodeResult">type <a href="/src/github.com/dshills/langgraph-go/graph/node.go?s=2546:3144#L61">NodeResult</a>
+				<a class="permalink" href="#NodeResult">&#xb6;</a>
+				
+				
+			</h2>
+			<p>NodeResult represents the output of a node execution.
+<p>It contains all information needed to continue workflow execution:
+<ul>
+<li>Delta: Partial state update to be merged via reducer
+<li>Route: Next hop(s) for execution flow
+<li>Events: Observability events emitted during execution
+<li>Err: Node-level error (if any)
+</ul>
+
+			<pre>type NodeResult[S <a href="/pkg/builtin/#any">any</a>] struct {
+<span id="NodeResult.Delta"></span>    <span class="comment">// Delta is the partial state update produced by this node.</span>
+    <span class="comment">// It will be merged with the current state using the configured reducer.</span>
+    Delta S
+
+<span id="NodeResult.Route"></span>    <span class="comment">// Route specifies the next step(s) in workflow execution.</span>
+    <span class="comment">// Use Stop() for terminal nodes, Goto(id) for explicit routing,</span>
+    <span class="comment">// or set Many for fan-out to multiple nodes.</span>
+    Route <a href="#Next">Next</a>
+
+<span id="NodeResult.Err"></span>    <span class="comment">// Err contains any error that occurred during node execution.</span>
+    <span class="comment">// Non-nil errors halt the workflow unless custom error handling is implemented.</span>
+    Err <a href="/pkg/builtin/#error">error</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Option">type <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=976:1013#L29">Option</a>
+				<a class="permalink" href="#Option">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Option is a functional option for configuring an Engine.
+<p>Functional options provide a clean, extensible API for engine configuration:
+- Chainable: engine := New(reducer, store, emitter, WithMaxConcurrent(8), WithQueueDepth(1024)).
+- Self-documenting: Option names clearly describe their purpose.
+- Optional: Only specify the configuration you need.
+- Backward compatible: Existing Options struct still works.
+<p>Example:
+<p>engine := graph.New(.
+<pre>reducer,
+store,
+emitter,
+graph.WithMaxConcurrent(16),
+graph.WithQueueDepth(2048),
+graph.WithDefaultNodeTimeout(10*time.Second),
+</pre>
+<p>).
+<p>Options can be mixed with the Options struct:
+<p>opts := graph.Options{MaxSteps: 100}.
+engine := graph.New(.
+<pre>reducer,
+store,
+emitter,
+opts,
+</pre>
+<p>graph.WithMaxConcurrent(8), // Overrides opts if specified.
+).
+
+			<pre>type Option func(*engineConfig) <a href="/pkg/builtin/#error">error</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="WithBackpressureTimeout">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=4470:4522#L141">WithBackpressureTimeout</a>
+					<a class="permalink" href="#WithBackpressureTimeout">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithBackpressureTimeout(d <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>) <a href="#Option">Option</a></pre>
+				<p>WithBackpressureTimeout sets the maximum time to wait when the frontier queue is full.
+<p>Default: 30s. If exceeded, Run() returns ErrBackpressureTimeout.
+<p>Set lower for fast-failing systems, higher for workflows with bursty fan-outs.
+<p>When backpressure timeout is exceeded:
+1. Execution pauses with checkpoint saved.
+2. ErrBackpressureTimeout is returned.
+3. Resume from checkpoint after reducing load or increasing MaxConcurrentNodes.
+<p>Example:
+<p>engine := graph.New(.
+<pre>reducer, store, emitter,
+graph.WithMaxConcurrent(8),
+</pre>
+<p>graph.WithBackpressureTimeout(60*time.Second), // Wait up to 60s for queue space.
+).
+
+				
+				
+			
+				
+				<h3 id="WithConflictPolicy">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=9149:9202#L286">WithConflictPolicy</a>
+					<a class="permalink" href="#WithConflictPolicy">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithConflictPolicy(policy <a href="#ConflictPolicy">ConflictPolicy</a>) <a href="#Option">Option</a></pre>
+				<p>WithConflictPolicy sets the policy for handling concurrent state update conflicts.
+<p>Default: ConflictFail (returns error on conflict).
+<p>Only ConflictFail is currently supported. Other policies are planned for future releases.
+<p>Example:
+<p>engine := graph.New(.
+<pre>reducer, store, emitter,
+</pre>
+<p>graph.WithConflictPolicy(graph.ConflictFail), // Explicit error on conflicts.
+).
+
+				
+				
+			
+				
+				<h3 id="WithCostTracker">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=11275:11324#L353">WithCostTracker</a>
+					<a class="permalink" href="#WithCostTracker">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithCostTracker(tracker *<a href="#CostTracker">CostTracker</a>) <a href="#Option">Option</a></pre>
+				<p>WithCostTracker enables LLM cost tracking with static pricing.
+<p>Cost tracker monitors:
+<ul>
+<li>Per-model token usage (input/output)
+<li>Cost calculation using static pricing tables
+<li>Cumulative cost tracking across calls
+<li>Per-model cost attribution
+</ul>
+<p>Static pricing includes OpenAI, Anthropic, and Google models.
+<p>Example:
+<pre>tracker := graph.NewCostTracker(&quot;run-123&quot;, &quot;USD&quot;)
+engine := graph.New(
+    reducer, store, emitter,
+    graph.WithCostTracker(tracker),
+)
+
+// After execution, get cost summary
+totalCost := tracker.GetTotalCost()
+modelCosts := tracker.GetCostByModel()
+</pre>
+
+				
+				
+			
+				
+				<h3 id="WithDefaultNodeTimeout">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=5134:5185#L163">WithDefaultNodeTimeout</a>
+					<a class="permalink" href="#WithDefaultNodeTimeout">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithDefaultNodeTimeout(d <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>) <a href="#Option">Option</a></pre>
+				<p>WithDefaultNodeTimeout sets the maximum execution time for nodes without explicit Policy().Timeout.
+<p>Default: 30s. Individual nodes can override via NodePolicy.Timeout.
+<p>Prevents single slow nodes from blocking workflow progress indefinitely.
+When exceeded, node execution is cancelled and returns context.DeadlineExceeded.
+<p>Example:
+<p>engine := graph.New(.
+<pre>reducer, store, emitter,
+</pre>
+<p>graph.WithDefaultNodeTimeout(10*time.Second), // All nodes timeout after 10s by default.
+).
+
+				
+				
+			
+				
+				<h3 id="WithMaxConcurrent">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=3034:3070#L89">WithMaxConcurrent</a>
+					<a class="permalink" href="#WithMaxConcurrent">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithMaxConcurrent(n <a href="/pkg/builtin/#int">int</a>) <a href="#Option">Option</a></pre>
+				<p>WithMaxConcurrent sets the maximum number of nodes executing concurrently.
+<p>Default: 8 when concurrent mode is enabled (determined by presence of other concurrent options).
+Set to 0 for sequential execution (backward compatible default).
+<p>Tuning guidance:
+- CPU-bound workflows: Set to runtime.NumCPU().
+- I/O-bound workflows: Set to 10-50 depending on external service limits.
+- Memory-constrained: Reduce to prevent excessive state copies.
+<p>Each concurrent node holds a deep copy of state, so memory usage scales.
+linearly with MaxConcurrentNodes.
+<p>Example:
+<p>engine := graph.New(.
+<pre>reducer, store, emitter,
+</pre>
+<p>graph.WithMaxConcurrent(16), // Up to 16 nodes execute in parallel.
+).
+
+				
+				
+			
+				
+				<h3 id="WithMaxSteps">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=2180:2211#L61">WithMaxSteps</a>
+					<a class="permalink" href="#WithMaxSteps">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithMaxSteps(n <a href="/pkg/builtin/#int">int</a>) <a href="#Option">Option</a></pre>
+				<p>WithMaxSteps limits workflow execution to prevent infinite loops.
+<p>Default: 0 (no limit, use with caution).
+<p>Workflow loops (A → B → A) are fully supported. Use MaxSteps to prevent
+infinite loops when a conditional exit is missing or misconfigured.
+<p>Loop patterns:
+<ol>
+<li>Node-based conditional loop: nodeA returns Goto(&quot;B&quot;) if shouldContinue(state), else Stop()
+<li>Edge predicate loop: Connect(&quot;A&quot;, &quot;B&quot;, loopPredicate) and Connect(&quot;A&quot;, &quot;exit&quot;, exitPredicate)
+</ol>
+<p>Recommended values:
+<ul>
+<li>Simple workflows (3-5 nodes): MaxSteps = 20
+<li>Workflows with loops: MaxSteps = depth × max_iterations (e.g., 5 nodes × 10 iterations = 50)
+<li>Complex multi-loop workflows: MaxSteps = 100-200
+</ul>
+<p>When MaxSteps is exceeded, Run() returns EngineError with code &quot;MAX_STEPS_EXCEEDED&quot;.
+<p>Example:
+<pre>engine := graph.New(
+    reducer, store, emitter,
+    graph.WithMaxSteps(100), // Limit to 100 execution steps
+)
+</pre>
+
+				
+				
+			
+				
+				<h3 id="WithMetrics">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=10500:10551#L325">WithMetrics</a>
+					<a class="permalink" href="#WithMetrics">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithMetrics(metrics *<a href="#PrometheusMetrics">PrometheusMetrics</a>) <a href="#Option">Option</a></pre>
+				<p>WithMetrics enables Prometheus metrics collection.
+<p>Metrics enable production monitoring with 6 key metrics:
+<ul>
+<li>inflight_nodes: Current concurrent node count
+<li>queue_depth: Pending nodes in scheduler queue
+<li>step_latency_ms: Node execution duration histogram
+<li>retries_total: Cumulative retry attempts
+<li>merge_conflicts_total: Concurrent state merge conflicts
+<li>backpressure_events_total: Queue saturation events
+</ul>
+<p>All metrics are automatically updated during workflow execution.
+<p>Example:
+<pre>registry := prometheus.NewRegistry()
+metrics := graph.NewPrometheusMetrics(registry)
+engine := graph.New(
+    reducer, store, emitter,
+    graph.WithMetrics(metrics),
+)
+
+// Expose metrics endpoint
+http.Handle(&quot;/metrics&quot;, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+</pre>
+
+				
+				
+			
+				
+				<h3 id="WithQueueDepth">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=3688:3721#L114">WithQueueDepth</a>
+					<a class="permalink" href="#WithQueueDepth">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithQueueDepth(n <a href="/pkg/builtin/#int">int</a>) <a href="#Option">Option</a></pre>
+				<p>WithQueueDepth sets the capacity of the execution frontier queue.
+<p>Default: 1024. Increase for workflows with large fan-outs.
+<p>When the queue fills, new work items block until space is available.
+This provides backpressure to prevent unbounded memory growth.
+<p>Recommended: MaxConcurrentNodes × 100 for initial estimate.
+<p>Example:
+<p>engine := graph.New(.
+<pre>reducer, store, emitter,
+graph.WithMaxConcurrent(8),
+</pre>
+<p>graph.WithQueueDepth(2048), // Queue can hold 2048 work items.
+).
+
+				
+				
+			
+				
+				<h3 id="WithReplayMode">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=6802:6842#L213">WithReplayMode</a>
+					<a class="permalink" href="#WithReplayMode">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithReplayMode(enabled <a href="/pkg/builtin/#bool">bool</a>) <a href="#Option">Option</a></pre>
+				<p>WithReplayMode enables deterministic replay using recorded I/O.
+<p>Default: false (record mode - captures I/O for later replay).
+<p>When true, nodes with SideEffectPolicy.Recordable=true will use recorded.
+responses instead of executing live I/O. This enables:
+- Debugging: Replay production executions locally.
+- Testing: Verify workflow logic without external dependencies.
+- Auditing: Reconstruct exact execution flow from checkpoints.
+<p>Requires prior execution with ReplayMode=false to record I/O.
+<p>Example:
+<p>// Original execution (record mode).
+recordEngine := graph.New(reducer, store, emitter, graph.WithReplayMode(false)).
+_, _ = recordEngine.Run(ctx, &quot;run-001&quot;, initialState).
+<p>// Later: replay execution.
+replayEngine := graph.New(reducer, store, emitter, graph.WithReplayMode(true)).
+replayedState, _ := replayEngine.ReplayRun(ctx, &quot;run-001&quot;).
+
+				
+				
+			
+				
+				<h3 id="WithRunWallClockBudget">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=5747:5798#L185">WithRunWallClockBudget</a>
+					<a class="permalink" href="#WithRunWallClockBudget">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithRunWallClockBudget(d <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>) <a href="#Option">Option</a></pre>
+				<p>WithRunWallClockBudget sets the maximum total execution time for Run().
+<p>Default: 10m. If exceeded, Run() returns context.DeadlineExceeded.
+<p>Use this to enforce hard deadlines on entire workflow execution.
+Set to 0 to disable (workflow runs until completion or MaxSteps).
+<p>Example:
+<p>engine := graph.New(.
+<pre>reducer, store, emitter,
+</pre>
+<p>graph.WithRunWallClockBudget(5*time.Minute), // Entire workflow must complete in 5 minutes.
+).
+
+				
+				
+			
+				
+				<h3 id="WithStrictReplay">func <a href="/src/github.com/dshills/langgraph-go/graph/options.go?s=7528:7570#L239">WithStrictReplay</a>
+					<a class="permalink" href="#WithStrictReplay">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func WithStrictReplay(enabled <a href="/pkg/builtin/#bool">bool</a>) <a href="#Option">Option</a></pre>
+				<p>WithStrictReplay controls replay mismatch behavior.
+<p>Default: true (fail on I/O hash mismatch).
+<p>When true, replay mode verifies recorded I/O hashes match expected values.
+If a mismatch is detected (indicating logic changes), Run() returns ErrReplayMismatch.
+<p>Set to false to allow &quot;best effort&quot; replay that tolerates minor changes.
+Useful when debugging with modified node logic.
+<p>Example:
+<p>engine := graph.New(.
+<pre>reducer, store, emitter,
+graph.WithReplayMode(true),
+</pre>
+<p>graph.WithStrictReplay(false), // Allow replay even if logic changed.
+).
+
+				
+				
+			
+
+			
+		
+			
+			
+			<h2 id="Options">type <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=7504:12484#L204">Options</a>
+				<a class="permalink" href="#Options">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Options configures Engine execution behavior.
+<p>Zero values are valid - the Engine will use sensible defaults.
+
+			<pre>type Options struct {
+<span id="Options.MaxSteps"></span>    <span class="comment">// MaxSteps limits workflow execution to prevent infinite loops.</span>
+    <span class="comment">// If 0, no limit is enforced (use with caution).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Workflow loops (A → B → A) are fully supported. Use MaxSteps to prevent</span>
+    <span class="comment">// infinite loops when a conditional exit is missing or misconfigured.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Loop patterns:</span>
+    <span class="comment">//   1. Node-based conditional loop:</span>
+    <span class="comment">//        nodeA returns Goto(&#34;B&#34;) if shouldContinue(state), else Stop()</span>
+    <span class="comment">//   2. Edge predicate loop:</span>
+    <span class="comment">//        Connect(&#34;A&#34;, &#34;B&#34;, loopPredicate)</span>
+    <span class="comment">//        Connect(&#34;A&#34;, &#34;exit&#34;, exitPredicate)</span>
+    <span class="comment">//</span>
+    <span class="comment">// Recommended values:</span>
+    <span class="comment">//   - Simple workflows (3-5 nodes): MaxSteps = 20</span>
+    <span class="comment">//   - Workflows with loops: MaxSteps = depth × max_iterations (e.g., 5 nodes × 10 iterations = 50)</span>
+    <span class="comment">//   - Complex multi-loop workflows: MaxSteps = 100-200</span>
+    <span class="comment">//</span>
+    <span class="comment">// When MaxSteps is exceeded, Run() returns EngineError with code &#34;MAX_STEPS_EXCEEDED&#34;.</span>
+    MaxSteps <a href="/pkg/builtin/#int">int</a>
+
+<span id="Options.Retries"></span>    <span class="comment">// Retries specifies how many times to retry a node on transient errors.</span>
+    <span class="comment">// If 0, nodes are not retried.</span>
+    <span class="comment">// Transient errors are identified by checking if error implements Retryable interface.</span>
+    <span class="comment">// Deprecated: Use NodePolicy.RetryPolicy for per-node retry configuration.</span>
+    Retries <a href="/pkg/builtin/#int">int</a>
+
+<span id="Options.MaxConcurrentNodes"></span>    <span class="comment">// MaxConcurrentNodes limits the number of nodes executing in parallel.</span>
+    <span class="comment">// Default: 8. Set to 0 for sequential execution (backward compatible).</span>
+    <span class="comment">//</span>
+    <span class="comment">// Tuning guidance:</span>
+    <span class="comment">//   - CPU-bound workflows: Set to runtime.NumCPU()</span>
+    <span class="comment">//   - I/O-bound workflows: Set to 10-50 depending on external service limits</span>
+    <span class="comment">//   - Memory-constrained: Reduce to prevent excessive state copies</span>
+    <span class="comment">//</span>
+    <span class="comment">// Each concurrent node holds a deep copy of state, so memory usage scales</span>
+    <span class="comment">// linearly with MaxConcurrentNodes.</span>
+    MaxConcurrentNodes <a href="/pkg/builtin/#int">int</a>
+
+<span id="Options.QueueDepth"></span>    <span class="comment">// QueueDepth sets the capacity of the execution frontier queue.</span>
+    <span class="comment">// Default: 1024. Increase for workflows with large fan-outs.</span>
+    <span class="comment">//</span>
+    <span class="comment">// When the queue fills, new work items block until space is available.</span>
+    <span class="comment">// This provides backpressure to prevent unbounded memory growth.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Recommended: MaxConcurrentNodes × 100 for initial estimate.</span>
+    QueueDepth <a href="/pkg/builtin/#int">int</a>
+
+<span id="Options.BackpressureTimeout"></span>    <span class="comment">// BackpressureTimeout is the maximum time to wait when the frontier queue is full.</span>
+    <span class="comment">// Default: 30s. If exceeded, Run() returns ErrBackpressureTimeout.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Set lower for fast-failing systems, higher for workflows with bursty fan-outs.</span>
+    BackpressureTimeout <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>
+
+<span id="Options.DefaultNodeTimeout"></span>    <span class="comment">// DefaultNodeTimeout is the maximum execution time for nodes without explicit Policy().Timeout.</span>
+    <span class="comment">// Default: 30s. Individual nodes can override via NodePolicy.Timeout.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Prevents single slow nodes from blocking workflow progress indefinitely.</span>
+    <span class="comment">// When exceeded, node execution is cancelled and returns context.DeadlineExceeded.</span>
+    DefaultNodeTimeout <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>
+
+<span id="Options.RunWallClockBudget"></span>    <span class="comment">// RunWallClockBudget is the maximum total execution time for Run().</span>
+    <span class="comment">// Default: 10m. If exceeded, Run() returns context.DeadlineExceeded.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Use this to enforce hard deadlines on entire workflow execution.</span>
+    <span class="comment">// Set to 0 to disable (workflow runs until completion or MaxSteps).</span>
+    RunWallClockBudget <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>
+
+<span id="Options.ReplayMode"></span>    <span class="comment">// ReplayMode enables deterministic replay using recorded I/O.</span>
+    <span class="comment">// Default: false (record mode - captures I/O for later replay).</span>
+    <span class="comment">//</span>
+    <span class="comment">// When true, nodes with SideEffectPolicy.Recordable=true will use recorded</span>
+    <span class="comment">// responses instead of executing live I/O. This enables:</span>
+    <span class="comment">//   - Debugging: Replay production executions locally</span>
+    <span class="comment">//   - Testing: Verify workflow logic without external dependencies</span>
+    <span class="comment">//   - Auditing: Reconstruct exact execution flow from checkpoints</span>
+    <span class="comment">//</span>
+    <span class="comment">// Requires prior execution with ReplayMode=false to record I/O.</span>
+    ReplayMode <a href="/pkg/builtin/#bool">bool</a>
+
+<span id="Options.StrictReplay"></span>    <span class="comment">// StrictReplay controls replay mismatch behavior.</span>
+    <span class="comment">// Default: true (fail on I/O hash mismatch).</span>
+    <span class="comment">//</span>
+    <span class="comment">// When true, replay mode verifies recorded I/O hashes match expected values.</span>
+    <span class="comment">// If a mismatch is detected (indicating logic changes), Run() returns ErrReplayMismatch.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Set to false to allow &#34;best effort&#34; replay that tolerates minor changes.</span>
+    <span class="comment">// Useful when debugging with modified node logic.</span>
+    StrictReplay <a href="/pkg/builtin/#bool">bool</a>
+
+<span id="Options.Metrics"></span>    <span class="comment">// Metrics enables Prometheus metrics collection (T044).</span>
+    <span class="comment">// If nil, metrics are not collected.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Create with NewPrometheusMetrics(registry) to enable production monitoring.</span>
+    <span class="comment">// All 6 metrics (inflight_nodes, queue_depth, step_latency_ms, retries_total,</span>
+    <span class="comment">// merge_conflicts_total, backpressure_events_total) are automatically updated.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example:</span>
+    <span class="comment">//   registry := prometheus.NewRegistry()</span>
+    <span class="comment">//   metrics := NewPrometheusMetrics(registry)</span>
+    <span class="comment">//   engine := New(reducer, store, emitter, Options{Metrics: metrics})</span>
+    Metrics *<a href="#PrometheusMetrics">PrometheusMetrics</a>
+
+<span id="Options.CostTracker"></span>    <span class="comment">// CostTracker enables LLM cost tracking with static pricing (T045).</span>
+    <span class="comment">// If nil, cost tracking is disabled.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Create with NewCostTracker(runID, &#34;USD&#34;) to track token usage and costs.</span>
+    <span class="comment">// Static pricing includes OpenAI, Anthropic, and Google models.</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example:</span>
+    <span class="comment">//   tracker := NewCostTracker(&#34;run-123&#34;, &#34;USD&#34;)</span>
+    <span class="comment">//   engine := New(reducer, store, emitter, Options{CostTracker: tracker})</span>
+    CostTracker *<a href="#CostTracker">CostTracker</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Predicate">type <a href="/src/github.com/dshills/langgraph-go/graph/edge.go?s=1515:1555#L32">Predicate</a>
+				<a class="permalink" href="#Predicate">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Predicate is a function that evaluates state to determine if an edge should be traversed.
+<p>Predicates enable conditional routing based on workflow state.
+They should be pure functions (deterministic, no side effects).
+<p>Common patterns:
+- Threshold: state.Score &gt; 0.8.
+- Presence: state.Result != &quot;&quot;.
+- Boolean flag: state.IsReady.
+- Complex logic: state.Retries &lt; 3 &amp;&amp; state.Error == nil.
+<p>Type parameter S is the state type to evaluate.
+
+			<pre>type Predicate[S <a href="/pkg/builtin/#any">any</a>] func(state S) <a href="/pkg/builtin/#bool">bool</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="PrometheusMetrics">type <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=2044:2644#L52">PrometheusMetrics</a>
+				<a class="permalink" href="#PrometheusMetrics">&#xb6;</a>
+				
+				
+			</h2>
+			<p>PrometheusMetrics (T032) provides comprehensive Prometheus-compatible metrics.
+collection for graph execution monitoring in production environments.
+<p>Metrics exposed (all namespaced with &quot;langgraph_&quot;):
+<p>1. inflight_nodes (gauge): Current number of nodes executing concurrently.
+Labels: run_id, graph_id.
+Use: Monitor concurrency levels and detect bottlenecks.
+<p>2. queue_depth (gauge): Number of pending nodes waiting for execution.
+Labels: run_id, graph_id.
+Use: Track backpressure and queue saturation.
+<p>3. step_latency_ms (histogram): Node execution duration in milliseconds.
+Labels: run_id, node_id, status (success/error).
+Buckets: [1, 5, 10, 50, 100, 500, 1000, 5000, 10000].
+Use: P50/P95/P99 latency analysis per node.
+<p>4. retries_total (counter): Cumulative retry attempts across all nodes.
+Labels: run_id, node_id, reason.
+Use: Identify flaky nodes and error patterns.
+<p>5. merge_conflicts_total (counter): Concurrent state merge conflicts detected.
+Labels: run_id, conflict_type.
+Use: Monitor determinism violations in concurrent execution.
+<p>6. backpressure_events_total (counter): Queue saturation events triggering backpressure.
+Labels: run_id, reason.
+Use: Track when execution is throttled due to resource limits.
+<p>Usage:
+<p>// Create metrics with custom registry.
+registry := prometheus.NewRegistry().
+metrics := NewPrometheusMetrics(registry).
+<p>// Integrate with engine.
+engine := New[MyState](.
+<pre>WithMetrics(metrics),
+</pre>
+<p>).
+<p>// Metrics automatically update during execution.
+<pre>// Expose via HTTP for Prometheus scraping:
+</pre>
+<p>http.Handle(&quot;/metrics&quot;, promhttp.HandlerFor(registry, promhttp.HandlerOpts{})).
+<p>Thread-safe: All methods use atomic operations or mutex protection.
+
+			<pre>type PrometheusMetrics struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewPrometheusMetrics">func <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=3495:3571#L96">NewPrometheusMetrics</a>
+					<a class="permalink" href="#NewPrometheusMetrics">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func NewPrometheusMetrics(registry <a href="/pkg/github.com/prometheus/client_golang/prometheus/">prometheus</a>.<a href="/pkg/github.com/prometheus/client_golang/prometheus/#Registerer">Registerer</a>) *<a href="#PrometheusMetrics">PrometheusMetrics</a></pre>
+				<p>NewPrometheusMetrics (T033) creates and registers all graph execution metrics.
+with the provided Prometheus registry.
+<p>Parameters:
+- registry: Prometheus registry to register metrics with (use prometheus.DefaultRegisterer for global registry).
+<p>Returns:
+- *PrometheusMetrics: Fully initialized metrics collector.
+<p>All metrics are registered with namespace &quot;langgraph&quot; and appropriate labels.
+Histograms use buckets optimized for typical node execution times (1ms to 10s).
+<p>Example:
+<p>// Use default global registry.
+metrics := NewPrometheusMetrics(prometheus.DefaultRegisterer).
+<p>// Use custom registry (recommended for isolation).
+registry := prometheus.NewRegistry().
+metrics := NewPrometheusMetrics(registry).
+http.Handle(&quot;/metrics&quot;, promhttp.HandlerFor(registry, promhttp.HandlerOpts{})).
+
+				
+				
+			
+
+			
+				
+				<h3 id="PrometheusMetrics.Disable">func (*PrometheusMetrics) <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=9806:9844#L289">Disable</a>
+					<a class="permalink" href="#PrometheusMetrics.Disable">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (pm *<a href="#PrometheusMetrics">PrometheusMetrics</a>) Disable()</pre>
+				<p>Disable temporarily disables metric recording (useful for testing).
+
+				
+				
+				
+			
+				
+				<h3 id="PrometheusMetrics.Enable">func (*PrometheusMetrics) <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=9961:9998#L296">Enable</a>
+					<a class="permalink" href="#PrometheusMetrics.Enable">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (pm *<a href="#PrometheusMetrics">PrometheusMetrics</a>) Enable()</pre>
+				<p>Enable re-enables metric recording after Disable().
+
+				
+				
+				
+			
+				
+				<h3 id="PrometheusMetrics.IncrementBackpressure">func (*PrometheusMetrics) <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=9572:9644#L280">IncrementBackpressure</a>
+					<a class="permalink" href="#PrometheusMetrics.IncrementBackpressure">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (pm *<a href="#PrometheusMetrics">PrometheusMetrics</a>) IncrementBackpressure(runID, reason <a href="/pkg/builtin/#string">string</a>)</pre>
+				<p>IncrementBackpressure (T039) increments the backpressure event counter.
+<p>This updates the backpressure_events_total counter with labels for run_id and reason.
+Use this to track when execution is throttled due to resource limits (queue full,
+max concurrent reached, etc.).
+<p>Parameters:
+- runID: Unique workflow execution identifier.
+- reason: Backpressure cause (&quot;queue_full&quot;, &quot;max_concurrent&quot;, &quot;timeout&quot;).
+<p>Example:
+<p>if queueDepth &gt;= maxQueueDepth {.
+metrics.IncrementBackpressure(runID, &quot;queue_full&quot;).
+return ErrBackpressure.
+}.
+
+				
+				
+				
+			
+				
+				<h3 id="PrometheusMetrics.IncrementMergeConflicts">func (*PrometheusMetrics) <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=8819:8899#L256">IncrementMergeConflicts</a>
+					<a class="permalink" href="#PrometheusMetrics.IncrementMergeConflicts">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (pm *<a href="#PrometheusMetrics">PrometheusMetrics</a>) IncrementMergeConflicts(runID, conflictType <a href="/pkg/builtin/#string">string</a>)</pre>
+				<p>IncrementMergeConflicts (T038) increments the merge conflict counter.
+<p>This updates the merge_conflicts_total counter with labels for run_id and conflict_type.
+Use this to detect determinism violations or reducer errors in concurrent execution.
+<p>Parameters:
+- runID: Unique workflow execution identifier.
+- conflictType: Type of conflict (&quot;reducer_error&quot;, &quot;state_divergence&quot;).
+<p>Example:
+<p>if err := reducer(prev, delta); err != nil {.
+metrics.IncrementMergeConflicts(runID, &quot;reducer_error&quot;).
+}.
+
+				
+				
+				
+			
+				
+				<h3 id="PrometheusMetrics.IncrementRetries">func (*PrometheusMetrics) <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=7106:7181#L196">IncrementRetries</a>
+					<a class="permalink" href="#PrometheusMetrics.IncrementRetries">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (pm *<a href="#PrometheusMetrics">PrometheusMetrics</a>) IncrementRetries(runID, nodeID, reason <a href="/pkg/builtin/#string">string</a>)</pre>
+				<p>IncrementRetries (T035) increments the retry counter for a specific node and reason.
+<p>This updates the retries_total counter with labels for run_id, node_id, and reason.
+Use this to identify flaky nodes and error patterns requiring investigation.
+<p>Parameters:
+- runID: Unique workflow execution identifier.
+- nodeID: Node that is being retried.
+- reason: Retry cause (&quot;error&quot;, &quot;timeout&quot;, &quot;transient&quot;).
+<p>Example:
+<p>if result.Err != nil {.
+metrics.IncrementRetries(runID, nodeID, &quot;error&quot;).
+<pre>	    // Retry logic...
+}.
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="PrometheusMetrics.RecordStepLatency">func (*PrometheusMetrics) <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=6283:6389#L170">RecordStepLatency</a>
+					<a class="permalink" href="#PrometheusMetrics.RecordStepLatency">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (pm *<a href="#PrometheusMetrics">PrometheusMetrics</a>) RecordStepLatency(runID, nodeID <a href="/pkg/builtin/#string">string</a>, latency <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>, status <a href="/pkg/builtin/#string">string</a>)</pre>
+				<p>RecordStepLatency (T034) records the execution duration of a node in milliseconds.
+<p>This updates the step_latency_ms histogram with labels for run_id, node_id, and status.
+Use this to track P50/P95/P99 latencies per node for performance monitoring.
+<p>Parameters:
+- runID: Unique workflow execution identifier.
+- nodeID: Node that was executed.
+- latency: Execution duration.
+- status: Execution outcome (&quot;success&quot;, &quot;error&quot;, &quot;timeout&quot;).
+<p>Example:
+<p>start := time.Now().
+result := node.Run(ctx, state).
+metrics.RecordStepLatency(runID, nodeID, time.Since(start), &quot;success&quot;).
+
+				
+				
+				
+			
+				
+				<h3 id="PrometheusMetrics.Reset">func (*PrometheusMetrics) <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=10170:10206#L304">Reset</a>
+					<a class="permalink" href="#PrometheusMetrics.Reset">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (pm *<a href="#PrometheusMetrics">PrometheusMetrics</a>) Reset()</pre>
+				<p>Reset clears all metric values (useful for testing).
+This does not unregister metrics from the registry.
+
+				
+				
+				
+			
+				
+				<h3 id="PrometheusMetrics.UpdateInflightNodes">func (*PrometheusMetrics) <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=8153:8212#L234">UpdateInflightNodes</a>
+					<a class="permalink" href="#PrometheusMetrics.UpdateInflightNodes">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (pm *<a href="#PrometheusMetrics">PrometheusMetrics</a>) UpdateInflightNodes(count <a href="/pkg/builtin/#int">int</a>)</pre>
+				<p>UpdateInflightNodes (T037) sets the current number of nodes executing concurrently.
+<p>This updates the inflight_nodes gauge. Use this to monitor concurrency levels.
+and detect whether MaxConcurrent limits are being reached.
+<p>Parameters:
+- count: Current number of nodes in execution.
+<p>Example:
+<p>metrics.UpdateInflightNodes(len(activeNodes)).
+
+				
+				
+				
+			
+				
+				<h3 id="PrometheusMetrics.UpdateQueueDepth">func (*PrometheusMetrics) <a href="/src/github.com/dshills/langgraph-go/graph/metrics.go?s=7655:7711#L215">UpdateQueueDepth</a>
+					<a class="permalink" href="#PrometheusMetrics.UpdateQueueDepth">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (pm *<a href="#PrometheusMetrics">PrometheusMetrics</a>) UpdateQueueDepth(depth <a href="/pkg/builtin/#int">int</a>)</pre>
+				<p>UpdateQueueDepth (T036) sets the current number of pending nodes in the scheduler queue.
+<p>This updates the queue_depth gauge. Use this to monitor backpressure and detect.
+when the system is saturated with pending work.
+<p>Parameters:
+- depth: Current number of nodes waiting for execution.
+<p>Example:
+<p>metrics.UpdateQueueDepth(scheduler.PendingCount()).
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="RecordedIO">type <a href="/src/github.com/dshills/langgraph-go/graph/replay.go?s=5577:6694#L134">RecordedIO</a>
+				<a class="permalink" href="#RecordedIO">&#xb6;</a>
+				
+				
+			</h2>
+			<p>RecordedIO captures an external interaction (API call, database query, etc.).
+for deterministic replay without re-invoking the external service.
+<p>During initial execution, RecordedIO instances are created for nodes with.
+SideEffectPolicy.Recordable=true. During replay, these recorded I/Os are.
+matched by (NodeID, Attempt) and their responses are returned directly.
+without executing the node.
+<p>The Hash field enables mismatch detection: if a live execution produces.
+a different response hash than recorded, ErrReplayMismatch is raised,
+indicating non-deterministic behavior.
+
+			<pre>type RecordedIO struct {
+<span id="RecordedIO.NodeID"></span>    <span class="comment">// NodeID identifies the node that performed this I/O operation.</span>
+    NodeID <a href="/pkg/builtin/#string">string</a> `json:&#34;node_id&#34;`
+
+<span id="RecordedIO.Attempt"></span>    <span class="comment">// Attempt is the retry attempt number this I/O corresponds to.</span>
+    <span class="comment">// This allows matching I/O recordings to specific retry attempts.</span>
+    Attempt <a href="/pkg/builtin/#int">int</a> `json:&#34;attempt&#34;`
+
+<span id="RecordedIO.Request"></span>    <span class="comment">// Request is the serialized request data sent to the external service.</span>
+    <span class="comment">// Stored as JSON for cross-language compatibility and human readability.</span>
+    Request <a href="/pkg/encoding/json/">json</a>.<a href="/pkg/encoding/json/#RawMessage">RawMessage</a> `json:&#34;request&#34;`
+
+<span id="RecordedIO.Response"></span>    <span class="comment">// Response is the serialized response data received from the external service.</span>
+    <span class="comment">// Stored as JSON for cross-language compatibility and human readability.</span>
+    Response <a href="/pkg/encoding/json/">json</a>.<a href="/pkg/encoding/json/#RawMessage">RawMessage</a> `json:&#34;response&#34;`
+
+<span id="RecordedIO.Hash"></span>    <span class="comment">// Hash is a SHA-256 hash of the response content, used for mismatch detection.</span>
+    <span class="comment">// during replay. Format: &#34;sha256:hex_encoded_hash&#34;.</span>
+    Hash <a href="/pkg/builtin/#string">string</a> `json:&#34;hash&#34;`
+
+<span id="RecordedIO.Timestamp"></span>    <span class="comment">// Timestamp records when this I/O operation was captured.</span>
+    Timestamp <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Time">Time</a> `json:&#34;timestamp&#34;`
+
+<span id="RecordedIO.Duration"></span>    <span class="comment">// Duration is how long the I/O operation took to complete.</span>
+    <span class="comment">// This can be used for performance analysis and replay simulation.</span>
+    Duration <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a> `json:&#34;duration&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Reducer">type <a href="/src/github.com/dshills/langgraph-go/graph/engine.go?s=5046:5087#L126">Reducer</a>
+				<a class="permalink" href="#Reducer">&#xb6;</a>
+				
+				
+			</h2>
+			<p>Reducer is a function that merges a partial state update (delta) into the previous state.
+<p>Reducers are responsible for deterministic state composition, enabling:
+<ul>
+<li>Sequential state updates across workflow nodes
+<li>Parallel branch result merging
+<li>Checkpoint-based state reconstruction
+</ul>
+<p>The reducer must be:
+<ul>
+<li>**Pure**: Same inputs always produce same output
+<li>**Deterministic**: No randomness or side effects
+<li>**Commutative** (for parallel merges): Order of deltas shouldn&apos;t matter for correctness
+</ul>
+<p>Example:
+<pre>reducer := func(prev, delta MyState) MyState {
+    if delta.Query != &quot;&quot; {
+        prev.Query = delta.Query  // Last write wins
+    }
+    prev.Counter += delta.Counter  // Accumulate
+    return prev
+}
+</pre>
+
+			<pre>type Reducer[S <a href="/pkg/builtin/#any">any</a>] func(prev, delta S) S</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="RetryPolicy">type <a href="/src/github.com/dshills/langgraph-go/graph/policy.go?s=1326:2102#L26">RetryPolicy</a>
+				<a class="permalink" href="#RetryPolicy">&#xb6;</a>
+				
+				
+			</h2>
+			<p>RetryPolicy defines automatic retry configuration for transient node failures.
+<p>When a node execution fails, the retry policy determines whether the failure.
+is retryable and how long to wait before the next attempt. Exponential backoff.
+with jitter is used to avoid thundering herd problems.
+
+			<pre>type RetryPolicy struct {
+<span id="RetryPolicy.MaxAttempts"></span>    <span class="comment">// MaxAttempts is the maximum number of execution attempts (including initial attempt).</span>
+    <span class="comment">// Must be &gt;= 1. A value of 1 means no retries.</span>
+    MaxAttempts <a href="/pkg/builtin/#int">int</a>
+
+<span id="RetryPolicy.BaseDelay"></span>    <span class="comment">// BaseDelay is the base delay for exponential backoff between retries.</span>
+    <span class="comment">// The actual delay is computed as: min(BaseDelay * 2^attempt + jitter, MaxDelay).</span>
+    BaseDelay <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>
+
+<span id="RetryPolicy.MaxDelay"></span>    <span class="comment">// MaxDelay is the maximum delay cap for exponential backoff.</span>
+    <span class="comment">// Must be &gt;= BaseDelay.</span>
+    MaxDelay <a href="/pkg/time/">time</a>.<a href="/pkg/time/#Duration">Duration</a>
+
+<span id="RetryPolicy.Retryable"></span>    <span class="comment">// Retryable is a predicate function that determines if an error is retryable.</span>
+    <span class="comment">// If nil, all errors are considered non-retryable.</span>
+    <span class="comment">// Common patterns:</span>
+    <span class="comment">// - Network errors: temporary, connection refused, timeout.</span>
+    <span class="comment">// - HTTP 429, 503, 504.</span>
+    <span class="comment">// - Database deadlocks.</span>
+    Retryable func(<a href="/pkg/builtin/#error">error</a>) <a href="/pkg/builtin/#bool">bool</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="RetryPolicy.Validate">func (*RetryPolicy) <a href="/src/github.com/dshills/langgraph-go/graph/policy.go?s=5736:5775#L133">Validate</a>
+					<a class="permalink" href="#RetryPolicy.Validate">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (rp *<a href="#RetryPolicy">RetryPolicy</a>) Validate() <a href="/pkg/builtin/#error">error</a></pre>
+				<p>Validate checks if the RetryPolicy configuration is valid.
+Returns an error if any constraints are violated:
+<ul>
+<li>MaxAttempts must be &gt;= 1 (1 means no retries, just initial attempt)
+<li>If both MaxDelay and BaseDelay are &gt; 0, then MaxDelay must be &gt;= BaseDelay
+(MaxDelay == 0 is treated as &quot;no maximum delay cap&quot;)
+</ul>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="SchedulerMetrics">type <a href="/src/github.com/dshills/langgraph-go/graph/scheduler.go?s=12059:13619#L305">SchedulerMetrics</a>
+				<a class="permalink" href="#SchedulerMetrics">&#xb6;</a>
+				
+				
+			</h2>
+			<p>SchedulerMetrics tracks execution metrics for monitoring and observability (T067).
+<p>These metrics provide insight into the runtime behavior of the concurrent scheduler,
+enabling operators to:
+<ul>
+<li>Detect bottlenecks and capacity issues
+<li>Monitor backpressure conditions
+<li>Tune concurrency parameters (MaxConcurrentNodes, QueueDepth)
+<li>Alert on unhealthy execution patterns
+</ul>
+<p>Metrics are updated atomically by the scheduler and can be safely read concurrently.
+<p>According to spec.md FR-027: System MUST expose metrics for queue_depth,
+step_latency_ms, active_nodes, and step_count.
+
+			<pre>type SchedulerMetrics struct {
+<span id="SchedulerMetrics.ActiveNodes"></span>    <span class="comment">// ActiveNodes is the current number of nodes executing concurrently.</span>
+    <span class="comment">// This value should never exceed MaxConcurrentNodes.</span>
+    <span class="comment">// Use atomic.LoadInt32() to read safely from multiple goroutines.</span>
+    ActiveNodes <a href="/pkg/builtin/#int32">int32</a>
+
+<span id="SchedulerMetrics.QueueDepth"></span>    <span class="comment">// QueueDepth is the current number of work items waiting in the frontier.</span>
+    <span class="comment">// High queue depth indicates work is being produced faster than consumed.</span>
+    <span class="comment">// When this reaches capacity, backpressure kicks in.</span>
+    QueueDepth <a href="/pkg/builtin/#int32">int32</a>
+
+<span id="SchedulerMetrics.QueueCapacity"></span>    <span class="comment">// QueueCapacity is the maximum queue depth configured via Options.QueueDepth.</span>
+    <span class="comment">// This is the capacity at which backpressure will block new work items.</span>
+    QueueCapacity <a href="/pkg/builtin/#int32">int32</a>
+
+<span id="SchedulerMetrics.TotalSteps"></span>    <span class="comment">// TotalSteps is the cumulative count of execution steps since run start.</span>
+    <span class="comment">// Monotonically increasing counter.</span>
+    TotalSteps <a href="/pkg/builtin/#int64">int64</a>
+
+<span id="SchedulerMetrics.TotalEnqueued"></span>    <span class="comment">// TotalEnqueued is the total number of work items enqueued since run start.</span>
+    <span class="comment">// Useful for calculating throughput (enqueued/second).</span>
+    TotalEnqueued <a href="/pkg/builtin/#int64">int64</a>
+
+<span id="SchedulerMetrics.TotalDequeued"></span>    <span class="comment">// TotalDequeued is the total number of work items dequeued since run start.</span>
+    <span class="comment">// Should equal TotalEnqueued when run completes.</span>
+    TotalDequeued <a href="/pkg/builtin/#int64">int64</a>
+
+<span id="SchedulerMetrics.BackpressureEvents"></span>    <span class="comment">// BackpressureEvents counts how many times backpressure was triggered.</span>
+    <span class="comment">// High count indicates sustained overload or insufficient concurrency.</span>
+    BackpressureEvents <a href="/pkg/builtin/#int32">int32</a>
+
+<span id="SchedulerMetrics.PeakActiveNodes"></span>    <span class="comment">// PeakActiveNodes is the maximum concurrent execution observed during this run.</span>
+    <span class="comment">// Should be &lt;= MaxConcurrentNodes.</span>
+    PeakActiveNodes <a href="/pkg/builtin/#int32">int32</a>
+
+<span id="SchedulerMetrics.PeakQueueDepth"></span>    <span class="comment">// PeakQueueDepth is the maximum queue depth observed during this run.</span>
+    <span class="comment">// If this equals QueueCapacity, backpressure was triggered.</span>
+    PeakQueueDepth <a href="/pkg/builtin/#int32">int32</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="SideEffectPolicy">type <a href="/src/github.com/dshills/langgraph-go/graph/policy.go?s=2506:3131#L55">SideEffectPolicy</a>
+				<a class="permalink" href="#SideEffectPolicy">&#xb6;</a>
+				
+				
+			</h2>
+			<p>SideEffectPolicy declares the external I/O characteristics of a node,
+informing the replay engine whether the node&apos;s interactions should be.
+recorded and replayed.
+<p>This policy affects deterministic replay behavior:
+- Recordable=true: I/O is captured and can be replayed without re-execution.
+- RequiresIdempotency=true: Node needs idempotency key to ensure exactly-once semantics.
+
+			<pre>type SideEffectPolicy struct {
+<span id="SideEffectPolicy.Recordable"></span>    <span class="comment">// Recordable indicates whether this node&#39;s I/O can be captured for replay.</span>
+    <span class="comment">// Examples:</span>
+    <span class="comment">// - LLM API calls: true (responses are cacheable).</span>
+    <span class="comment">// - Pure functions: false (no external I/O).</span>
+    <span class="comment">// - Database queries: false (may be non-deterministic).</span>
+    Recordable <a href="/pkg/builtin/#bool">bool</a>
+
+<span id="SideEffectPolicy.RequiresIdempotency"></span>    <span class="comment">// RequiresIdempotency indicates whether this node requires an idempotency key.</span>
+    <span class="comment">// to prevent duplicate execution. This is important for side-effecting operations.</span>
+    <span class="comment">// like database writes, payments, or notifications.</span>
+    <span class="comment">//</span>
+    <span class="comment">// If true, the node must provide an IdempotencyKeyFunc in its NodePolicy.</span>
+    RequiresIdempotency <a href="/pkg/builtin/#bool">bool</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="WorkItem">type <a href="/src/github.com/dshills/langgraph-go/graph/scheduler.go?s=725:1582#L15">WorkItem</a>
+				<a class="permalink" href="#WorkItem">&#xb6;</a>
+				
+				
+			</h2>
+			<p>WorkItem represents a schedulable unit of work in the execution frontier.
+Each WorkItem contains all the context needed to execute a node, including
+the node&apos;s input state, execution metadata, and provenance information for
+deterministic ordering.
+<p>WorkItems are created when nodes produce routing decisions and are queued
+in the frontier for concurrent execution. The OrderKey ensures deterministic
+processing order even when nodes complete out of order.
+
+			<pre>type WorkItem[S <a href="/pkg/builtin/#any">any</a>] struct {
+<span id="WorkItem.StepID"></span>    <span class="comment">// StepID is the monotonically increasing step number in the run</span>
+    StepID <a href="/pkg/builtin/#int">int</a> `json:&#34;step_id&#34;`
+
+<span id="WorkItem.OrderKey"></span>    <span class="comment">// OrderKey is a deterministic sort key computed from hash(path_hash, edge_index).</span>
+    <span class="comment">// This ensures consistent execution order across replays.</span>
+    OrderKey <a href="/pkg/builtin/#uint64">uint64</a> `json:&#34;order_key&#34;`
+
+<span id="WorkItem.NodeID"></span>    <span class="comment">// NodeID identifies the node to execute for this work item</span>
+    NodeID <a href="/pkg/builtin/#string">string</a> `json:&#34;node_id&#34;`
+
+<span id="WorkItem.State"></span>    <span class="comment">// State is the snapshot of state for this work item&#39;s execution</span>
+    State S `json:&#34;state&#34;`
+
+<span id="WorkItem.Attempt"></span>    <span class="comment">// Attempt is the retry counter (0 for first execution, 1+ for retries)</span>
+    Attempt <a href="/pkg/builtin/#int">int</a> `json:&#34;attempt&#34;`
+
+<span id="WorkItem.ParentNodeID"></span>    <span class="comment">// ParentNodeID is the node that spawned this work item, used for path hash computation</span>
+    ParentNodeID <a href="/pkg/builtin/#string">string</a> `json:&#34;parent_node_id&#34;`
+
+<span id="WorkItem.EdgeIndex"></span>    <span class="comment">// EdgeIndex is the index of the edge taken from parent, used for deterministic ordering</span>
+    EdgeIndex <a href="/pkg/builtin/#int">int</a> `json:&#34;edge_index&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+				<tr>
+				
+					<td class="pkg-name" style="padding-left: 0px;">
+						<a href="emit/">emit</a>
+					</td>
+				
+					<td class="pkg-synopsis">
+						Package emit provides event emission and observability for graph execution.
+					</td>
+				</tr>
+			
+				<tr>
+				
+					<td class="pkg-name" style="padding-left: 0px;">
+						<a href="model/">model</a>
+					</td>
+				
+					<td class="pkg-synopsis">
+						Package model provides LLM integration adapters.
+					</td>
+				</tr>
+			
+				<tr>
+				
+					<td class="pkg-name" style="padding-left: 20px;">
+						<a href="model/anthropic/">anthropic</a>
+					</td>
+				
+					<td class="pkg-synopsis">
+						Package anthropic provides ChatModel adapter for Anthropic Claude API.
+					</td>
+				</tr>
+			
+				<tr>
+				
+					<td class="pkg-name" style="padding-left: 20px;">
+						<a href="model/google/">google</a>
+					</td>
+				
+					<td class="pkg-synopsis">
+						Package google provides ChatModel adapter for Google Gemini API.
+					</td>
+				</tr>
+			
+				<tr>
+				
+					<td class="pkg-name" style="padding-left: 20px;">
+						<a href="model/openai/">openai</a>
+					</td>
+				
+					<td class="pkg-synopsis">
+						Package openai provides ChatModel adapter for OpenAI GPT API.
+					</td>
+				</tr>
+			
+				<tr>
+				
+					<td class="pkg-name" style="padding-left: 0px;">
+						<a href="store/">store</a>
+					</td>
+				
+					<td class="pkg-synopsis">
+						Package store provides persistence implementations for graph state.
+					</td>
+				</tr>
+			
+				<tr>
+				
+					<td class="pkg-name" style="padding-left: 0px;">
+						<a href="tool/">tool</a>
+					</td>
+				
+					<td class="pkg-synopsis">
+						Package tool provides tool interfaces for graph nodes.
+					</td>
+				</tr>
+			
+		</table>
+	</div>
+
+
+
+<div id="footer">
+Build version go1.25.4.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="/LICENSE">BSD license</a>.<br>
+<a href="https://golang.org/doc/tos.html">Terms of Service</a> |
+<a href="https://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</body>
+</html>
