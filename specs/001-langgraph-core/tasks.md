@@ -322,7 +322,7 @@
 ### Documentation ✅ COMPLETE
 
 - [X] T201 Generate godoc for all exported types and functions in docs/godoc/
-- [ ] T202 Create architecture diagram (DOT/PNG) in docs/architecture/ (DEFERRED)
+- [X] T202 Create architecture diagram (DOT/PNG) in docs/architecture/
 - [X] T203 Write user guide: Getting Started in docs/guides/01-getting-started.md
 - [X] T204 Write user guide: Building Workflows in docs/guides/02-building-workflows.md
 - [X] T205 Write user guide: State Management in docs/guides/03-state-management.md
@@ -346,8 +346,7 @@
 **Task IDs Planned**: T001-T215 (215 task IDs allocated)
 **Tasks Executed**: 157 actual task items (consolidation during implementation)
 **Status Breakdown**:
-- ✅ **Completed**: 155 tasks (98.7% of executed tasks)
-- ⏸️ **Deferred**: 1 task (0.6%) - T202 (Architecture diagram)
+- ✅ **Completed**: 156 tasks (99.4% of executed tasks)
 - ⏭️ **Skipped**: 1 task (0.6%) - T213 (Migration guide - N/A for initial release)
 
 **v1.0 Release Readiness**: 100% of functional features complete (all core + optional enhancements done)
@@ -360,7 +359,7 @@
 - Phase 5 (US3 - Parallel): 24/24 ✅ 100%
 - Phase 6 (US4 - LLM): 3/3 ✅ 100%
 - Phase 7 (US5 - Events): 24/24 ✅ 100%
-- Phase 8 (Polish): 24/26 ✅ 92% (2 deferred/skipped: T202, T213)
+- Phase 8 (Polish): 25/26 ✅ 96% (1 skipped: T213)
 
 **Phase 8 Subsystem Status**:
 - Error Handling & Retry: ✅ COMPLETE (6 tasks)
@@ -368,11 +367,11 @@
 - MySQL Store: ✅ COMPLETE (9 tasks - `graph/store/mysql.go`, migrations)
 - OpenTelemetry: ✅ COMPLETE (4 tasks - `graph/emit/otel.go`, `otel_test.go`, `README.md`)
 - Performance & Benchmarking: ✅ COMPLETE (5 tasks - benchmarks, profiling)
-- Documentation: ⏸️ 11/14 complete, 2 deferred, 1 skipped
+- Documentation: ✅ 13/14 complete, 1 skipped
   - ✅ User guides complete (T203-T210: 8 guides)
   - ✅ API reference (T211), FAQ (T212), CHANGELOG (T215)
-  - ⏸️ T201: Godoc HTML (deferred - auto-generate with `godoc -http=:6060`)
-  - ⏸️ T202: Architecture diagram (deferred - can generate later)
+  - ✅ T201: Godoc HTML (complete - generated in docs/godoc/)
+  - ✅ T202: Architecture diagram (complete - docs/architecture/)
   - ⏭️ T213: Migration guide (skipped - N/A for initial release)
 
 ## Dependencies
@@ -385,7 +384,7 @@
 5. ✅ US5 (Event Tracing) - independent
 
 **Non-Blocking Items** (not required for v1.0):
-- ⏸️ DEFERRED: T201 (Godoc HTML), T202 (Architecture diagram) - auto-generated documentation
+- ✅ COMPLETE: T201 (Godoc HTML), T202 (Architecture diagram) - auto-generated documentation
 - ⏭️ SKIPPED: T213 (Migration guide) - N/A for initial release
 
 ## Parallel Execution Opportunities
@@ -445,8 +444,12 @@
   - Includes README with viewing instructions
   - Evidence: See `docs/godoc/README.md` for generated documentation
 
-**⏸️ Deferred** (post-v1.0):
-- T202: Architecture diagram (can generate from codebase with `go-callvis` or manually)
+- T202: Architecture diagrams - **COMPLETE**
+  - Generated 3 comprehensive architecture diagrams with GraphViz/DOT
+  - Output: `docs/architecture/` with 3 DOT files and 3 PNG renders
+  - Diagrams: system-architecture, workflow-execution, package-dependencies
+  - Includes README with viewing/regeneration instructions
+  - Evidence: See `docs/architecture/README.md` for diagram documentation
 
 **⏭️ Skipped**:
 - T213: Migration guide (N/A - no prior version to migrate from)

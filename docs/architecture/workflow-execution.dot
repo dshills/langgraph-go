@@ -1,0 +1,139 @@
+digraph WorkflowExecution {
+    // Graph attributes
+    rankdir=TB;
+    fontname="Arial";
+    fontsize=14;
+    node [fontname="Arial", fontsize=11];
+    edge [fontname="Arial", fontsize=10];
+
+    // Title
+    label="LangGraph-Go Workflow Execution Flow";
+    labelloc="t";
+    fontsize=18;
+
+    // Start
+    start [label="Start", shape=ellipse, style=filled, color=green];
+
+    // Initialization
+    init [label="Initialize Engine\n• Add nodes\n• Define edges\n• Set start node", shape=box];
+
+    // Run invocation
+    run [label="engine.Run(ctx, runID, initialState)", shape=box, style=filled, color=lightblue];
+
+    // State initialization
+    state_init [label="Initialize State\n• Load from checkpoint (if resuming)\n• Or use initialState", shape=box];
+
+    // Load checkpoint decision
+    checkpoint_exists [label="Checkpoint\nexists?", shape=diamond];
+    load_checkpoint [label="Load Checkpoint\nstore.LoadCheckpoint()", shape=box];
+
+    // Main execution loop
+    exec_loop [label="Execution Loop\n(while not stopped)", shape=box, style=filled, color=lightyellow];
+
+    // Frontier queue
+    frontier_check [label="Frontier\nQueue Empty?", shape=diamond];
+    frontier_pop [label="Pop Step from Frontier\n• Get next node(s)\n• Respect order_key", shape=box];
+
+    // Concurrent execution decision
+    concurrent_check [label="Multiple\nNodes Ready?", shape=diamond];
+
+    // Sequential execution
+    seq_exec [label="Execute Node Sequentially\nnode.Run(ctx, state)", shape=box];
+
+    // Parallel execution
+    par_exec [label="Execute Nodes in Parallel\n• Goroutine per node\n• Isolated state copies\n• Deterministic ordering", shape=box, style=filled, color=lightcyan];
+
+    // Node execution details
+    node_exec [label="Node Execution\n1. Emit 'node_start' event\n2. Apply timeout\n3. Call node.Run()\n4. Handle errors/retries\n5. Emit 'node_end' event", shape=box];
+
+    // Result processing
+    process_result [label="Process NodeResult\n• state delta\n• routing decision\n• events\n• errors", shape=box];
+
+    // State reduction
+    reduce_state [label="Reduce State\nstate = reducer(prevState, delta)", shape=box, style=filled, color=lightgreen];
+
+    // Merge handling (parallel)
+    merge_check [label="Multiple\nResults?", shape=diamond];
+    merge_results [label="Merge Results\n• Collect all deltas\n• Merge deterministically\n• Preserve order_key ordering", shape=box];
+
+    // Store persistence
+    save_step [label="Persist Step\nstore.SaveStep(runID, step, state)", shape=box];
+
+    // Routing decision
+    routing [label="Determine Next Nodes\n• Follow edges\n• Evaluate predicates\n• Handle STOP/GOTO/FANOUT", shape=box];
+
+    // Add to frontier
+    add_frontier [label="Add Nodes to Frontier\n• Assign step_id\n• Calculate order_key\n• Enqueue for execution", shape=box];
+
+    // Max steps check
+    max_steps [label="Max Steps\nReached?", shape=diamond];
+
+    // Emit events
+    emit_event [label="Emit Events\nemitter.Emit(event)", shape=box, style=dashed];
+
+    // Error handling
+    error_check [label="Error\nOccurred?", shape=diamond];
+    retry_check [label="Retry\nAttempts\nRemaining?", shape=diamond];
+    retry_exec [label="Retry with\nExponential Backoff", shape=box];
+    error_persist [label="Persist Error\nLastError in state", shape=box];
+
+    // Completion
+    complete [label="Workflow Complete\n• Final state\n• Emit 'workflow_end'\n• Flush emitter", shape=box, style=filled, color=lightgreen];
+
+    // End
+    end [label="Return Final State", shape=ellipse, style=filled, color=red];
+
+    // Main flow
+    start -> init;
+    init -> run;
+    run -> state_init;
+    state_init -> checkpoint_exists;
+    checkpoint_exists -> load_checkpoint [label="yes"];
+    checkpoint_exists -> exec_loop [label="no"];
+    load_checkpoint -> exec_loop;
+
+    exec_loop -> frontier_check;
+    frontier_check -> complete [label="yes (empty)"];
+    frontier_check -> frontier_pop [label="no"];
+
+    frontier_pop -> max_steps;
+    max_steps -> complete [label="yes"];
+    max_steps -> concurrent_check [label="no"];
+
+    concurrent_check -> seq_exec [label="no (single)"];
+    concurrent_check -> par_exec [label="yes (multiple)"];
+
+    seq_exec -> node_exec;
+    par_exec -> node_exec;
+
+    node_exec -> emit_event [style=dashed];
+    emit_event -> process_result [style=dashed];
+    node_exec -> process_result;
+
+    process_result -> error_check;
+    error_check -> retry_check [label="yes"];
+    error_check -> merge_check [label="no"];
+
+    retry_check -> retry_exec [label="yes"];
+    retry_check -> error_persist [label="no"];
+    retry_exec -> node_exec;
+    error_persist -> routing;
+
+    merge_check -> merge_results [label="yes (parallel)"];
+    merge_check -> reduce_state [label="no (single)"];
+    merge_results -> reduce_state;
+
+    reduce_state -> save_step;
+    save_step -> routing;
+    routing -> add_frontier;
+    add_frontier -> exec_loop;
+
+    complete -> end;
+
+    // Observability annotations
+    obs1 [label="Events: node_start, node_end,\nstate_change, error, checkpoint", shape=note, style=filled, color=lightyellow];
+    obs2 [label="Metrics: queue_depth,\nactive_workers, step_duration", shape=note, style=filled, color=lightyellow];
+
+    emit_event -> obs1 [style=dotted, arrowhead=none];
+    save_step -> obs2 [style=dotted, arrowhead=none];
+}
