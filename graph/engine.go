@@ -1063,15 +1063,20 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 					// T046: Track node execution start time for latency metrics
 					startTime := time.Now()
 
-					// Execute node (with replay mode support - T052)
-					// When Options.ReplayMode=true, recorded I/O should be used instead of live execution.
-					// Full replay implementation requires:
-					//   1. Loading checkpoint with RecordedIOs at Run() start
-					//   2. Looking up recorded response via lookupRecordedIO(nodeID, attempt)
-					//   3. Deserializing recorded response into NodeResult
-					//   4. Optionally verifying hash with verifyReplayHash() if StrictReplay=true
-					// For now, execute normally - replay integration will be completed in T056-T057
-					result := nodeImpl.Run(nodeCtx, item.State)
+					// Execute node with timeout enforcement (T076)
+					// Use executeNodeWithTimeout to apply per-node timeout policy.
+					// This respects NodePolicy.Timeout if set, otherwise uses DefaultNodeTimeout.
+					result, timeoutErr := executeNodeWithTimeout(nodeCtx, nodeImpl, item.NodeID, item.State, policy, e.opts.DefaultNodeTimeout)
+
+					// Handle timeout errors: preserve both timeout and node errors if both occur
+					if timeoutErr != nil {
+						if result.Err == nil {
+							result.Err = timeoutErr
+						} else {
+							// Both timeout and node error occurred - combine them
+							result.Err = fmt.Errorf("%w (node also returned: %v)", timeoutErr, result.Err)
+						}
+					}
 
 					// T046: Record step latency metric
 					latency := time.Since(startTime)

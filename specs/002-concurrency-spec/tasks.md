@@ -203,27 +203,27 @@ This document provides a complete, dependency-ordered task breakdown for impleme
 
 ### Tests (TDD - Write First)
 
-- [ ] T059 [US3] Write test for MaxConcurrentNodes enforcement in graph/engine_test.go (TestConcurrencyLimit)
-- [ ] T060 [US3] Write test for backpressure blocking in graph/scheduler_test.go (TestBackpressureBlock)
-- [ ] T061 [US3] Write test for backpressure timeout in graph/scheduler_test.go (TestBackpressureTimeout)
-- [ ] T062 [US3] Write integration test for queue depth monitoring in graph/integration_test.go (TestQueueDepthMetrics)
+- [X] T059 [US3] Write test for MaxConcurrentNodes enforcement in graph/engine_test.go (TestConcurrencyLimit)
+- [X] T060 [US3] Write test for backpressure blocking in graph/scheduler_test.go (TestBackpressureBlock)
+- [X] T061 [US3] Write test for backpressure timeout in graph/scheduler_test.go (TestBackpressureTimeout)
+- [X] T062 [US3] Write integration test for queue depth monitoring in graph/integration_test.go (TestQueueDepthMetrics)
 
 ### Backpressure Implementation
 
-- [ ] T063 [US3] Implement channel capacity enforcement in Frontier.Enqueue in graph/scheduler.go (block when full)
-- [ ] T064 [US3] Implement backpressure timeout logic in Frontier.Enqueue in graph/scheduler.go (checkpoint and pause after timeout)
-- [ ] T065 [US3] Add active node counter to Engine in graph/engine.go (track concurrent execution count)
-- [ ] T066 [US3] Enforce MaxConcurrentNodes in execution loop in graph/engine.go (wait until slot available)
+- [X] T063 [US3] Implement channel capacity enforcement in Frontier.Enqueue in graph/scheduler.go (block when full)
+- [ ] T064 [US3] Implement backpressure timeout logic in Frontier.Enqueue in graph/scheduler.go (checkpoint and pause after timeout) **DEFERRED: Basic backpressure blocking implemented; timeout with checkpoint save is future enhancement**
+- [X] T065 [US3] Add active node counter to Engine in graph/engine.go (track concurrent execution count)
+- [X] T066 [US3] Enforce MaxConcurrentNodes in execution loop in graph/engine.go (wait until slot available)
 
 ### Metrics & Observability
 
-- [ ] T067 [US3] Define SchedulerMetrics struct in graph/scheduler.go (ActiveNodes, QueueDepth, TotalSteps, etc.)
-- [ ] T068 [US3] Implement metrics collection in scheduler in graph/scheduler.go (update after each operation)
-- [ ] T069 [US3] Emit backpressure events via Emitter in graph/engine.go (EventBackpressure when blocked)
+- [X] T067 [US3] Define SchedulerMetrics struct in graph/scheduler.go (ActiveNodes, QueueDepth, TotalSteps, etc.)
+- [X] T068 [US3] Implement metrics collection in scheduler in graph/scheduler.go (update after each operation)
+- [X] T069 [US3] Emit backpressure events via Emitter in graph/engine.go (EventBackpressure when blocked)
 
 ### Validation
 
-- [ ] T070 [US3] Run all US3 tests and verify they pass (go test -run TestConcurrencyLimit -v ./graph)
+- [X] T070 [US3] Run all US3 tests and verify they pass (go test -run TestConcurrencyLimit -v ./graph)
 
 **Acceptance Criteria**:
 - ✅ MaxConcurrentNodes=5 allows max 5 simultaneous nodes
@@ -245,26 +245,26 @@ This document provides a complete, dependency-ordered task breakdown for impleme
 
 ### Tests (TDD - Write First)
 
-- [ ] T071 [US4] Write test for run-level timeout in graph/engine_test.go (TestRunWallClockBudget)
-- [ ] T072 [US4] Write test for node-level timeout in graph/policy_test.go (TestNodeTimeout)
-- [ ] T073 [US4] Write test for context cancellation propagation in graph/engine_test.go (TestCancellationPropagation)
-- [ ] T074 [US4] Write test for deadlock detection in graph/engine_test.go (TestDeadlockDetection)
+- [X] T071 [US4] Write test for run-level timeout in graph/engine_test.go (TestRunWallClockBudget)
+- [X] T072 [US4] Write test for node-level timeout in graph/policy_test.go (TestNodeTimeout)
+- [X] T073 [US4] Write test for context cancellation propagation in graph/engine_test.go (TestCancellationPropagation)
+- [X] T074 [US4] Write test for deadlock detection in graph/engine_test.go (TestDeadlockDetection)
 
 ### Timeout Implementation
 
-- [ ] T075 [US4] Implement RunWallClockBudget enforcement in Engine.Run in graph/engine.go (context.WithTimeout)
-- [ ] T076 [US4] Implement per-node timeout from NodePolicy in graph/engine.go (derived context per node)
-- [ ] T077 [US4] Propagate context to all goroutines in execution loop in graph/engine.go
-- [ ] T078 [US4] Check ctx.Done() in scheduler loop in graph/scheduler.go (fast cancellation detection)
+- [X] T075 [US4] Implement RunWallClockBudget enforcement in Engine.Run in graph/engine.go (context.WithTimeout)
+- [X] T076 [US4] Implement per-node timeout from NodePolicy in graph/engine.go (derived context per node)
+- [X] T077 [US4] Propagate context to all goroutines in execution loop in graph/engine.go
+- [X] T078 [US4] Check ctx.Done() in scheduler loop in graph/scheduler.go (fast cancellation detection)
 
 ### Deadlock Detection
 
-- [ ] T079 [US4] Implement no-progress detection in Engine.Run in graph/engine.go (empty frontier with active=0)
-- [ ] T080 [US4] Raise ErrNoProgress when deadlock detected in graph/engine.go
+- [X] T079 [US4] Implement no-progress detection in Engine.Run in graph/engine.go (empty frontier with active=0)
+- [X] T080 [US4] Raise ErrNoProgress when deadlock detected in graph/engine.go
 
 ### Validation
 
-- [ ] T081 [US4] Run all US4 tests and verify they pass (go test -run TestCancellation -v ./graph)
+- [X] T081 [US4] Run all US4 tests and verify they pass (go test -run TestCancellation -v ./graph)
 
 **Acceptance Criteria**:
 - ✅ RunWallClockBudget terminates execution at time limit
@@ -556,43 +556,44 @@ After Phase 10 completion, verify:
 | 2 | Foundational | 13 | 13 | ✅ Complete | All types defined |
 | 3 | US1 (P1) | 18 | 18 | ✅ Complete | Concurrent execution working |
 | 4 | US2 (P1) | 19 | 19 | ✅ Complete | Deterministic replay working |
-| 5 | US3 (P2) | 12 | 0 | ⏸️ Deferred | Future release (v0.3.0) |
-| 6 | US4 (P2) | 11 | 0 | ⏸️ Deferred | Future release (v0.3.0) |
+| 5 | US3 (P2) | 12 | 11 | ✅ Mostly Complete | T064 deferred (advanced timeout) |
+| 6 | US4 (P2) | 11 | 11 | ✅ Complete | Cancellation & timeouts working |
 | 7 | US5 (P3) | 12 | 10 | ✅ Mostly Complete | 2 tasks deferred (T091-T092) |
 | 8 | Store/Emit | 19 | 19 | ✅ Complete | All enhancements done |
 | 9 | Examples/Docs | 8 | 8 | ✅ Complete | Full documentation |
 | 10 | Polish | 16 | 16 | ✅ Complete | Ready for release |
-| **Total** | | **136** | **120** | **88% Complete** | **v0.2.0 ready** |
+| **Total** | | **136** | **133** | **98% Complete** | **v0.2.0+ ready** |
 
 **Completion Statistics**:
-- **Implemented**: 120 tasks (88%)
-- **Deferred**: 16 tasks (12%) - US3-US4 for future release
-- **Core Features**: 100% complete (all P1 user stories)
+- **Implemented**: 133 tasks (98%)
+- **Deferred**: 3 tasks (2%) - T064 (advanced backpressure timeout), T091-T092 (idempotency)
+- **Core Features**: 100% complete (all P1 + P2 user stories)
 - **Production Ready**: YES
 
 ---
 
 ## Status: ✅ IMPLEMENTATION COMPLETE
 
-**Feature Status**: Production-Ready for v0.2.0 Release
-**Completion Date**: 2025-10-28
-**Total Tasks Completed**: 120/136 (88%)
+**Feature Status**: Production-Ready for v0.2.0+ Release
+**Completion Date**: 2025-11-08
+**Total Tasks Completed**: 133/136 (98%)
 
 ### What Was Delivered
 
 ✅ **Phase 1-2**: Foundation and core types (21 tasks)
 ✅ **Phase 3**: US1 - Parallel Node Execution (18 tasks) - **MVP DELIVERED**
 ✅ **Phase 4**: US2 - Deterministic Replay (19 tasks)
+✅ **Phase 5**: US3 - Bounded Concurrency & Backpressure (11/12 tasks) - **NOW COMPLETE**
+✅ **Phase 6**: US4 - Cancellation & Timeouts (11 tasks) - **NOW COMPLETE**
 ✅ **Phase 7**: US5 - Retry Policies (10 tasks)
 ✅ **Phase 8**: Store & Emitter Enhancements (19 tasks)
 ✅ **Phase 9**: Examples & Documentation (8 tasks)
 ✅ **Phase 10**: Polish & Validation (16 tasks)
 
-### What Was Deferred
+### What Was Deferred (3 tasks only)
 
-⏸️ **Phase 5**: US3 - Bounded Concurrency & Backpressure (12 tasks) - for v0.3.0
-⏸️ **Phase 6**: US4 - Cancellation & Timeouts (11 tasks) - for v0.3.0
-⏸️ **Phase 7**: 2 idempotency tasks (T091-T092) - for v0.3.0
+⏸️ **Phase 5**: T064 - Advanced backpressure timeout with checkpoint save (future enhancement)
+⏸️ **Phase 7**: T091-T092 - 2 idempotency tasks (checkpoint infrastructure needed)
 
 ### Next Steps
 

@@ -4,6 +4,7 @@ package graph_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,6 +17,22 @@ import (
 type PolicyTestState struct {
 	Value   string
 	Counter int
+}
+
+// timedNode is a test helper node that implements a configurable timeout policy.
+type timedNode[S any] struct {
+	fn      func(context.Context, S) graph.NodeResult[S]
+	timeout time.Duration
+}
+
+func (n timedNode[S]) Run(ctx context.Context, state S) graph.NodeResult[S] {
+	return n.fn(ctx, state)
+}
+
+func (n timedNode[S]) Policy() graph.NodePolicy {
+	return graph.NodePolicy{
+		Timeout: n.timeout,
+	}
 }
 
 // TestNodeTimeout (T072) verifies per-node timeout enforcement via NodePolicy.
@@ -34,19 +51,10 @@ type PolicyTestState struct {
 // enforcement works correctly at the per-node level.
 func TestNodeTimeout(t *testing.T) {
 	t.Run("enforces per-node timeout", func(t *testing.T) {
-		// Note: This test is currently pending implementation of per-node timeout.
-		// enforcement (T076). The NodePolicy struct exists, but the Engine doesn't.
-		// yet apply per-node timeouts during execution.
-		//
-		// When T076 is implemented, this test should:
-		// 1. Create a node with NodePolicy that has Timeout=100ms.
-		// 2. Node execution attempts to run for 500ms.
-		// 3. Verify node is cancelled after ~100ms with context.DeadlineExceeded.
-		// 4. Verify workflow continues with error handling.
+		// T076: Verify per-node timeout enforcement via NodePolicy.Timeout.
+		// Node with 100ms timeout should be cancelled when execution exceeds that limit.
 
-		t.Skip("Pending implementation of per-node timeout enforcement (T076)")
-
-		// Create reducer.
+		// Create reducer
 		reducer := func(prev, delta PolicyTestState) PolicyTestState {
 			prev.Counter += delta.Counter
 			if delta.Value != "" {
@@ -55,48 +63,67 @@ func TestNodeTimeout(t *testing.T) {
 			return prev
 		}
 
-		// Create engine.
+		// Create engine with concurrent execution enabled
 		st := store.NewMemStore[PolicyTestState]()
 		emitter := emit.NewNullEmitter()
 		opts := graph.Options{
 			MaxSteps:           100,
+			MaxConcurrentNodes: 4,
 			DefaultNodeTimeout: 200 * time.Millisecond, // Default timeout
 		}
 		engine := graph.New(reducer, st, emitter, opts)
 
-		// TODO: Create node with explicit timeout policy
-		// The node should implement:
-		// - A Policy() method that returns NodePolicy with Timeout=100ms.
-		// - A Run() method that attempts to run for 500ms.
-		// - The engine should cancel it after 100ms (per NodePolicy.Timeout).
-		//
-		// Example (when implemented):
-		// type TimedNode struct {.
-		// timeout time.Duration.
-		// }.
-		// func (n *TimedNode) Policy() NodePolicy {.
-		// return NodePolicy{Timeout: n.timeout}.
-		// }.
-		// func (n *TimedNode) Run(ctx context.Context, s PolicyTestState) NodeResult[PolicyTestState] {.
-		// select {.
-		//     case <-time.After(500 * time.Millisecond):
-		// return NodeResult[PolicyTestState]{Delta: PolicyTestState{Counter: 1}, Route: Stop()}.
-		//     case <-ctx.Done():
-		// return NodeResult[PolicyTestState]{Err: ctx.Err()}.
-		// }.
-		// }.
+		// Create node with explicit 100ms timeout that attempts to run for 500ms
+		slowNode := timedNode[PolicyTestState]{
+			timeout: 100 * time.Millisecond,
+			fn: func(ctx context.Context, s PolicyTestState) graph.NodeResult[PolicyTestState] {
+				select {
+				case <-time.After(500 * time.Millisecond):
+					// Should not reach here due to timeout
+					return graph.NodeResult[PolicyTestState]{
+						Delta: PolicyTestState{Counter: 1, Value: "completed"},
+						Route: graph.Stop(),
+					}
+				case <-ctx.Done():
+					// Context cancelled due to timeout
+					return graph.NodeResult[PolicyTestState]{
+						Delta: PolicyTestState{Value: "timeout"},
+						Err:   ctx.Err(),
+					}
+				}
+			},
+		}
 
-		// Execute and verify timeout.
+		// Add node and execute
+		_ = engine.Add("slow", slowNode)
+		_ = engine.StartAt("slow")
+
+		// Execute and measure time
 		ctx := context.Background()
+		start := time.Now()
 		_, err := engine.Run(ctx, "node-timeout-test", PolicyTestState{})
+		duration := time.Since(start)
 
-		// Should get timeout error.
+		// Verify timeout error
 		if err == nil {
 			t.Fatal("expected timeout error, got nil")
 		}
-		if !errors.Is(err, context.DeadlineExceeded) {
-			t.Errorf("expected context.DeadlineExceeded, got %v", err)
+
+		// Verify execution terminated near the timeout (100ms), not the full 500ms
+		// Allow 100ms grace period for scheduling and cleanup
+		if duration > 200*time.Millisecond {
+			t.Errorf("execution took %v, expected ~100ms (per-node timeout)", duration)
 		}
+
+		// Verify error contains timeout indication
+		errStr := err.Error()
+		if !errors.Is(err, context.DeadlineExceeded) &&
+			!strings.Contains(errStr, "timeout") &&
+			!strings.Contains(errStr, "NODE_TIMEOUT") {
+			t.Errorf("expected timeout error, got %v", err)
+		}
+
+		t.Logf("Node timeout enforced after %v with error: %v", duration, err)
 	})
 
 	t.Run("uses DefaultNodeTimeout when Policy().Timeout is zero", func(t *testing.T) {
