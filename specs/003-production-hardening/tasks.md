@@ -150,9 +150,9 @@ This project follows Go standard layout:
 
 ### Tests Implementation for User Story 3
 
-- [ ] T049 [US3] Implement TestPrometheusMetricsExposed: Start engine, verify all 6 metrics available at /metrics endpoint
-- [ ] T050 [US3] Implement TestOpenTelemetryAttributes: Execute workflow, verify spans include run_id, step_id, order_key, attempt, tokens_in, tokens_out, cost_usd
-- [ ] T051 [US3] Implement TestCostTrackingAccuracy: Run 100 LLM calls with known token counts, verify cost accuracy within $0.01
+- [X] T049 [US3] Implement TestPrometheusMetricsExposed: Start engine, verify all 6 metrics available at /metrics endpoint
+- [X] T050 [US3] Implement TestOpenTelemetryAttributes: Execute workflow, verify spans include run_id, step_id, order_key, attempt, tokens_in, tokens_out, cost_usd
+- [X] T051 [US3] Implement TestCostTrackingAccuracy: Run 100 LLM calls with known token counts, verify cost accuracy within $0.01
 
 ### Documentation for User Story 3
 
@@ -274,7 +274,7 @@ This project follows Go standard layout:
 
 - [X] T108 [P] [US6] Update docs/quickstart.md with functional options examples
 - [X] T109 [P] [US6] Create docs/error-handling.md documenting all typed errors and when they occur
-- [ ] T110 [US6] Update all examples to use functional options pattern (examples/concurrent_workflow, examples/replay_demo, examples/ai_research_assistant)
+- [X] T110 [US6] Update all examples to use functional options pattern (examples/concurrent_workflow, examples/replay_demo, examples/ai_research_assistant)
 - [X] T111 [US6] Update README.md with functional options example in quick start section
 
 **Checkpoint**: User Story 6 complete - API more ergonomic while maintaining backward compatibility

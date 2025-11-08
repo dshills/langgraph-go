@@ -860,7 +860,7 @@ func runResearchWorkflow(topic, depth string, maxSources int, concurrent bool, g
 	memStore := store.NewMemStore[ResearchState]()
 	emitter := &detailedEmitter{showEvents: false}
 
-	// Use functional options for clean, self-documenting configuration
+	// Create engine with functional options (Options{} struct still supported for backward compatibility)
 	engine := graph.New(
 		researchReducer,
 		memStore,
