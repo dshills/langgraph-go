@@ -383,6 +383,7 @@ func main() {
 }
 
 // buildGameEngine constructs the game workflow graph.
+// Uses functional options for clean, self-documenting configuration.
 func buildGameEngine(st store.Store[GameState], emitter emit.Emitter, replayMode bool, options ...interface{}) *graph.Engine[GameState] {
 	engine := graph.New(gameReducer, st, emitter, options...)
 
