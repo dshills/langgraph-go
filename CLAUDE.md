@@ -53,6 +53,30 @@ The reducer function merges deltas into accumulated state, enabling deterministi
 
 ## Development Commands
 
+### Codebase Navigation
+
+**gocontext** is the primary tool for exploring this codebase:
+
+```bash
+# Index the codebase (run at project start or after major changes)
+mcp__gocontext__index_codebase(path="/Users/dshills/Development/projects/langgraph-go", include_tests=true)
+
+# Search code with natural language queries
+mcp__gocontext__search_code(path="/Users/dshills/Development/projects/langgraph-go", query="error handling patterns")
+
+# Search for DDD patterns (aggregates, entities, repositories, etc.)
+mcp__gocontext__search_code(
+  path="/Users/dshills/Development/projects/langgraph-go",
+  query="repository pattern",
+  filters={"ddd_patterns": ["repository"]}
+)
+
+# Check indexing status
+mcp__gocontext__get_status(path="/Users/dshills/Development/projects/langgraph-go")
+```
+
+Use gocontext for exploratory code search instead of grep/ripgrep. It provides semantic search with natural language queries, DDD pattern filtering, and context-aware results.
+
 ### Go Tooling
 ```bash
 # Build the project

@@ -1,13 +1,13 @@
 <!--
 Sync Impact Report:
-Version: 1.0.0 → 1.1.0
-Reason: MINOR version bump - Added mandatory pre-commit code review requirement
+Version: 1.1.0 → 1.2.0
+Reason: MINOR version bump - Added mandatory gocontext tooling requirement for codebase navigation
 
 Modified Principles:
 - No core principles modified
 
 Added Sections:
-- Development Workflow > Code Review: Added mandatory mcp-pr review before commits
+- Development Workflow > Codebase Navigation: Added mandatory gocontext usage and synchronization
 
 Removed Sections:
 - None
@@ -16,13 +16,14 @@ Templates Requiring Updates:
 ✅ plan-template.md - No changes needed (generic template, constitution check references principles)
 ✅ spec-template.md - No changes needed (generic template)
 ✅ tasks-template.md - No changes needed (already emphasizes tests before commits)
-✅ CLAUDE.md - No changes needed (references constitution for compliance)
-✅ README.md - No changes needed (high-level overview only)
+✅ CLAUDE.md - Needs update to reference gocontext usage
+⚠ README.md - May benefit from gocontext mention in Development section (optional)
 
 Follow-up TODOs:
-- None - all placeholders resolved
+- Update CLAUDE.md to include gocontext usage guidance in "Development Commands" section
+- Consider adding gocontext setup to project onboarding documentation
 
-Date: 2025-10-23
+Date: 2025-11-08
 -->
 
 # LangGraph-Go Constitution
@@ -143,6 +144,26 @@ Code MUST follow official Go guidelines:
 
 ## Development Workflow
 
+### Codebase Navigation
+
+**gocontext Indexing (MANDATORY)**:
+- ALL codebase exploration MUST use `gocontext` for fast semantic search
+- The codebase MUST be indexed using `mcp__gocontext__index_codebase` at project start
+- gocontext index MUST be updated after significant file changes (new packages, major refactors)
+- Use `mcp__gocontext__search_code` for natural language code queries instead of manual grep/find
+
+**Rationale**: gocontext provides semantic code search with natural language queries, DDD pattern
+filtering, and context-aware results. This dramatically improves code discovery, reduces time
+spent searching, and enables better understanding of architecture patterns.
+
+**Requirements**:
+- Index the codebase before beginning feature work: `mcp__gocontext__index_codebase(path, include_tests=true)`
+- Re-index after adding/moving packages or substantial code changes
+- Use semantic search for questions like "find all aggregates" or "error handling patterns"
+- Prefer gocontext over grep/ripgrep for exploratory code search
+- Use `search_mode="hybrid"` for balanced semantic + keyword search
+- Filter by `ddd_patterns` when searching for domain patterns (aggregates, entities, repositories, etc.)
+
 ### Code Review
 
 **Pre-Commit Review (MANDATORY)**:
@@ -197,4 +218,4 @@ All PRs and reviews MUST verify compliance with these principles. Complexity MUS
 against the principle of simplicity. Use CLAUDE.md for runtime development guidance and quick
 reference.
 
-**Version**: 1.1.0 | **Ratified**: 2025-10-23 | **Last Amended**: 2025-10-23
+**Version**: 1.2.0 | **Ratified**: 2025-10-23 | **Last Amended**: 2025-11-08
