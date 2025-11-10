@@ -254,6 +254,251 @@ When a node exceeds its timeout:
 
 See `examples/node_timeouts/` for a complete demonstration of per-node timeout configuration.
 
+## Sequential Execution & Retry Policies
+
+### Sequential vs Concurrent Execution
+
+The framework supports both concurrent and sequential execution modes:
+
+**Concurrent Execution** (default):
+- Multiple nodes execute in parallel up to `MaxConcurrentNodes` limit
+- Enables fan-out patterns via `Next{Many: []string{...}}`
+- Results merge deterministically using reducer and ordering keys
+- Default: `MaxConcurrentNodes = 8`
+
+**Sequential Execution**:
+- Set `MaxConcurrentNodes = 0` in `Options`
+- Nodes execute one at a time in graph order
+- No parallelism, no fan-out merging complexity
+- Simpler mental model for debugging and testing
+
+```go
+engine := graph.New(
+    reducer, store, emitter,
+    graph.WithOptions(graph.Options{
+        MaxConcurrentNodes: 0,  // Enable sequential mode
+        MaxSteps:           20,
+    }),
+)
+```
+
+Sequential mode is ideal for:
+- Debugging complex workflows
+- Workflows with strict ordering requirements
+- Resource-constrained environments
+- Testing retry behavior in isolation
+
+### RetryPolicy Configuration
+
+Nodes can configure automatic retry behavior for transient failures via the `Policy()` method:
+
+```go
+type MyNode struct{}
+
+func (n MyNode) Run(ctx context.Context, state S) NodeResult[S] {
+    // Node implementation
+}
+
+func (n MyNode) Policy() graph.NodePolicy {
+    return graph.NodePolicy{
+        Timeout: 30 * time.Second,
+        RetryPolicy: &graph.RetryPolicy{
+            MaxAttempts: 3,                    // Total attempts (1 initial + 2 retries)
+            BaseDelay:   time.Second,          // Base delay for backoff
+            MaxDelay:    10 * time.Second,     // Maximum delay cap
+            Retryable: func(err error) bool {  // Error classification
+                errStr := err.Error()
+                return strings.Contains(errStr, "timeout") ||
+                    strings.Contains(errStr, "rate limit") ||
+                    strings.Contains(errStr, "503")
+            },
+        },
+    }
+}
+```
+
+**RetryPolicy Fields**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `MaxAttempts` | `int` | Yes | Maximum execution attempts including initial attempt. Must be >= 1. A value of 1 means no retries. |
+| `BaseDelay` | `time.Duration` | Yes | Base delay for exponential backoff between retries. |
+| `MaxDelay` | `time.Duration` | Yes | Maximum delay cap for exponential backoff. Must be >= BaseDelay. |
+| `Retryable` | `func(error) bool` | Optional | Predicate to determine if error is retryable. If nil, all errors are non-retryable. |
+
+**Validation Rules**:
+- `MaxAttempts >= 1` (enforced at configuration time)
+- `MaxDelay >= BaseDelay` (enforced at configuration time)
+- If `RetryPolicy` is nil, node will not retry on errors
+
+### Retry Behavior
+
+When a node returns an error, the retry mechanism:
+
+1. **Evaluates Retryability**: Calls `Retryable(err)` predicate
+   - If `false` or `Retryable` is `nil`, fails immediately
+   - If `true`, proceeds to step 2
+
+2. **Checks Attempt Count**: Compares current attempt to `MaxAttempts`
+   - If attempts exhausted, returns `graph.ErrMaxAttemptsExceeded`
+   - Otherwise, proceeds to step 3
+
+3. **Calculates Backoff Delay**: Uses exponential backoff with jitter
+   ```
+   delay = min(BaseDelay * 2^attempt, MaxDelay) + jitter
+   ```
+   - `attempt`: 0-based retry attempt (0 for first retry, 1 for second, etc.)
+   - `jitter`: Random value in range `[0, BaseDelay)` for thundering herd prevention
+
+4. **Waits with Cancellation**: Sleeps for calculated delay
+   - Respects context cancellation during backoff
+   - Returns `context.Canceled` or `context.DeadlineExceeded` if context cancelled
+
+5. **Retries Execution**: Re-invokes `node.Run()` with incremented attempt counter
+
+**Deterministic Jitter**:
+- Jitter values are computed using a seeded RNG derived from `runID`
+- Same `runID` produces identical retry delays across runs
+- Enables deterministic replay of workflows with retries
+
+### Accessing Attempt Number
+
+Nodes can determine their current retry attempt via context:
+
+```go
+func (n MyNode) Run(ctx context.Context, state S) NodeResult[S] {
+    attempt, ok := ctx.Value(graph.AttemptKey).(int)
+    if !ok {
+        attempt = 0  // First attempt
+    }
+
+    log.Printf("Executing attempt %d", attempt+1)
+
+    // Adjust behavior based on attempt
+    if attempt > 0 {
+        // Use fallback strategy on retries
+    }
+
+    // ... node logic
+}
+```
+
+**AttemptKey Context Value**:
+- Type: `int` (0-based)
+- Value: `0` for initial execution, `1` for first retry, `2` for second retry, etc.
+- Always present in context during node execution
+- Use for attempt-aware logging, metrics, or behavior adjustments
+
+### Error Classification
+
+The `Retryable` predicate determines which errors trigger retries:
+
+**Common Retryable Errors**:
+- Network timeouts and connection failures
+- HTTP 429 (rate limit), 503 (service unavailable), 504 (gateway timeout)
+- Database deadlocks and lock timeouts
+- Temporary resource exhaustion
+
+**Common Non-Retryable Errors**:
+- HTTP 400 (bad request), 401 (unauthorized), 404 (not found)
+- Validation errors and invalid input
+- Business logic failures (e.g., insufficient funds)
+- Permanent configuration errors
+
+**Example Classification Functions**:
+
+```go
+// Network-focused retries
+func networkRetryable(err error) bool {
+    errStr := err.Error()
+    return strings.Contains(errStr, "timeout") ||
+        strings.Contains(errStr, "connection refused") ||
+        strings.Contains(errStr, "temporary failure")
+}
+
+// HTTP API retries
+func httpRetryable(err error) bool {
+    errStr := err.Error()
+    return strings.Contains(errStr, "429") ||  // Rate limit
+        strings.Contains(errStr, "503") ||     // Service unavailable
+        strings.Contains(errStr, "504")        // Gateway timeout
+}
+
+// Database retries
+func dbRetryable(err error) bool {
+    errStr := err.Error()
+    return strings.Contains(errStr, "deadlock") ||
+        strings.Contains(errStr, "lock timeout") ||
+        strings.Contains(errStr, "serialization failure")
+}
+```
+
+### Retry Examples
+
+**LLM API Call with Retries**:
+```go
+type LLMNode struct {
+    model graph.ChatModel
+}
+
+func (n LLMNode) Policy() graph.NodePolicy {
+    return graph.NodePolicy{
+        Timeout: 30 * time.Second,
+        RetryPolicy: &graph.RetryPolicy{
+            MaxAttempts: 3,
+            BaseDelay:   time.Second,
+            MaxDelay:    10 * time.Second,
+            Retryable: func(err error) bool {
+                errStr := err.Error()
+                return strings.Contains(errStr, "timeout") ||
+                    strings.Contains(errStr, "rate limit") ||
+                    strings.Contains(errStr, "503")
+            },
+        },
+    }
+}
+```
+
+**External API Call with Aggressive Retries**:
+```go
+type APIFetchNode struct{}
+
+func (n APIFetchNode) Policy() graph.NodePolicy {
+    return graph.NodePolicy{
+        Timeout: 15 * time.Second,
+        RetryPolicy: &graph.RetryPolicy{
+            MaxAttempts: 4,  // API can be flaky
+            BaseDelay:   2 * time.Second,
+            MaxDelay:    20 * time.Second,
+            Retryable: func(err error) bool {
+                errStr := err.Error()
+                return strings.Contains(errStr, "timeout") ||
+                    strings.Contains(errStr, "connection") ||
+                    strings.Contains(errStr, "503") ||
+                    strings.Contains(errStr, "502")
+            },
+        },
+    }
+}
+```
+
+**No Retries for Validation Errors**:
+```go
+type ValidationNode struct{}
+
+func (n ValidationNode) Policy() graph.NodePolicy {
+    return graph.NodePolicy{
+        Timeout: 5 * time.Second,
+        // No RetryPolicy: validation errors are not retryable
+    }
+}
+```
+
+### Reference Examples
+
+- `examples/ai_research_assistant/` - Comprehensive retry configuration for LLM and API nodes
+- `examples/node_timeouts/` - Sequential execution with timeout and retry behavior
+
 ## Backpressure & Queue Management
 
 ### Overview

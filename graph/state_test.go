@@ -376,7 +376,7 @@ func TestDeterministicMerge(t *testing.T) {
 
 		expectedCounter := 55 // Sum of 1..10
 		if results[0].Counter != expectedCounter {
-			t.Errorf("expected Counter=%d, got %d", expectedCounter, results[0].Counter)
+			t.Errorf("expected Counter=%d, got %d", expectedCounter, results[0].Counter) //nolint:gosec // G602: results is pre-allocated with length 5 at line 341
 		}
 	})
 

@@ -228,14 +228,39 @@ issues:
         - revive
 
     # Unused parameters common in test functions and interface implementations
-    - text: "seems to be unused, consider removing or renaming it as _"
+    - text: "unused-parameter.*seems to be unused"
       linters:
         - revive
+      path: _test\.go
 
     # Unused t parameter in test helper functions (interface compliance)
     - text: "unused-parameter.*parameter 't' seems to be unused"
       linters:
         - revive
+      path: _test\.go
+
+    # Unused test helper functions (kept for consistency and future use)
+    - text: "func .* is unused"
+      linters:
+        - unused
+      path: _test\.go
+
+    # Variable shadowing built-ins acceptable in test code for clarity
+    - text: "redefines-builtin-id"
+      linters:
+        - revive
+      path: _test\.go
+
+    # Explicit nil initialization acceptable for clarity in tests
+    - text: "var-declaration.*should drop = nil"
+      linters:
+        - revive
+      path: _test\.go
+
+    # Loop simplification not always clearer in test code
+    - text: "S1011.*should replace loop with"
+      linters:
+        - staticcheck
       path: _test\.go
 
     # Dot imports acceptable in test files for readability
