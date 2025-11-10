@@ -4,7 +4,59 @@ package graph
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 )
+
+// StateCopier is an optional interface that state types can implement to provide
+// custom deep copy logic. When a state type implements this interface, the engine
+// will use the custom DeepCopy method instead of JSON-based serialization.
+//
+// This interface allows users to:
+// - Avoid JSON serialization overhead in performance-critical paths
+// - Properly handle unexported fields, channels, or other non-JSON-serializable types
+// - Implement application-specific copying semantics
+//
+// The interface uses any return type to accommodate both value and pointer receiver
+// implementations, avoiding generic interface instantiation issues where S = *T would
+// require DeepCopy() (*T, error) instead of DeepCopy() (T, error).
+//
+// Example implementations:
+//
+// Value receiver (returns value):
+//
+//	type MyState struct {
+//	    Counter int
+//	    Data    []byte
+//	}
+//
+//	func (s MyState) DeepCopy() (any, error) {
+//	    copied := MyState{
+//	        Counter: s.Counter,
+//	        Data:    append([]byte(nil), s.Data...),
+//	    }
+//	    return copied, nil
+//	}
+//
+// Pointer receiver (returns pointer):
+//
+//	type MyState struct {
+//	    Counter int
+//	    Data    []byte
+//	}
+//
+//	func (s *MyState) DeepCopy() (any, error) {
+//	    copied := &MyState{
+//	        Counter: s.Counter,
+//	        Data:    append([]byte(nil), s.Data...),
+//	    }
+//	    return copied, nil
+//	}
+//
+// Thread-safety: DeepCopy implementations must be safe to call from multiple
+// goroutines without external synchronization.
+type StateCopier interface {
+	DeepCopy() (any, error)
+}
 
 // deepCopy creates a deep copy of state S using JSON round-trip serialization (T102).
 //
@@ -49,32 +101,98 @@ func deepCopy[S any](state S) (S, error) {
 // deepCopyState creates a deep copy of state S for fan-out execution (T037).
 //
 // This function implements copy-on-write semantics for parallel node execution.
-// When a node returns Next.Many (fan-out routing), each branch receives an.
+// When a node returns Next.Many (fan-out routing), each branch receives an
 // independent copy of the state to ensure isolation between concurrent executions.
 //
-// The implementation uses JSON serialization for deep copying, which works for.
-// any JSON-marshalable type but has the following limitations:
-// - Unexported struct fields are not copied.
-// - Channels, functions, and complex types that don't marshal to JSON will fail.
-// - Circular references will cause infinite loops.
+// Copy Strategy:
+// 1. If state implements StateCopier, uses the custom DeepCopy method (fastest, most flexible)
+// 2. Otherwise, uses JSON serialization (slower, limited to JSON-serializable types)
 //
-// For custom state types that require specialized copying logic, consider.
-// implementing a custom copy method on your state type and calling it from.
-// a custom reducer.
+// JSON serialization limitations:
+// - Unexported struct fields are silently dropped
+// - Channels, functions, and complex types will cause errors
+// - Circular references will cause stack overflow panics
+// - interface{} values lose type information
 //
-// Example usage in concurrent execution:
+// For performance-critical fan-out operations, implement StateCopier on your
+// state type to avoid JSON serialization overhead.
 //
-// // When node returns Next{Many: []string{"branchA", "branchB"}}.
-// for _, branchID := range result.Route.Many {.
-// branchState, err := deepCopyState(currentState).
-// if err != nil {.
-// return err.
-// }.
-// // Execute branchID with isolated branchState copy.
-// }.
+// Example custom copier:
 //
-// Thread-safety: This function is safe to call from multiple goroutines as.
+//	type MyState struct {
+//	    Counter int
+//	    Data    []byte
+//	}
+//
+//	func (s MyState) DeepCopy() (any, error) {
+//	    return MyState{
+//	        Counter: s.Counter,
+//	        Data:    append([]byte(nil), s.Data...),
+//	    }, nil
+//	}
+//
+// Thread-safety: This function is safe to call from multiple goroutines as
 // it does not modify the input state.
 func deepCopyState[S any](state S) (S, error) {
+	var zero S
+
+	// Handle nil states explicitly to avoid surprising behavior
+	// Check all nilable kinds: pointer, slice, map, chan, func, interface
+	stateVal := reflect.ValueOf(state)
+	if !stateVal.IsValid() {
+		return zero, nil // untyped nil
+	}
+	kind := stateVal.Kind()
+	if (kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map ||
+		kind == reflect.Chan || kind == reflect.Func || kind == reflect.Interface) &&
+		stateVal.IsNil() {
+		return zero, nil // typed nil
+	}
+
+	// Check if state implements StateCopier interface
+	if copier, ok := any(state).(StateCopier); ok {
+		v, err := copier.DeepCopy()
+		if err != nil {
+			return zero, fmt.Errorf("custom DeepCopy failed: %w", err)
+		}
+
+		// Handle nil return value from DeepCopy
+		if v == nil {
+			return zero, nil
+		}
+
+		// Type-assert the result back to S (fast path)
+		copied, ok := v.(S)
+		if ok {
+			return copied, nil
+		}
+
+		// Fast path failed - use reflection for assignable/convertible types
+		// Get the expected type reliably (works even when zero is nil)
+		expectedType := reflect.TypeOf((*S)(nil)).Elem()
+
+		vVal := reflect.ValueOf(v)
+		if !vVal.IsValid() {
+			return zero, nil
+		}
+		gotType := vVal.Type()
+
+		// Try to construct a value of the expected type
+		if gotType.AssignableTo(expectedType) {
+			dest := reflect.New(expectedType).Elem()
+			dest.Set(vVal)
+			return dest.Interface().(S), nil
+		}
+		if gotType.ConvertibleTo(expectedType) {
+			dest := reflect.New(expectedType).Elem()
+			dest.Set(vVal.Convert(expectedType))
+			return dest.Interface().(S), nil
+		}
+
+		// Type mismatch - provide detailed error message
+		return zero, fmt.Errorf("DeepCopy returned wrong type: got %s, want %s", gotType, expectedType)
+	}
+
+	// Fall back to JSON-based deep copy
 	return deepCopy(state)
 }
