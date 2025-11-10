@@ -105,14 +105,14 @@ This project follows Go standard layout:
 
 **Dependencies**: Requires US1 complete (RNG and frontier fixes)
 
-- [ ] T036 [US2] Create determinism validation test suite in graph/replay_test.go
-- [ ] T037 [US2] Test: Run workflow with retries 100 times, verify identical retry delays
-- [ ] T038 [US2] Test: Run workflow with 5 parallel branches 50 times, verify identical merge order
-- [ ] T039 [US2] Test: Replay recorded execution and verify no mismatch errors
-- [ ] T040 [US2] Validate RNG sequences are identical across replays
-- [ ] T041 [US2] Validate OrderKey-based merge produces consistent results
-- [ ] T042 [US2] Run 1000-iteration determinism test as final validation
-- [ ] T043 [US2] Document determinism guarantees in graph/replay.go godoc comments
+- [x] T036 [US2] Create determinism validation test suite in graph/replay_test.go ✅ COMPLETED
+- [x] T037 [US2] Test: Run workflow with retries 100 times, verify identical retry delays ✅ COMPLETED
+- [x] T038 [US2] Test: Run workflow with 5 parallel branches 50 times, verify identical merge order ✅ COMPLETED
+- [x] T039 [US2] Test: Replay recorded execution and verify no mismatch errors ✅ COMPLETED
+- [x] T040 [US2] Validate RNG sequences are identical across replays ✅ COMPLETED
+- [x] T041 [US2] Validate OrderKey-based merge produces consistent results ✅ COMPLETED
+- [x] T042 [US2] Run 1000-iteration determinism test as final validation ✅ COMPLETED
+- [x] T043 [US2] Document determinism guarantees in graph/replay.go godoc comments ✅ COMPLETED
 
 ---
 
