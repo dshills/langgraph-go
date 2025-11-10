@@ -112,13 +112,50 @@ rate(langgraph_merge_conflicts_total[5m])
 
 ### 6. `langgraph_backpressure_events_total`
 
-Queue saturation events.
+Queue saturation events that occur when the scheduler queue reaches capacity (T033).
+
+This counter tracks how many times the scheduler had to wait because the execution queue was full.
+Backpressure is a natural throttling mechanism to prevent unbounded queue growth when nodes execute
+faster than they can be drained.
+
+**Labels:**
+- `run_id`: Workflow execution identifier
+- `reason`: Cause of backpressure event (currently `"queue_full"`)
+
+**When backpressure occurs:**
+1. A work item is about to be enqueued
+2. Current queue depth >= queue capacity (default: 64)
+3. The enqueuer waits for a slot to become available (blocking)
+4. Metric increments to track the throttling event
+5. When a slot opens, execution continues
 
 **Query examples:**
 ```promql
-# Backpressure event rate
+# Backpressure event rate (events per second)
 rate(langgraph_backpressure_events_total[5m])
+
+# Total backpressure events by run
+sum by (run_id) (langgraph_backpressure_events_total)
+
+# Backpressure events by reason
+sum by (reason) (rate(langgraph_backpressure_events_total[5m]))
 ```
+
+**Example metric output:**
+```
+# When backpressure occurs (queue is at capacity)
+langgraph_backpressure_events_total{reason="queue_full",run_id="run-1"} 3.0
+langgraph_backpressure_events_total{reason="queue_full",run_id="run-2"} 7.0
+```
+
+**Interpreting backpressure metrics:**
+- **0 events**: Queue never filled up during execution
+- **Low rate** (<0.1/s): Normal, slight queueing under load
+- **High rate** (>1/s): Queue frequently at capacity, consider:
+  - Increasing `QueueDepth` (if memory allows)
+  - Increasing `MaxConcurrent` (if CPU/resources allow)
+  - Optimizing slow nodes
+  - Distributing load across more instances
 
 ## Prometheus Configuration
 
@@ -226,6 +263,12 @@ Use the provided dashboard JSON (below) or create panels manually.
 - Query: `rate(langgraph_step_latency_ms_count{status="error"}[5m])`
 - Description: Errors per second
 
+**7. Backpressure Events (T033)**
+- Type: Graph
+- Query: `rate(langgraph_backpressure_events_total[5m])`
+- Description: Queue saturation events per second
+- Alert threshold: > 1 event/s indicates queue at capacity
+
 ### Dashboard JSON
 
 Save this as `langgraph-dashboard.json` and import into Grafana:
@@ -297,6 +340,25 @@ Save this as `langgraph-dashboard.json` and import into Grafana:
                 {"value": 0, "color": "green"},
                 {"value": 50, "color": "yellow"},
                 {"value": 60, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Backpressure Events (T033)",
+        "targets": [
+          {
+            "expr": "rate(langgraph_backpressure_events_total[5m])"
+          }
+        ],
+        "type": "graph",
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "red"}
               ]
             }
           }
@@ -426,6 +488,41 @@ If retry rate unexpectedly high:
        MaxDelay:  30 * time.Second,
    }
    ```
+
+### High Backpressure Events (T033)
+
+If `langgraph_backpressure_events_total` rate is consistently high (>1/s):
+
+1. **Monitor queue saturation:**
+   ```promql
+   # Queue saturation percentage
+   (langgraph_queue_depth / 64) * 100
+
+   # When saturation is high, backpressure will trigger
+   rate(langgraph_backpressure_events_total[5m]) > 1
+   ```
+
+2. **Increase queue capacity:**
+   ```go
+   // Increase from default 64 to 256
+   graph.WithQueueDepth(256)
+   ```
+
+3. **Increase concurrent node capacity:**
+   ```go
+   // Increase from default 8 to 16
+   graph.WithMaxConcurrent(16)
+   ```
+
+4. **Optimize slow nodes:**
+   - Identify which nodes cause queue buildup
+   - Check `langgraph_step_latency_ms` per node
+   - Add caching or async patterns to slow operations
+
+5. **Scale horizontally:**
+   - Run multiple workflow instances
+   - Use load balancer to distribute work
+   - Each instance gets own queue
 
 ## Performance Tips
 
