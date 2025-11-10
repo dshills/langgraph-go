@@ -4,6 +4,7 @@ package graph
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 )
 
 // StateCopier is an optional interface that state types can implement to provide
@@ -135,6 +136,12 @@ func deepCopy[S any](state S) (S, error) {
 func deepCopyState[S any](state S) (S, error) {
 	var zero S
 
+	// Handle nil states explicitly to avoid surprising behavior
+	stateVal := reflect.ValueOf(state)
+	if !stateVal.IsValid() || (stateVal.Kind() == reflect.Ptr && stateVal.IsNil()) {
+		return zero, nil
+	}
+
 	// Check if state implements StateCopier interface
 	if copier, ok := any(state).(StateCopier); ok {
 		v, err := copier.DeepCopy()
@@ -145,7 +152,21 @@ func deepCopyState[S any](state S) (S, error) {
 		// Type-assert the result back to S
 		copied, ok := v.(S)
 		if !ok {
-			return zero, fmt.Errorf("DeepCopy returned wrong type: got %T, want %T", v, zero)
+			// If direct assertion fails, try reflection-based conversion for assignable types
+			vVal := reflect.ValueOf(v)
+			expectedType := reflect.TypeOf(zero)
+			gotType := vVal.Type()
+
+			// Check if types are assignable/convertible
+			if gotType.AssignableTo(expectedType) {
+				return vVal.Interface().(S), nil
+			}
+			if gotType.ConvertibleTo(expectedType) {
+				return vVal.Convert(expectedType).Interface().(S), nil
+			}
+
+			// Type mismatch - provide detailed error message
+			return zero, fmt.Errorf("DeepCopy returned wrong type: got %v, want %v", gotType, expectedType)
 		}
 
 		return copied, nil

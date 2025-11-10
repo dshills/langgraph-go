@@ -317,7 +317,7 @@ func (s benchStateLarge) DeepCopy() (any, error) {
 		// Type-assert the result from any to benchStateMedium
 		copiedMedium, ok := copied.(benchStateMedium)
 		if !ok {
-			return benchStateLarge{}, fmt.Errorf("DeepCopy returned wrong type")
+			return benchStateLarge{}, fmt.Errorf("DeepCopy returned wrong type: got %T, want benchStateMedium", copied)
 		}
 		nested[i] = copiedMedium
 	}
