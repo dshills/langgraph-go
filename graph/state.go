@@ -137,9 +137,16 @@ func deepCopyState[S any](state S) (S, error) {
 	var zero S
 
 	// Handle nil states explicitly to avoid surprising behavior
+	// Check all nilable kinds: pointer, slice, map, chan, func, interface
 	stateVal := reflect.ValueOf(state)
-	if !stateVal.IsValid() || (stateVal.Kind() == reflect.Ptr && stateVal.IsNil()) {
-		return zero, nil
+	if !stateVal.IsValid() {
+		return zero, nil // untyped nil
+	}
+	kind := stateVal.Kind()
+	if (kind == reflect.Ptr || kind == reflect.Slice || kind == reflect.Map ||
+		kind == reflect.Chan || kind == reflect.Func || kind == reflect.Interface) &&
+		stateVal.IsNil() {
+		return zero, nil // typed nil
 	}
 
 	// Check if state implements StateCopier interface
@@ -149,27 +156,41 @@ func deepCopyState[S any](state S) (S, error) {
 			return zero, fmt.Errorf("custom DeepCopy failed: %w", err)
 		}
 
-		// Type-assert the result back to S
-		copied, ok := v.(S)
-		if !ok {
-			// If direct assertion fails, try reflection-based conversion for assignable types
-			vVal := reflect.ValueOf(v)
-			expectedType := reflect.TypeOf(zero)
-			gotType := vVal.Type()
-
-			// Check if types are assignable/convertible
-			if gotType.AssignableTo(expectedType) {
-				return vVal.Interface().(S), nil
-			}
-			if gotType.ConvertibleTo(expectedType) {
-				return vVal.Convert(expectedType).Interface().(S), nil
-			}
-
-			// Type mismatch - provide detailed error message
-			return zero, fmt.Errorf("DeepCopy returned wrong type: got %v, want %v", gotType, expectedType)
+		// Handle nil return value from DeepCopy
+		if v == nil {
+			return zero, nil
 		}
 
-		return copied, nil
+		// Type-assert the result back to S (fast path)
+		copied, ok := v.(S)
+		if ok {
+			return copied, nil
+		}
+
+		// Fast path failed - use reflection for assignable/convertible types
+		// Get the expected type reliably (works even when zero is nil)
+		expectedType := reflect.TypeOf((*S)(nil)).Elem()
+
+		vVal := reflect.ValueOf(v)
+		if !vVal.IsValid() {
+			return zero, nil
+		}
+		gotType := vVal.Type()
+
+		// Try to construct a value of the expected type
+		if gotType.AssignableTo(expectedType) {
+			dest := reflect.New(expectedType).Elem()
+			dest.Set(vVal)
+			return dest.Interface().(S), nil
+		}
+		if gotType.ConvertibleTo(expectedType) {
+			dest := reflect.New(expectedType).Elem()
+			dest.Set(vVal.Convert(expectedType))
+			return dest.Interface().(S), nil
+		}
+
+		// Type mismatch - provide detailed error message
+		return zero, fmt.Errorf("DeepCopy returned wrong type: got %s, want %s", gotType, expectedType)
 	}
 
 	// Fall back to JSON-based deep copy
