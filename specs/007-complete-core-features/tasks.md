@@ -32,14 +32,22 @@ All three user stories are **independent** and can be implemented in parallel or
 - **Effort**: 1-2 days
 - **Tests**: Unskips TestDeterministicRetryDelays, validates deterministic retry behavior
 
-## Phase 1: Setup & Analysis
+## Phase 1: Setup & Analysis ✅
 
 **Goal**: Understand existing implementations and prepare for enhancement
 
-- [ ] T001 [P] Review concurrent retry implementation in graph/engine.go:runConcurrent (lines 920-1250)
-- [ ] T002 [P] Review sequential execution path in graph/engine.go (locate runSequential or sequential execution logic)
-- [ ] T003 [P] Analyze existing retry tests in graph/retry_integration_test.go for pattern reference
-- [ ] T004 [P] Review skipped tests to understand requirements: graph/replay_test.go:483, graph/policy_test.go:47,103,116,130, graph/scheduler_test.go:191,452,467
+**Status**: COMPLETE (2025-11-10) - All analysis tasks completed using concurrent agents
+
+- [X] T001 [P] Review concurrent retry implementation in graph/engine.go:runConcurrent (lines 920-1250) - ✓ Complete, documented in TASK_T001_ANALYSIS.md
+- [X] T002 [P] Review sequential execution path in graph/engine.go (locate runSequential or sequential execution logic) - ✓ Complete, found existing retry support at lines 763-832
+- [X] T003 [P] Analyze existing retry tests in graph/retry_integration_test.go for pattern reference - ✓ Complete, identified test patterns and utilities
+- [X] T004 [P] Review skipped tests to understand requirements: graph/replay_test.go:483, graph/policy_test.go:47,103,116,130, graph/scheduler_test.go:191,452,467 - ✓ Complete, generated T004_SKIPPED_TESTS_ANALYSIS.md (473 lines), T004_FINDINGS_SUMMARY.md (277 lines), T004_TEST_MATRIX.md (560 lines)
+
+**Key Findings**:
+- Sequential retry already exists (lines 763-832) but uses global config instead of per-node policies
+- US2 (Node Timeouts) is highest priority - well-defined with no blockers
+- US1 (Retry Delays) has semantic test issue requiring clarification
+- US3 (Backpressure) requires 3-phase implementation approach
 
 ## Phase 2: User Story 1 - Sequential Execution with Retries (P1)
 
