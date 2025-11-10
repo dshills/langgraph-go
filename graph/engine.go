@@ -1157,7 +1157,7 @@ func (e *Engine[S]) runConcurrent(ctx context.Context, runID string, initial S) 
 							result.Err = timeoutErr
 						} else {
 							// Both timeout and node error occurred - combine them
-							result.Err = fmt.Errorf("%w (node also returned: %v)", timeoutErr, result.Err)
+							result.Err = fmt.Errorf("%w (node also returned: %w)", timeoutErr, result.Err)
 						}
 					}
 
