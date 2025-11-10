@@ -204,6 +204,56 @@ Adapters implement the `ChatModel` interface to provide a unified API across pro
 
 Nodes can return multiple next hops via `Next{Many: []string{...}}` to enable parallel execution. Branches execute concurrently with isolated state copies and merge at a join node using the reducer function.
 
+## Node Configuration & Timeouts
+
+### Per-Node Timeouts
+
+Nodes can configure execution timeouts via the optional `Policy()` method:
+
+```go
+type MyNode struct{}
+
+func (n MyNode) Run(ctx context.Context, state S) NodeResult[S] {
+    // Node implementation
+}
+
+func (n MyNode) Policy() NodePolicy {
+    return NodePolicy{
+        Timeout: 30 * time.Second, // Per-node timeout
+    }
+}
+```
+
+### Timeout Precedence
+
+Timeout enforcement follows this precedence order:
+
+1. **Per-Node Timeout** (highest priority)
+   - Set via `NodePolicy.Timeout` on individual nodes
+   - Overrides `DefaultNodeTimeout` and global timeouts
+   - Example: `Policy().Timeout = 2 * time.Minute`
+
+2. **DefaultNodeTimeout** (fallback)
+   - Set via `Options.DefaultNodeTimeout` when creating the engine
+   - Used when a node's `Policy().Timeout` is zero
+   - Example: `Options{DefaultNodeTimeout: 30 * time.Second}`
+
+3. **No Timeout** (when both are zero)
+   - Node can run indefinitely
+   - Use cautiously to avoid hanging workflows
+
+### Timeout Error Handling
+
+When a node exceeds its timeout:
+- Returns `context.DeadlineExceeded` error
+- Error wrapped as `EngineError` with code `NODE_TIMEOUT`
+- Node's `Run()` method receives cancellation via `ctx.Done()`
+- Other nodes are not affected (timeout is per-node)
+
+### Example
+
+See `examples/node_timeouts/` for a complete demonstration of per-node timeout configuration.
+
 ## Error Handling
 
 - Node errors (`NodeResult.Err`) trigger retry logic or route to error handling nodes
