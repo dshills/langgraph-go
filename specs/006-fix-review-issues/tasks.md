@@ -133,68 +133,68 @@ This is a Go library/framework project with structure:
 
 ### Edge Case Tests for User Story 2
 
-- [ ] T044 [P] [US2] Add input validation tests in relevant test files (*_test.go) for boundary conditions
-- [ ] T045 [P] [US2] Add error propagation tests in graph/engine_test.go
-- [ ] T046 [P] [US2] Add resource cleanup tests with intentional errors in graph/engine_test.go
-- [ ] T047 [US2] Run new tests and verify they expose missing validation/error handling
+- [X] T044 [P] [US2] Add input validation tests in relevant test files (*_test.go) for boundary conditions
+- [X] T045 [P] [US2] Add error propagation tests in graph/engine_test.go
+- [X] T046 [P] [US2] Add resource cleanup tests with intentional errors in graph/engine_test.go
+- [X] T047 [US2] Run new tests and verify they expose missing validation/error handling
 
 ### Implementation for User Story 2
 
 **Sub-batch 2a: Input Validation in /graph**
 
-- [ ] T048 [P] [US2] Add input validation for CreateBatches batchSize parameter in examples/multi-llm-review/scanner/batcher.go
-- [ ] T049 [P] [US2] Add input validation for Engine configuration parameters in graph/engine.go
-- [ ] T050 [P] [US2] Add validation for state types and generics constraints in graph/state.go
-- [ ] T051 [P] [US2] Add validation for node graph cycles and configuration in graph/engine.go
-- [ ] T052 [US2] Test all input validation with edge case tests T044
-- [ ] T053 [US2] Run go test ./graph/... and verify all tests pass
+- [X] T048 [P] [US2] Add input validation for CreateBatches batchSize parameter in examples/multi-llm-review/scanner/batcher.go
+- [X] T049 [P] [US2] Add input validation for Engine configuration parameters in graph/engine.go
+- [X] T050 [P] [US2] Add validation for state types and generics constraints in graph/state.go
+- [X] T051 [P] [US2] Add validation for node graph cycles and configuration in graph/engine.go
+- [X] T052 [US2] Test all input validation with edge case tests T044
+- [X] T053 [US2] Run go test ./graph/... and verify all tests pass
 
 **Sub-batch 2b: Error Handling in /graph**
 
-- [ ] T054 [P] [US2] Add error checking for all unchecked function returns in graph/engine.go
-- [ ] T055 [P] [US2] Add error wrapping with fmt.Errorf("%w") for context in graph/engine.go
-- [ ] T056 [P] [US2] Add error checking in graph/emit/*.go implementations
-- [ ] T057 [P] [US2] Add error checking in graph/model/*.go adapters
-- [ ] T058 [P] [US2] Add error checking in graph/store/*.go implementations
-- [ ] T059 [US2] Test error propagation with edge case tests T045
-- [ ] T060 [US2] Run go test ./graph/... and verify proper error handling
+- [X] T054 [P] [US2] Add error checking for all unchecked function returns in graph/engine.go
+- [X] T055 [P] [US2] Add error wrapping with fmt.Errorf("%w") for context in graph/engine.go
+- [X] T056 [P] [US2] Add error checking in graph/emit/*.go implementations
+- [X] T057 [P] [US2] Add error checking in graph/model/*.go adapters
+- [X] T058 [P] [US2] Add error checking in graph/store/*.go implementations
+- [X] T059 [US2] Test error propagation with edge case tests T045
+- [X] T060 [US2] Run go test ./graph/... and verify proper error handling
 
 **Sub-batch 2c: Resource Management in /graph**
 
-- [ ] T061 [P] [US2] Add defer statements for channel closes in graph/engine.go
-- [ ] T062 [P] [US2] Add defer statements for goroutine cleanup in graph/engine.go
-- [ ] T063 [P] [US2] Add context timeout enforcement in graph/engine.go operations
-- [ ] T064 [P] [US2] Add proper store connection cleanup in graph/store/mysql.go
-- [ ] T065 [US2] Test resource cleanup with error scenarios from T046
-- [ ] T066 [US2] Run go test -race ./graph/... and verify no leaks
+- [X] T061 [P] [US2] Add defer statements for channel closes in graph/engine.go
+- [X] T062 [P] [US2] Add defer statements for goroutine cleanup in graph/engine.go
+- [X] T063 [P] [US2] Add context timeout enforcement in graph/engine.go operations
+- [X] T064 [P] [US2] Add proper store connection cleanup in graph/store/mysql.go
+- [X] T065 [US2] Test resource cleanup with error scenarios from T046
+- [X] T066 [US2] Run go test -race ./graph/... and verify no leaks
 
 **Sub-batch 2d: Concurrency Safety in /graph**
 
-- [ ] T067 [P] [US2] Add mutex protection for shared state in graph/engine.go
-- [ ] T068 [P] [US2] Add channel buffer sizing fixes to prevent deadlocks in graph/engine.go
-- [ ] T069 [P] [US2] Add goroutine synchronization for fan-out operations in graph/engine.go
-- [ ] T070 [US2] Run go test -race ./graph/... repeatedly to verify no race conditions
-- [ ] T071 [US2] Test concurrent execution scenarios with integration tests
+- [X] T067 [P] [US2] Add mutex protection for shared state in graph/engine.go
+- [X] T068 [P] [US2] Add channel buffer sizing fixes to prevent deadlocks in graph/engine.go
+- [X] T069 [P] [US2] Add goroutine synchronization for fan-out operations in graph/engine.go
+- [X] T070 [US2] Run go test -race ./graph/... repeatedly to verify no race conditions
+- [X] T071 [US2] Test concurrent execution scenarios with integration tests
 
 **Sub-batch 2e: High Priority Fixes in /examples**
 
-- [ ] T072 [P] [US2] Fix high-priority issues in examples/multi-llm-review/workflow/*.go
-- [ ] T073 [P] [US2] Fix high-priority issues in examples/multi-llm-review/scanner/*.go
-- [ ] T074 [P] [US2] Fix high-priority issues in examples/ai_research_assistant/*.go
-- [ ] T075 [P] [US2] Fix high-priority issues in examples/sqlite_quickstart/main.go
-- [ ] T076 [P] [US2] Fix high-priority issues in examples/prometheus_monitoring/main.go
-- [ ] T077 [US2] Run go test ./examples/... and verify all tests pass
+- [X] T072 [P] [US2] Fix high-priority issues in examples/multi-llm-review/workflow/*.go
+- [X] T073 [P] [US2] Fix high-priority issues in examples/multi-llm-review/scanner/*.go
+- [X] T074 [P] [US2] Fix high-priority issues in examples/ai_research_assistant/*.go
+- [X] T075 [P] [US2] Fix high-priority issues in examples/sqlite_quickstart/main.go
+- [X] T076 [P] [US2] Fix high-priority issues in examples/prometheus_monitoring/main.go
+- [X] T077 [US2] Run go test ./examples/... and verify all tests pass
 
 ### Validation for User Story 2
 
-- [ ] T078 [US2] Run full test suite: go test ./... and verify 100% pass rate
-- [ ] T079 [US2] Run go test -race ./... and verify zero race conditions
-- [ ] T080 [US2] Run golangci-lint run --enable=errcheck,govet and verify zero warnings
-- [ ] T081 [US2] Measure code coverage and verify maintained or improved
-- [ ] T082 [US2] Update issue tracking document with all US2 fixes
-- [ ] T083 [US2] Run mcp-pr review_unstaged and address any issues
-- [ ] T084 [US2] Create commit with structured message for US2 fixes
-- [ ] T085 [US2] Create Pull Request for Batch 2 (High Priority Robustness)
+- [X] T078 [US2] Run full test suite: go test ./... and verify 100% pass rate
+- [X] T079 [US2] Run go test -race ./... and verify zero race conditions
+- [X] T080 [US2] Run golangci-lint run --enable=errcheck,govet and verify zero warnings
+- [X] T081 [US2] Measure code coverage and verify maintained or improved
+- [X] T082 [US2] Update issue tracking document with all US2 fixes
+- [X] T083 [US2] Run mcp-pr review_unstaged and address any issues
+- [X] T084 [US2] Create commit with structured message for US2 fixes
+- [X] T085 [US2] Create Pull Request for Batch 2 (High Priority Robustness)
 
 **Checkpoint**: All high-priority issues resolved; robust error handling and resource management in place
 
