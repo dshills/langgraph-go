@@ -15,15 +15,36 @@ import (
 // - Properly handle unexported fields, channels, or other non-JSON-serializable types
 // - Implement application-specific copying semantics
 //
-// Example implementation:
+// The interface uses any return type to accommodate both value and pointer receiver
+// implementations, avoiding generic interface instantiation issues where S = *T would
+// require DeepCopy() (*T, error) instead of DeepCopy() (T, error).
+//
+// Example implementations:
+//
+// Value receiver (returns value):
 //
 //	type MyState struct {
 //	    Counter int
 //	    Data    []byte
 //	}
 //
-//	func (s MyState) DeepCopy() (MyState, error) {
+//	func (s MyState) DeepCopy() (any, error) {
 //	    copied := MyState{
+//	        Counter: s.Counter,
+//	        Data:    append([]byte(nil), s.Data...),
+//	    }
+//	    return copied, nil
+//	}
+//
+// Pointer receiver (returns pointer):
+//
+//	type MyState struct {
+//	    Counter int
+//	    Data    []byte
+//	}
+//
+//	func (s *MyState) DeepCopy() (any, error) {
+//	    copied := &MyState{
 //	        Counter: s.Counter,
 //	        Data:    append([]byte(nil), s.Data...),
 //	    }
@@ -32,8 +53,8 @@ import (
 //
 // Thread-safety: DeepCopy implementations must be safe to call from multiple
 // goroutines without external synchronization.
-type StateCopier[S any] interface {
-	DeepCopy() (S, error)
+type StateCopier interface {
+	DeepCopy() (any, error)
 }
 
 // deepCopy creates a deep copy of state S using JSON round-trip serialization (T102).
@@ -83,16 +104,16 @@ func deepCopy[S any](state S) (S, error) {
 // independent copy of the state to ensure isolation between concurrent executions.
 //
 // Copy Strategy:
-// 1. If state implements StateCopier[S], uses the custom DeepCopy method (fastest, most flexible)
+// 1. If state implements StateCopier, uses the custom DeepCopy method (fastest, most flexible)
 // 2. Otherwise, uses JSON serialization (slower, limited to JSON-serializable types)
 //
 // JSON serialization limitations:
 // - Unexported struct fields are silently dropped
 // - Channels, functions, and complex types will cause errors
-// - Circular references will cause stack overflow
+// - Circular references will cause stack overflow panics
 // - interface{} values lose type information
 //
-// For performance-critical fan-out operations, implement StateCopier[S] on your
+// For performance-critical fan-out operations, implement StateCopier on your
 // state type to avoid JSON serialization overhead.
 //
 // Example custom copier:
@@ -102,7 +123,7 @@ func deepCopy[S any](state S) (S, error) {
 //	    Data    []byte
 //	}
 //
-//	func (s MyState) DeepCopy() (MyState, error) {
+//	func (s MyState) DeepCopy() (any, error) {
 //	    return MyState{
 //	        Counter: s.Counter,
 //	        Data:    append([]byte(nil), s.Data...),
@@ -112,9 +133,22 @@ func deepCopy[S any](state S) (S, error) {
 // Thread-safety: This function is safe to call from multiple goroutines as
 // it does not modify the input state.
 func deepCopyState[S any](state S) (S, error) {
+	var zero S
+
 	// Check if state implements StateCopier interface
-	if copier, ok := any(state).(StateCopier[S]); ok {
-		return copier.DeepCopy()
+	if copier, ok := any(state).(StateCopier); ok {
+		v, err := copier.DeepCopy()
+		if err != nil {
+			return zero, fmt.Errorf("custom DeepCopy failed: %w", err)
+		}
+
+		// Type-assert the result back to S
+		copied, ok := v.(S)
+		if !ok {
+			return zero, fmt.Errorf("DeepCopy returned wrong type: got %T, want %T", v, zero)
+		}
+
+		return copied, nil
 	}
 
 	// Fall back to JSON-based deep copy

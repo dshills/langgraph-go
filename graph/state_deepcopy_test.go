@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -200,6 +201,71 @@ func TestStateCopier_Interface(t *testing.T) {
 			t.Error("State was not deep copied")
 		}
 	})
+
+	t.Run("pointer_receiver_implementation", func(t *testing.T) {
+		// Use package-level PointerState which implements StateCopier with pointer receiver
+		var _ StateCopier = (*PointerState)(nil)
+
+		original := &PointerState{
+			ID:    "test-id",
+			Count: 42,
+		}
+
+		copied, err := deepCopyState(original)
+		if err != nil {
+			t.Fatalf("deepCopyState failed: %v", err)
+		}
+
+		if copied.ID != original.ID || copied.Count != original.Count {
+			t.Error("Pointer receiver copier did not copy correctly")
+		}
+
+		// Verify independence (different pointer)
+		if copied == original {
+			t.Error("Copied pointer is the same as original (not deep copied)")
+		}
+
+		copied.Count = 999
+		if original.Count == 999 {
+			t.Error("State was not deep copied (shared data)")
+		}
+	})
+
+	t.Run("nil_pointer_state_with_json_fallback", func(t *testing.T) {
+		type SimpleState struct {
+			Value int
+		}
+
+		var original *SimpleState = nil
+
+		// JSON round-trip handles nil pointers gracefully
+		copied, err := deepCopyState(original)
+		if err != nil {
+			t.Fatalf("deepCopyState failed with nil pointer: %v", err)
+		}
+
+		if copied != nil {
+			t.Errorf("Expected nil copy, got %v", copied)
+		}
+	})
+
+	t.Run("wrong_type_returned_from_custom_copier", func(t *testing.T) {
+		// Use package-level BadCopier which implements StateCopier but returns wrong type
+		var _ StateCopier = BadCopier{}
+
+		original := BadCopier{Value: 42}
+
+		// Should fail with type mismatch error
+		_, err := deepCopyState(original)
+		if err == nil {
+			t.Fatal("Expected error for wrong return type, got nil")
+		}
+
+		// Error should mention type mismatch
+		if err.Error() == "" {
+			t.Error("Error message should describe the type mismatch")
+		}
+	})
 }
 
 // Example states for benchmarking
@@ -225,14 +291,14 @@ type benchStateLarge struct {
 }
 
 // Custom copier implementations for benchmarking
-func (s benchStateSmall) DeepCopy() (benchStateSmall, error) {
+func (s benchStateSmall) DeepCopy() (any, error) {
 	return benchStateSmall{
 		ID:      s.ID,
 		Counter: s.Counter,
 	}, nil
 }
 
-func (s benchStateMedium) DeepCopy() (benchStateMedium, error) {
+func (s benchStateMedium) DeepCopy() (any, error) {
 	return benchStateMedium{
 		ID:       s.ID,
 		Counter:  s.Counter,
@@ -241,14 +307,19 @@ func (s benchStateMedium) DeepCopy() (benchStateMedium, error) {
 	}, nil
 }
 
-func (s benchStateLarge) DeepCopy() (benchStateLarge, error) {
+func (s benchStateLarge) DeepCopy() (any, error) {
 	nested := make([]benchStateMedium, len(s.Nested))
 	for i, n := range s.Nested {
 		copied, err := n.DeepCopy()
 		if err != nil {
 			return benchStateLarge{}, err
 		}
-		nested[i] = copied
+		// Type-assert the result from any to benchStateMedium
+		copiedMedium, ok := copied.(benchStateMedium)
+		if !ok {
+			return benchStateLarge{}, fmt.Errorf("DeepCopy returned wrong type")
+		}
+		nested[i] = copiedMedium
 	}
 
 	return benchStateLarge{
@@ -270,4 +341,32 @@ func copyMap(m map[string]string) map[string]string {
 		result[k] = v
 	}
 	return result
+}
+
+// Test helper types for pointer receiver and error cases
+
+type PointerState struct {
+	ID    string
+	Count int
+}
+
+// DeepCopy implements StateCopier with pointer receiver
+func (s *PointerState) DeepCopy() (any, error) {
+	if s == nil {
+		return (*PointerState)(nil), nil
+	}
+	return &PointerState{
+		ID:    s.ID,
+		Count: s.Count,
+	}, nil
+}
+
+type BadCopier struct {
+	Value int
+}
+
+// DeepCopy implements StateCopier but returns wrong type
+func (b BadCopier) DeepCopy() (any, error) {
+	// Intentionally return wrong type for testing
+	return "wrong-type", nil
 }
