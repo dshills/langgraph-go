@@ -105,7 +105,7 @@ All three user stories are **independent** and can be implemented in parallel or
   - executeNodeWithTimeout() wraps node.Run() with context deadline
   - Used in both sequential (line 773) and concurrent (line 1138) execution paths
 - Tasks T016-T020 were pre-existing implementation, only tests and documentation needed
-- **Commits**: commit SHA for tests (T021-T022), commit SHA for documentation (T023-T024)
+- **Commits**: Tests (commit 036e390), Example & docs (commit 8cfa855)
 
 ## Phase 4: User Story 3 - Backpressure Visibility (P3) ✅
 
