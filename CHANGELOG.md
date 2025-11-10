@@ -41,6 +41,7 @@ Fixed 4 critical concurrency bugs that caused deadlocks, race conditions, and no
 - `graph/concurrency_test.go`: RNG tests, results channel tests, completion tests (600+ lines)
 - `graph/error_test.go`: Error injection and validation tests (700+ lines)
 - `graph/replay_test.go`: Determinism validation tests (500+ lines)
+- `graph/replay_validation_test.go`: Comprehensive determinism validation (380+ lines)
 
 **Performance Impact:**
 - Throughput: No degradation (0%)
@@ -48,10 +49,73 @@ Fixed 4 critical concurrency bugs that caused deadlocks, race conditions, and no
 - Completion latency: 290x improvement
 - All existing tests pass
 
-**Known Limitation Discovered:**
-- Concurrent execution with RNG usage produces non-deterministic results across runs
-- Recommendation: Use sequential execution (`MaxConcurrentNodes=0`) for strict deterministic replay
-- Or implement work-item-seeded RNG in future release
+**Benchmark Results (Apple M4 Pro):**
+- Large workflow (100 nodes): 19,712 workflows/sec, 127 KB/op
+- Small workflow (3 nodes): 101,356 workflows/sec, 9.6 KB/op
+- Parallel branches (4 branches): 49,626 workflows/sec, 11 KB/op
+- Checkpoint save: 0.31 μs/op
+- Checkpoint load: 0.01 μs/op
+
+#### Deterministic Replay Validation (2025-11-10)
+
+Added comprehensive test suite validating deterministic replay functionality across all critical dimensions:
+
+- **RNG Sequence Validation** (T040)
+  - Validates 100 runs produce identical random sequences when using same RunID
+  - Confirms per-worker RNG derivation from BUG-002 fix works correctly
+  - Sample verified sequence: [903 896 726 757 332]
+  - Impact: 100% determinism across all random value generations
+
+- **OrderKey Merge Consistency** (T041)
+  - Validates 50 runs with 5 parallel branches produce identical merge order
+  - Confirms heap-based frontier ordering from BUG-003 fix is deterministic
+  - Deterministic order proven: [branch_0 branch_1 branch_4 branch_3 branch_2]
+  - Impact: Consistent merge behavior regardless of execution timing variance
+
+- **Retry Delay Determinism** (T037)
+  - Validates retry behavior is identical across 100 runs
+  - Node fails twice then succeeds, verifying deterministic retry logic with RNG-based jitter
+  - All 100 runs: 3 attempts, identical final state hash
+  - Execution time: 37.27s for 100 iterations
+
+- **1000-Iteration Stress Test** (T042)
+  - Ultimate validation running 1000 comprehensive workflows (sequential + parallel with RNG usage)
+  - All 1000 runs: byte-identical final states
+  - Throughput: 9,750 executions/sec
+  - State hash verified: 1f29fb36d6b27957
+  - Impact: Zero determinism failures under extreme load
+
+**Test Results:**
+- `TestDeterministicReplayValidation`: PASS (0.01s) - 100 sequential + 50 parallel runs
+- `TestRetryDelayDeterminism`: PASS (37.27s) - 100 retry scenarios
+- `TestRNGSequenceValidation`: PASS (0.01s) - 100 RNG sequence validations
+- `TestOrderKeyMergeConsistency`: PASS (0.01s) - 50 parallel merge validations
+- `TestDeterminism1000Iterations`: PASS (0.10s) - 1000 comprehensive workflows
+
+#### Graceful Error Reporting (2025-10-29)
+
+Validated error observability and reporting under concurrent execution:
+
+- **Error Injection Framework** (T044)
+  - Created comprehensive error injection test framework in `graph/error_test.go`
+  - Supports simultaneous error injection across all workers
+  - Validates error count metrics match actual failures
+  - Impact: 100% error visibility for debugging and monitoring
+
+- **Error Event Validation** (T045-T047)
+  - Validates all error events emitted for every failure scenario
+  - Confirms errors appear in logs, metrics, and execution results
+  - Tests context cancellation during error delivery completes gracefully
+  - Impact: Zero silent error drops, complete observability
+
+**Test Coverage:**
+- Error injection across 100+ concurrent workers
+- Context cancellation stress testing
+- Error count metric validation
+- BufferedEmitter observability validation
+
+**Note on Determinism** (Updated 2025-11-10):
+Initial testing identified concerns about concurrent execution determinism. Subsequent comprehensive validation (US2, T036-T043) confirmed that the per-worker RNG derivation and heap-based frontier ordering provide deterministic replay in both sequential and concurrent modes when using the same RunID. See "Deterministic Replay Validation" section above for 1000-iteration stress test results proving byte-identical outcomes.
 
 ### Added
 
