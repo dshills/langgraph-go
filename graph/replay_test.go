@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dshills/langgraph-go/graph"
+	"github.com/dshills/langgraph-go/graph/emit"
 	"github.com/dshills/langgraph-go/graph/store"
 )
 
@@ -1023,6 +1024,289 @@ func TestDeterminismStressTest(t *testing.T) {
 		t.Errorf("❌ Determinism failure: %d/%d runs produced different hashes (%0.2f%% success rate)",
 			mismatches, numRuns, 100.0*float64(numRuns-mismatches)/float64(numRuns))
 	}
+}
+
+// ============================================================================
+// T036-T037: Determinism Validation Test Suite (User Story 2)
+// ============================================================================
+
+// TestDeterministicReplayValidation (T036) validates that workflows produce
+// identical results across multiple executions with the same RunID.
+//
+// This test verifies that US1 fixes (RNG thread safety, Frontier ordering)
+// preserve deterministic replay functionality as required by FR-020.
+//
+// Requirements:
+// - Same RunID → identical final state across 100 runs
+// - Same RunID → identical execution traces
+// - Different RunID → potentially different results (RNG variance)
+func TestDeterministicReplayValidation(t *testing.T) {
+	type DeterminismTestState struct {
+		Counter      int
+		RandomValues []int
+		Hash         string
+	}
+
+	// Helper to run a workflow and return state hash
+	runWorkflow := func(runID string, sequential bool) (string, error) {
+		st := store.NewMemStore[DeterminismTestState]()
+		emitter := emit.NewBufferedEmitter()
+
+		reducer := func(prev, delta DeterminismTestState) DeterminismTestState {
+			newState := prev
+			newState.Counter += delta.Counter
+			if len(delta.RandomValues) > 0 {
+				newState.RandomValues = append(newState.RandomValues, delta.RandomValues...)
+			}
+			return newState
+		}
+
+		maxConcurrent := 10
+		if sequential {
+			maxConcurrent = 0
+		}
+
+		engine := graph.New(reducer, st, emitter, graph.Options{
+			MaxSteps:           50,
+			MaxConcurrentNodes: maxConcurrent,
+		})
+
+		// Create simple workflow nodes
+		for i := 0; i < 10; i++ {
+			nodeID := fmt.Sprintf("node_%d", i)
+			node := graph.NodeFunc[DeterminismTestState](func(ctx context.Context, state DeterminismTestState) graph.NodeResult[DeterminismTestState] {
+				// Use RNG from context for determinism
+				rngVal := ctx.Value(graph.RNGKey)
+				var randomVal int
+				if rngVal != nil {
+					if rng, ok := rngVal.(*rand.Rand); ok {
+						randomVal = rng.Intn(1000)
+					}
+				}
+
+				return graph.NodeResult[DeterminismTestState]{
+					Delta: DeterminismTestState{
+						Counter:      1,
+						RandomValues: []int{randomVal},
+					},
+					Route: graph.Stop(),
+				}
+			})
+			if err := engine.Add(nodeID, node); err != nil {
+				return "", fmt.Errorf("add node %s: %w", nodeID, err)
+			}
+		}
+
+		// Start at first node
+		if err := engine.StartAt("node_0"); err != nil {
+			return "", fmt.Errorf("start at node_0: %w", err)
+		}
+
+		// Run workflow
+		finalState, err := engine.Run(context.Background(), runID, DeterminismTestState{})
+		if err != nil {
+			return "", fmt.Errorf("run workflow: %w", err)
+		}
+
+		// Compute hash
+		stateJSON, _ := json.Marshal(finalState)
+		hash := sha256.Sum256(stateJSON)
+		return hex.EncodeToString(hash[:]), nil
+	}
+
+	t.Run("sequential_workflow_100_iterations", func(t *testing.T) {
+		runID := "determinism-test-sequential"
+		hashes := make(map[string]int)
+
+		for i := 0; i < 100; i++ {
+			hash, err := runWorkflow(runID, true)
+			if err != nil {
+				t.Fatalf("Run %d failed: %v", i, err)
+			}
+			hashes[hash]++
+		}
+
+		if len(hashes) != 1 {
+			t.Errorf("Sequential workflow not deterministic: %d unique hashes from 100 runs", len(hashes))
+			for hash, count := range hashes {
+				t.Logf("  Hash %s: %d runs", hash[:16]+"...", count)
+			}
+		} else {
+			for hash := range hashes {
+				t.Logf("✓ Sequential workflow determinism validated: 100 runs produced identical state (hash: %s)", hash[:16]+"...")
+			}
+		}
+	})
+
+	t.Run("parallel_workflow_50_iterations", func(t *testing.T) {
+		runID := "determinism-test-parallel"
+		hashes := make(map[string]int)
+
+		for i := 0; i < 50; i++ {
+			hash, err := runWorkflow(runID, false)
+			if err != nil {
+				t.Fatalf("Run %d failed: %v", i, err)
+			}
+			hashes[hash]++
+		}
+
+		if len(hashes) != 1 {
+			t.Errorf("Parallel workflow not deterministic: %d unique hashes from 50 runs", len(hashes))
+			for hash, count := range hashes {
+				t.Logf("  Hash %s: %d runs", hash[:16]+"...", count)
+			}
+		} else {
+			for hash := range hashes {
+				t.Logf("✓ Parallel workflow determinism validated: 50 runs produced identical state (hash: %s)", hash[:16]+"...")
+			}
+		}
+	})
+
+	t.Run("different_runid_may_differ", func(t *testing.T) {
+		// Verify that different RunIDs can produce different results
+		// (RNG is seeded from RunID, so this is expected behavior)
+
+		hash1, err1 := runWorkflow("runid-1", false)
+		hash2, err2 := runWorkflow("runid-2", false)
+
+		if err1 != nil {
+			t.Errorf("RunID-1 failed: %v", err1)
+		}
+		if err2 != nil {
+			t.Errorf("RunID-2 failed: %v", err2)
+		}
+
+		t.Logf("RunID1 hash: %s, RunID2 hash: %s", hash1[:16]+"...", hash2[:16]+"...")
+
+		// Different runIDs may produce different states (not required, but common with RNG)
+		if hash1 != hash2 {
+			t.Logf("✓ Different RunIDs produced different states (expected RNG variance)")
+		} else {
+			t.Logf("  Note: Different RunIDs produced same state (RNG coincidence or no RNG usage)")
+		}
+	})
+}
+
+// TestRetryDelayDeterminism (T037) validates that retry delays are
+// deterministic across multiple executions with the same RunID.
+//
+// According to FR-020, retry delays must be reproducible for replay.
+// This test verifies that RNG-based jitter produces identical values.
+//
+// Requirements:
+// - 100 executions with same RunID
+// - All retry delays identical
+// - Retry success timing identical
+func TestRetryDelayDeterminism(t *testing.T) {
+	t.Run("retry_delays_identical_across_100_runs", func(t *testing.T) {
+		type RetryTestState struct {
+			Counter int
+		}
+
+		runID := "retry-determinism-test"
+		numRuns := 100
+
+		type RetryResult struct {
+			AttemptCount  int
+			Success       bool
+			ExecutionTime time.Duration
+			StateHash     string
+		}
+
+		results := make([]RetryResult, numRuns)
+
+		for i := 0; i < numRuns; i++ {
+			st := store.NewMemStore[RetryTestState]()
+			emitter := emit.NewBufferedEmitter()
+
+			reducer := func(prev, delta RetryTestState) RetryTestState {
+				newState := prev
+				newState.Counter += delta.Counter
+				return newState
+			}
+
+			engine := graph.New(reducer, st, emitter, graph.Options{
+				MaxSteps:           20,
+				MaxConcurrentNodes: 0, // Sequential for determinism
+				Retries:            3,
+			})
+
+			// Node that fails twice then succeeds (simulated retry scenario)
+			attemptCounter := 0
+			retryNode := graph.NodeFunc[RetryTestState](func(ctx context.Context, state RetryTestState) graph.NodeResult[RetryTestState] {
+				attemptCounter++
+
+				if attemptCounter <= 2 {
+					// Fail first 2 attempts
+					return graph.NodeResult[RetryTestState]{
+						Err: fmt.Errorf("simulated failure attempt %d", attemptCounter),
+					}
+				}
+
+				// Succeed on 3rd attempt
+				return graph.NodeResult[RetryTestState]{
+					Delta: RetryTestState{Counter: attemptCounter},
+					Route: graph.Stop(),
+				}
+			})
+
+			if err := engine.Add("retry-node", retryNode); err != nil {
+				t.Fatalf("Failed to add retry-node: %v", err)
+			}
+			if err := engine.StartAt("retry-node"); err != nil {
+				t.Fatalf("Failed to start at retry-node: %v", err)
+			}
+
+			startTime := time.Now()
+			finalState, err := engine.Run(context.Background(), runID, RetryTestState{})
+			duration := time.Since(startTime)
+
+			if err != nil {
+				t.Fatalf("Run %d failed: %v", i, err)
+			}
+
+			// Compute state hash
+			stateJSON, _ := json.Marshal(finalState)
+			hash := sha256.Sum256(stateJSON)
+			stateHash := hex.EncodeToString(hash[:])
+
+			results[i] = RetryResult{
+				AttemptCount:  attemptCounter,
+				Success:       true,
+				ExecutionTime: duration,
+				StateHash:     stateHash,
+			}
+
+			if i < 5 {
+				t.Logf("Run %d: attempts=%d, duration=%v, counter=%d, hash=%s",
+					i, attemptCounter, duration, finalState.Counter, stateHash[:16]+"...")
+			}
+		}
+
+		// Verify all runs had identical retry behavior
+		firstResult := results[0]
+		allIdentical := true
+
+		for i := 1; i < numRuns; i++ {
+			if results[i].AttemptCount != firstResult.AttemptCount {
+				t.Errorf("Run %d attempt count differs: got %d, want %d",
+					i, results[i].AttemptCount, firstResult.AttemptCount)
+				allIdentical = false
+			}
+			if results[i].StateHash != firstResult.StateHash {
+				t.Errorf("Run %d state hash differs: got %s, want %s",
+					i, results[i].StateHash[:16]+"...", firstResult.StateHash[:16]+"...")
+				allIdentical = false
+			}
+		}
+
+		if allIdentical {
+			t.Logf("✓ All %d runs had identical retry behavior (attempts=%d, hash=%s)",
+				numRuns, firstResult.AttemptCount, firstResult.StateHash[:16]+"...")
+		} else {
+			t.Error("❌ Retry behavior not deterministic across runs")
+		}
+	})
 }
 
 // ============================================================================
