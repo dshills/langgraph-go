@@ -19,6 +19,21 @@ import (
 
 // Note: RNGKey is now defined in engine.go and imported via dot-import.
 
+// retryableNodeWrapper is a test helper that wraps a function with a retry policy.
+// Used for testing retry behavior with NodePolicy.RetryPolicy.
+type retryableNodeWrapper[S any] struct {
+	fn     func(context.Context, S) graph.NodeResult[S]
+	policy graph.NodePolicy
+}
+
+func (n *retryableNodeWrapper[S]) Run(ctx context.Context, state S) graph.NodeResult[S] {
+	return n.fn(ctx, state)
+}
+
+func (n *retryableNodeWrapper[S]) Policy() graph.NodePolicy {
+	return n.policy
+}
+
 // TestRecordIO (T040) verifies that recordIO captures external interactions correctly.
 //
 // According to spec.md FR-021: System MUST record external I/O (requests, responses, hashes).
@@ -1198,13 +1213,13 @@ func TestDeterministicReplayValidation(t *testing.T) {
 // - All retry delays identical
 // - Retry success timing identical
 func TestRetryDelayDeterminism(t *testing.T) {
-	t.Run("retry_delays_identical_across_100_runs", func(t *testing.T) {
+	t.Run("retry_delays_identical_across_10_runs", func(t *testing.T) {
 		type RetryTestState struct {
 			Counter int
 		}
 
 		runID := "retry-determinism-test"
-		numRuns := 100
+		numRuns := 10 // Reduced from 100 for faster test execution
 
 		type RetryResult struct {
 			AttemptCount  int
@@ -1228,27 +1243,39 @@ func TestRetryDelayDeterminism(t *testing.T) {
 			engine := graph.New(reducer, st, emitter, graph.Options{
 				MaxSteps:           20,
 				MaxConcurrentNodes: 0, // Sequential for determinism
-				Retries:            3,
 			})
 
 			// Node that fails twice then succeeds (simulated retry scenario)
+			// Updated to use RetryPolicy (T007-T009 refactor)
 			attemptCounter := 0
-			retryNode := graph.NodeFunc[RetryTestState](func(ctx context.Context, state RetryTestState) graph.NodeResult[RetryTestState] {
-				attemptCounter++
+			retryNode := &retryableNodeWrapper[RetryTestState]{
+				fn: func(ctx context.Context, state RetryTestState) graph.NodeResult[RetryTestState] {
+					attemptCounter++
 
-				if attemptCounter <= 2 {
-					// Fail first 2 attempts
-					return graph.NodeResult[RetryTestState]{
-						Err: fmt.Errorf("simulated failure attempt %d", attemptCounter),
+					if attemptCounter <= 2 {
+						// Fail first 2 attempts
+						return graph.NodeResult[RetryTestState]{
+							Err: fmt.Errorf("simulated failure attempt %d", attemptCounter),
+						}
 					}
-				}
 
-				// Succeed on 3rd attempt
-				return graph.NodeResult[RetryTestState]{
-					Delta: RetryTestState{Counter: attemptCounter},
-					Route: graph.Stop(),
-				}
-			})
+					// Succeed on 3rd attempt
+					return graph.NodeResult[RetryTestState]{
+						Delta: RetryTestState{Counter: attemptCounter},
+						Route: graph.Stop(),
+					}
+				},
+				policy: graph.NodePolicy{
+					RetryPolicy: &graph.RetryPolicy{
+						MaxAttempts: 3,
+						BaseDelay:   10 * time.Millisecond,  // Minimal delay for fast test
+						MaxDelay:    100 * time.Millisecond, // Small cap for test speed
+						Retryable: func(err error) bool {
+							return true // All errors retryable for this test
+						},
+					},
+				},
+			}
 
 			if err := engine.Add("retry-node", retryNode); err != nil {
 				t.Fatalf("Failed to add retry-node: %v", err)

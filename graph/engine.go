@@ -762,10 +762,22 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 
 		// Execute node with retry support for sequential execution (US1: T005-T009)
 		var result NodeResult[S]
-		maxRetries := e.opts.Retries // Number of retry attempts (0 = no retries)
 
-		for attempt := 0; attempt <= maxRetries; attempt++ {
-			// Add retry attempt to context for nodes to access
+		// Determine max attempts from per-node RetryPolicy or use default of 1 (no retries)
+		// This mirrors the concurrent execution retry logic (lines 1179-1240)
+		maxAttempts := 1
+		var retryPol *RetryPolicy
+		if policy != nil && policy.RetryPolicy != nil {
+			retryPol = policy.RetryPolicy
+			// Validate retry policy configuration (T007)
+			if err := retryPol.Validate(); err != nil {
+				return zero, fmt.Errorf("retry policy validation failed for node %s: %w", currentNode, err)
+			}
+			maxAttempts = retryPol.MaxAttempts
+		}
+
+		for attempt := 0; attempt < maxAttempts; attempt++ {
+			// Add retry attempt to context for nodes to access (T008)
 			attemptCtx := context.WithValue(ctx, AttemptKey, attempt)
 
 			// Execute node with timeout enforcement (US2: T017, T018)
@@ -781,52 +793,54 @@ func (e *Engine[S]) Run(ctx context.Context, runID string, initial S) (S, error)
 				break
 			}
 
-			// Node failed - check if we should retry
-			if attempt < maxRetries {
-				// Get RNG from attemptCtx for deterministic backoff jitter
-				var rng *rand.Rand
-				if rngVal := attemptCtx.Value(RNGKey); rngVal != nil {
-					if r, ok := rngVal.(*rand.Rand); ok {
-						rng = r
+			// Node failed - check if we should retry (T007, T009)
+			if retryPol != nil {
+				// Check if error is retryable using predicate (T007)
+				isRetryable := retryPol.Retryable != nil && retryPol.Retryable(result.Err)
+
+				// If error is not retryable, fail immediately without retry
+				if !isRetryable {
+					e.emitError(runID, currentNode, step-1, result.Err)
+					return zero, result.Err
+				}
+
+				// Error is retryable - check if we have retry attempts remaining
+				if attempt+1 < maxAttempts {
+					// Increment retry metrics (T009)
+					if e.metrics != nil {
+						e.metrics.IncrementRetries(runID, currentNode, "error")
 					}
+
+					// Get RNG from attemptCtx for deterministic backoff jitter
+					var rng *rand.Rand
+					if rngVal := attemptCtx.Value(RNGKey); rngVal != nil {
+						if r, ok := rngVal.(*rand.Rand); ok {
+							rng = r
+						}
+					}
+
+					// Compute exponential backoff using policy parameters (T007)
+					delay := computeBackoff(attempt, retryPol.BaseDelay, retryPol.MaxDelay, rng)
+
+					// Apply backoff delay with context cancellation support
+					select {
+					case <-time.After(delay):
+						// Backoff completed, continue to retry
+					case <-ctx.Done():
+						// Context canceled during backoff
+						return zero, ctx.Err()
+					}
+
+					// Continue to next retry attempt
+					continue
 				}
 
-				// Compute exponential backoff with jitter (deterministic)
-				const maxBackoff = 30 * time.Second // Cap backoff to prevent overflow
-				baseDelay := 100 * time.Millisecond
-
-				// Safe exponential calculation with bounds checking
-				shift := attempt
-				if shift > 10 {
-					shift = 10 // Cap shift to prevent overflow (2^10 = 1024)
-				}
-				backoff := baseDelay * time.Duration(1<<uint(shift)) // #nosec G115 -- shift capped at 10, safe conversion
-				if backoff > maxBackoff {
-					backoff = maxBackoff
-				}
-
-				// Add deterministic jitter if RNG available
-				var jitter time.Duration
-				if rng != nil {
-					// Deterministic jitter for replay consistency
-					jitter = time.Duration(rng.Intn(50)) * time.Millisecond
-				}
-				delay := backoff + jitter
-
-				// Apply backoff delay with context cancellation support
-				select {
-				case <-time.After(delay):
-					// Backoff completed, continue to retry
-				case <-ctx.Done():
-					// Context canceled during backoff
-					return zero, ctx.Err()
-				}
-
-				// Continue to next retry attempt
-				continue
+				// Max attempts exceeded - no retries left (T009)
+				e.emitError(runID, currentNode, step-1, ErrMaxAttemptsExceeded)
+				return zero, ErrMaxAttemptsExceeded
 			}
 
-			// Max retries exceeded - emit final error and return
+			// No retry policy - fail immediately on first error (T009)
 			e.emitError(runID, currentNode, step-1, result.Err)
 			return zero, result.Err
 		}
