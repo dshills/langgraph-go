@@ -72,30 +72,40 @@ All three user stories are **independent** and can be implemented in parallel or
 - [ ] T012 [US1] Add example demonstrating sequential retry in examples/ directory (new file)
 - [ ] T013 [US1] Update CLAUDE.md documenting sequential retry capability
 
-## Phase 3: User Story 2 - Per-Node Timeout Control (P2)
+## Phase 3: User Story 2 - Per-Node Timeout Control (P2) ✅
 
 **Story Goal**: Enforce NodePolicy.Timeout limits during node execution
 
 **Independent Test**: Create workflow with mixed timeout policies, verify fast nodes timeout quickly while slow nodes run longer
 
+**Status**: COMPLETE (2025-11-10) - Timeout infrastructure pre-existing, tests and documentation added
+
 **Acceptance**:
-- NodePolicy.Timeout enforced during node execution
-- DefaultNodeTimeout used as fallback when NodePolicy.Timeout is zero
-- 4 skipped tests in policy_test.go pass
+- ✅ NodePolicy.Timeout enforced during node execution
+- ✅ DefaultNodeTimeout used as fallback when NodePolicy.Timeout is zero
+- ✅ All 4 TestNodeTimeout tests pass
 
 ### Implementation Tasks
 
-- [ ] T014 [P] [US2] Review NodePolicy interface in graph/policy.go and timeout field usage
-- [ ] T015 [P] [US2] Review Options.DefaultNodeTimeout in graph/options.go:173
-- [ ] T016 [US2] Locate node execution point in graph/engine.go (where node.Run() is called in both concurrent and sequential paths)
-- [ ] T017 [US2] Wrap node.Run() with timeout context in concurrent execution (graph/engine.go runConcurrent method)
-- [ ] T018 [US2] Wrap node.Run() with timeout context in sequential execution (graph/engine.go sequential method)
-- [ ] T019 [US2] Implement timeout precedence logic (node timeout < default timeout < global timeout) in graph/engine.go
-- [ ] T020 [US2] Create timeout error with node ID and duration in graph/engine.go
-- [ ] T021 [US2] Remove t.Skip() from 4 tests in graph/policy_test.go:47,103,116,130
-- [ ] T022 [US2] Run timeout tests and verify correct enforcement
-- [ ] T023 [US2] Add example demonstrating per-node timeouts in examples/ directory (new file or update existing)
-- [ ] T024 [US2] Update CLAUDE.md documenting timeout configuration
+- [X] T014 [P] [US2] Review NodePolicy interface in graph/policy.go and timeout field usage - ✓ Complete, found NodePolicy.Timeout field exists
+- [X] T015 [P] [US2] Review Options.DefaultNodeTimeout in graph/options.go:173 - ✓ Complete, found DefaultNodeTimeout with precedence logic
+- [X] T016 [US2] Locate node execution point in graph/engine.go (where node.Run() is called in both concurrent and sequential paths) - ✓ Pre-existing: sequential line 773, concurrent line 1138
+- [X] T017 [US2] Wrap node.Run() with timeout context in concurrent execution (graph/engine.go runConcurrent method) - ✓ Pre-existing: executeNodeWithTimeout() at line 1138
+- [X] T018 [US2] Wrap node.Run() with timeout context in sequential execution (graph/engine.go sequential method) - ✓ Pre-existing: executeNodeWithTimeout() at line 773
+- [X] T019 [US2] Implement timeout precedence logic (node timeout < default timeout < global timeout) in graph/engine.go - ✓ Pre-existing: graph/timeout.go:getNodeTimeout()
+- [X] T020 [US2] Create timeout error with node ID and duration in graph/engine.go - ✓ Pre-existing: EngineError with NODE_TIMEOUT code
+- [X] T021 [US2] Remove t.Skip() from 4 tests in graph/policy_test.go:47,103,116,130 - ✓ Complete, implemented 3 skipped tests (line 52 was already active)
+- [X] T022 [US2] Run timeout tests and verify correct enforcement - ✓ Complete, all 4 tests pass (enforces_per-node: 101ms, uses_DefaultNodeTimeout: 101ms, independent_timeouts: 51ms, no_timeout: 101ms)
+- [X] T023 [US2] Add example demonstrating per-node timeouts in examples/ directory (new file or update existing) - ✓ Complete, created examples/node_timeouts/ with main.go, README.md, go.mod
+- [X] T024 [US2] Update CLAUDE.md documenting timeout configuration - ✓ Complete, added "Node Configuration & Timeouts" section with precedence rules and error handling
+
+**Key Findings**:
+- Timeout infrastructure was already fully implemented in graph/timeout.go:
+  - getNodeTimeout() implements 3-tier precedence (NodePolicy.Timeout → DefaultNodeTimeout → 0)
+  - executeNodeWithTimeout() wraps node.Run() with context deadline
+  - Used in both sequential (line 773) and concurrent (line 1138) execution paths
+- Tasks T016-T020 were pre-existing implementation, only tests and documentation needed
+- **Commits**: commit SHA for tests (T021-T022), commit SHA for documentation (T023-T024)
 
 ## Phase 4: User Story 3 - Backpressure Visibility (P3)
 
