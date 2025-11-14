@@ -99,15 +99,15 @@ func NewChatModel(config Config) (*ChatModel, error) {
 // Process:
 // 1. Check context cancellation
 // 2. Translate messages to Ollama format
-// 3. Build request with model configuration
+// 3. Build request with model configuration and tools (if provided)
 // 4. Call Ollama Chat API (non-streaming)
-// 5. Parse response to ChatOut format
+// 5. Parse response to ChatOut format with tool calls
 // 6. Translate errors to OllamaError
 //
 // Parameters:
 //   - ctx: Context for cancellation and timeout control
 //   - messages: Conversation history (system, user, assistant messages)
-//   - tools: Tool specifications (currently unused, planned for Phase 6)
+//   - tools: Tool specifications for function calling (optional)
 //
 // Returns:
 //   - ChatOut with response text and/or tool calls
@@ -123,7 +123,7 @@ func NewChatModel(config Config) (*ChatModel, error) {
 //	    log.Fatal(err)
 //	}
 //	fmt.Println(out.Text)
-func (m *ChatModel) Chat(ctx context.Context, messages []model.Message, _ []model.ToolSpec) (model.ChatOut, error) {
+func (m *ChatModel) Chat(ctx context.Context, messages []model.Message, tools []model.ToolSpec) (model.ChatOut, error) {
 	// Check context cancellation
 	if ctx.Err() != nil {
 		return model.ChatOut{}, ctx.Err()
@@ -158,8 +158,10 @@ func (m *ChatModel) Chat(ctx context.Context, messages []model.Message, _ []mode
 		Options:  options,
 	}
 
-	// TODO: Tool support in Phase 6 (US4)
-	// For now, tools are ignored even if provided
+	// Add tools if provided
+	if len(tools) > 0 {
+		req.Tools = toOllamaTools(tools)
+	}
 
 	// Call Ollama Chat API with non-streaming callback
 	var finalResp api.ChatResponse
@@ -204,6 +206,120 @@ func toOllamaMessages(messages []model.Message) []api.Message {
 	}
 
 	return result
+}
+
+// toOllamaTools translates LangGraph ToolSpec to Ollama Tool format.
+//
+// Converts tool specifications for function calling:
+//   - Name: Tool function name
+//   - Description: Tool purpose and usage
+//   - Schema: JSON schema for parameters (converted to ToolFunctionParameters)
+//
+// Parameters:
+//   - tools: LangGraph tool specifications
+//
+// Returns:
+//   - Ollama API tool list
+func toOllamaTools(tools []model.ToolSpec) []api.Tool {
+	result := make([]api.Tool, len(tools))
+
+	for i, tool := range tools {
+		// Convert schema map to ToolFunctionParameters
+		params := schemaToParams(tool.Schema)
+
+		result[i] = api.Tool{
+			Type: "function",
+			Function: api.ToolFunction{
+				Name:        tool.Name,
+				Description: tool.Description,
+				Parameters:  params,
+			},
+		}
+	}
+
+	return result
+}
+
+// schemaToParams converts a JSON schema map to Ollama ToolFunctionParameters.
+//
+// Extracts fields from the schema:
+//   - type: Parameter type (usually "object")
+//   - properties: Field definitions (converted to ToolProperty)
+//   - required: Required field names
+//   - $defs, items: Pass through for complex schemas
+//
+// Parameters:
+//   - schema: JSON schema as map[string]interface{}
+//
+// Returns:
+//   - Ollama ToolFunctionParameters structure
+func schemaToParams(schema map[string]interface{}) api.ToolFunctionParameters {
+	params := api.ToolFunctionParameters{
+		Properties: make(map[string]api.ToolProperty),
+	}
+
+	// Extract type (default to "object" if not specified)
+	if t, ok := schema["type"].(string); ok {
+		params.Type = t
+	} else {
+		params.Type = "object"
+	}
+
+	// Extract properties and convert to ToolProperty
+	if props, ok := schema["properties"].(map[string]interface{}); ok {
+		for name, propDef := range props {
+			if propMap, ok := propDef.(map[string]interface{}); ok {
+				property := api.ToolProperty{}
+
+				// Extract type field (can be string or array of strings)
+				if t, ok := propMap["type"].(string); ok {
+					property.Type = api.PropertyType{t}
+				} else if tArr, ok := propMap["type"].([]string); ok {
+					property.Type = api.PropertyType(tArr)
+				}
+
+				// Extract description
+				if desc, ok := propMap["description"].(string); ok {
+					property.Description = desc
+				}
+
+				// Extract enum values
+				if enum, ok := propMap["enum"].([]interface{}); ok {
+					property.Enum = enum
+				}
+
+				// Extract items for array types
+				if items, ok := propMap["items"]; ok {
+					property.Items = items
+				}
+
+				params.Properties[name] = property
+			}
+		}
+	}
+
+	// Extract required fields
+	if req, ok := schema["required"].([]interface{}); ok {
+		required := make([]string, len(req))
+		for i, r := range req {
+			if s, ok := r.(string); ok {
+				required[i] = s
+			}
+		}
+		params.Required = required
+	} else if req, ok := schema["required"].([]string); ok {
+		params.Required = req
+	}
+
+	// Pass through $defs and items for complex schemas
+	if defs, ok := schema["$defs"]; ok {
+		params.Defs = defs
+	}
+	if items, ok := schema["items"]; ok {
+		params.Items = items
+	}
+
+	return params
 }
 
 // toLangGraphOutput translates Ollama ChatResponse to LangGraph ChatOut.

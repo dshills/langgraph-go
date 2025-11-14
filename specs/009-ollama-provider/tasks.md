@@ -156,12 +156,12 @@ Example code in `examples/ollama/` directory.
 
 ### Implementation for User Story 4
 
-- [ ] T055 [US4] Implement tool spec translation function `toOllamaTools()` in `graph/model/ollama/ollama.go`
-- [ ] T056 [US4] Implement tool call parsing function `fromOllamaToolCalls()` in `graph/model/ollama/ollama.go`
-- [ ] T057 [US4] Update `Chat()` method to include tools in request if provided in `graph/model/ollama/ollama.go`
-- [ ] T058 [US4] Update response parsing to extract tool calls from api.ChatResponse in `graph/model/ollama/ollama.go`
-- [ ] T059 [US4] Add tool-related error messages (e.g., "Model does not support tools") in `graph/model/ollama/errors.go`
-- [ ] T060 [US4] Run tests with `go test ./graph/model/ollama/...` and verify all US4 tests pass
+- [X] T055 [US4] Implement tool spec translation function `toOllamaTools()` in `graph/model/ollama/ollama.go`
+- [X] T056 [US4] Implement tool call parsing function `fromOllamaToolCalls()` in `graph/model/ollama/ollama.go`
+- [X] T057 [US4] Update `Chat()` method to include tools in request if provided in `graph/model/ollama/ollama.go`
+- [X] T058 [US4] Update response parsing to extract tool calls from api.ChatResponse in `graph/model/ollama/ollama.go`
+- [X] T059 [US4] Add tool-related error messages (e.g., "Model does not support tools") in `graph/model/ollama/errors.go`
+- [X] T060 [US4] Run tests with `go test ./graph/model/ollama/...` and verify all US4 tests pass
 
 **Checkpoint**: All user stories (US1-US4) should now be independently functional
 
@@ -187,12 +187,12 @@ Example code in `examples/ollama/` directory.
 
 **Purpose**: User-facing example and documentation
 
-- [ ] T070 [P] Create example directory `examples/ollama/`
-- [ ] T071 [P] Create example main.go in `examples/ollama/main.go` with basic local usage
-- [ ] T072 [P] Add remote instance example to `examples/ollama/main.go`
-- [ ] T073 [P] Add tool calling example to `examples/ollama/main.go`
-- [ ] T074 [P] Add deterministic generation example (with seed) to `examples/ollama/main.go`
-- [ ] T075 [P] Add comments and usage instructions to `examples/ollama/main.go`
+- [X] T070 [P] Create example directory `examples/ollama/`
+- [X] T071 [P] Create example main.go in `examples/ollama/main.go` with basic local usage
+- [X] T072 [P] Add remote instance example to `examples/ollama/main.go`
+- [X] T073 [P] Add tool calling example to `examples/ollama/main.go`
+- [X] T074 [P] Add deterministic generation example (with seed) to `examples/ollama/main.go`
+- [X] T075 [P] Add comments and usage instructions to `examples/ollama/main.go`
 - [ ] T076 [P] Write `ExampleChatModel_Chat` in `graph/model/ollama/ollama_test.go` for godoc
 - [ ] T077 [P] Write `ExampleNewChatModel` in `graph/model/ollama/ollama_test.go` for godoc
 - [ ] T078 Run example with `go run examples/ollama/main.go` (requires local Ollama with `gpt-oss` model)
