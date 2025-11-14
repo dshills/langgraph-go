@@ -1,6 +1,6 @@
 module github.com/dshills/langgraph-go
 
-go 1.24.0
+go 1.24.1
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.14.0
@@ -54,6 +54,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
+	github.com/ollama/ollama v0.12.11 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
