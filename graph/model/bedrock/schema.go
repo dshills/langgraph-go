@@ -470,9 +470,10 @@ func (t ClaudeSchemaTranslator) TranslateStreamEvent(event json.RawMessage) (Str
 			return StreamChunk{}, fmt.Errorf("failed to parse content_block_delta event: %w", err)
 		}
 
-		if blockDelta.Delta.Type == "text_delta" {
+		switch blockDelta.Delta.Type {
+		case "text_delta":
 			chunk.Delta = blockDelta.Delta.Text
-		} else if blockDelta.Delta.Type == "input_json_delta" {
+		case "input_json_delta":
 			chunk.ToolCallDelta = &ToolCallDelta{
 				Index:       blockDelta.Index,
 				PartialJSON: blockDelta.Delta.PartialJSON,

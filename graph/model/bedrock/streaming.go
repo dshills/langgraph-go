@@ -108,11 +108,16 @@ func (a *Adapter) ChatStream(ctx context.Context, messages []model.Message, tool
 
 	// Process event stream
 	stream := output.GetStream()
-	defer stream.Close()
+	defer func() {
+		if err := stream.Close(); err != nil {
+			// Log stream close error (non-fatal)
+			_ = err
+		}
+	}()
 
 	// Accumulate response chunks
 	var textParts []string
-	var toolCalls []model.ToolCall
+	toolCalls := make([]model.ToolCall, 0) // Pre-allocate for performance
 	metadata := make(map[string]interface{})
 	var finishReason string
 

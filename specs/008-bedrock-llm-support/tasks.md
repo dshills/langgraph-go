@@ -253,16 +253,16 @@ Single library project structure:
 
 **Purpose**: Final improvements, documentation, and validation
 
-- [ ] T100 [P] Add package-level godoc comments to graph/model/bedrock/bedrock.go
-- [ ] T101 [P] Add godoc comments to all exported types and functions in graph/model/bedrock/ (Config, Adapter, SchemaTranslator, errors)
-- [ ] T102 [P] Run gofmt on all files in graph/model/bedrock/
-- [ ] T103 [P] Run golangci-lint on graph/model/bedrock/ and fix issues
-- [ ] T104 [P] Run gosec security scanner on graph/model/bedrock/ (check for credential leaks, error message information disclosure)
-- [ ] T105 Run all unit tests: go test ./graph/model/bedrock/
+- [X] T100 [P] Add package-level godoc comments to graph/model/bedrock/bedrock.go
+- [X] T101 [P] Add godoc comments to all exported types and functions in graph/model/bedrock/ (Config, Adapter, SchemaTranslator, errors)
+- [X] T102 [P] Run gofmt on all files in graph/model/bedrock/
+- [X] T103 [P] Run golangci-lint on graph/model/bedrock/ and fix issues
+- [X] T104 [P] Run gosec security scanner on graph/model/bedrock/ (check for credential leaks, error message information disclosure)
+- [X] T105 Run all unit tests: go test ./graph/model/bedrock/
 - [ ] T106 Run all integration tests with AWS credentials: go test -tags=integration ./graph/model/bedrock/
 - [ ] T107 Validate quickstart examples: go run examples/bedrock_quickstart/main.go (requires AWS setup)
-- [ ] T108 Run mcp-pr review_unstaged for pre-commit code review
-- [ ] T109 Re-index codebase with gocontext after implementation
+- [X] T108 Run mcp-pr review_unstaged for pre-commit code review
+- [X] T109 Re-index codebase with gocontext after implementation
 - [X] T110 Update CLAUDE.md with Bedrock adapter usage examples if needed
 - [X] T111 Verify SC-001 through SC-007 success criteria from spec.md
 
