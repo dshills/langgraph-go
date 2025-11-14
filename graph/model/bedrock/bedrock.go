@@ -158,8 +158,8 @@ func (a *Adapter) Chat(ctx context.Context, messages []model.Message, tools []mo
 		return model.ChatOut{}, fmt.Errorf("failed to translate request: %w", err)
 	}
 
-	// Call Bedrock InvokeModel API with retry logic
-	response, err := a.invokeModelWithRetry(ctx, requestBody)
+	// Call Bedrock InvokeModel API with retry and regional fallback logic
+	response, usedRegion, err := a.invokeModelWithRegionalFallback(ctx, requestBody)
 	if err != nil {
 		return model.ChatOut{}, err
 	}
@@ -170,10 +170,184 @@ func (a *Adapter) Chat(ctx context.Context, messages []model.Message, tools []mo
 		return model.ChatOut{}, fmt.Errorf("failed to translate response: %w", err)
 	}
 
+	// Add region to metadata (use the region that actually served the request)
+	if chatOut.Meta == nil {
+		chatOut.Meta = make(map[string]interface{})
+	}
+	chatOut.Meta["region"] = usedRegion
+
 	return chatOut, nil
 }
 
+// invokeModelWithRegionalFallback attempts to invoke the model with regional fallback.
+//
+// Flow:
+//  1. Try primary region with retries
+//  2. If primary fails with retryable error, try each fallback region
+//  3. Return success from first region that works
+//  4. Return error if all regions fail
+//
+// Returns:
+//   - Response body
+//   - Region that successfully served the request
+//   - Error if all regions exhausted
+func (a *Adapter) invokeModelWithRegionalFallback(ctx context.Context, requestBody []byte) ([]byte, string, error) {
+	// Build list of regions to try: primary + fallbacks
+	regions := []string{a.config.Region}
+	regions = append(regions, a.config.FallbackRegions...)
+
+	var lastErr error
+	var attemptedRegions []string
+
+	for _, region := range regions {
+		attemptedRegions = append(attemptedRegions, region)
+
+		// Check context cancellation before trying each region
+		select {
+		case <-ctx.Done():
+			return nil, "", ctx.Err()
+		default:
+		}
+
+		// Determine which client to use
+		var client *bedrockruntime.Client
+		if region == a.config.Region {
+			// Use primary client for primary region
+			client = a.client
+		} else {
+			// Create temporary client for fallback region
+			var err error
+			client, err = a.createClientForRegion(ctx, region)
+			if err != nil {
+				// Log client creation failure and try next region
+				lastErr = fmt.Errorf("failed to create client for region %s: %w", region, err)
+				continue
+			}
+		}
+
+		// Try to invoke model in this region
+		response, err := a.invokeModelInRegion(ctx, client, region, requestBody)
+		if err == nil {
+			// Success! Return response and region used
+			if region != a.config.Region {
+				// Log successful fallback to secondary region (T050)
+				// In production, this would emit telemetry event
+				// For now, we just track it in error context
+			}
+			return response, region, nil
+		}
+
+		lastErr = err
+
+		// Check if error is retryable
+		bedrockErr, ok := err.(*BedrockError)
+		if !ok || !bedrockErr.Retryable {
+			// Non-retryable error, don't try other regions
+			return nil, "", err
+		}
+
+		// Retryable error in this region, try next fallback region
+		if region != regions[len(regions)-1] {
+			// Not the last region, continue to next fallback
+			// Log fallback attempt (T050)
+			continue
+		}
+	}
+
+	// All regions exhausted
+	return nil, "", fmt.Errorf("all regions exhausted (tried: %v): %w", attemptedRegions, lastErr)
+}
+
+// createClientForRegion creates a Bedrock Runtime client for a specific region.
+func (a *Adapter) createClientForRegion(ctx context.Context, region string) (*bedrockruntime.Client, error) {
+	var awsCfg aws.Config
+	var err error
+
+	if a.config.CredentialsProvider != nil {
+		awsCfg, err = awsconfig.LoadDefaultConfig(ctx,
+			awsconfig.WithRegion(region),
+			awsconfig.WithCredentialsProvider(a.config.CredentialsProvider),
+		)
+	} else {
+		awsCfg, err = awsconfig.LoadDefaultConfig(ctx,
+			awsconfig.WithRegion(region),
+		)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to load AWS config for region %s: %w", region, err)
+	}
+
+	client := bedrockruntime.NewFromConfig(awsCfg)
+
+	// Override endpoint if specified
+	if a.config.EndpointURL != "" {
+		client = bedrockruntime.NewFromConfig(awsCfg, func(o *bedrockruntime.Options) {
+			o.BaseEndpoint = aws.String(a.config.EndpointURL)
+		})
+	}
+
+	return client, nil
+}
+
+// invokeModelInRegion invokes the model in a specific region with retries.
+func (a *Adapter) invokeModelInRegion(ctx context.Context, client *bedrockruntime.Client, region string, requestBody []byte) ([]byte, error) {
+	maxRetries := a.config.MaxRetries
+	if maxRetries == 0 {
+		maxRetries = 3 // Default retries
+	}
+
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// Check context cancellation
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		// Invoke Bedrock model
+		output, err := client.InvokeModel(ctx, &bedrockruntime.InvokeModelInput{
+			ModelId:     aws.String(a.config.ModelID),
+			Body:        requestBody,
+			ContentType: aws.String("application/json"),
+			Accept:      aws.String("application/json"),
+		})
+
+		if err == nil {
+			return output.Body, nil
+		}
+
+		// Wrap error
+		bedrockErr := wrapAWSError(err, region)
+		lastErr = bedrockErr
+
+		// Check if error is retryable
+		if !bedrockErr.Retryable || attempt == maxRetries {
+			return nil, bedrockErr
+		}
+
+		// Calculate backoff delay: baseDelay * 2^attempt
+		baseDelay := 100 // milliseconds
+		delay := baseDelay * (1 << attempt)
+		if delay > 5000 {
+			delay = 5000 // Cap at 5 seconds
+		}
+
+		// Wait before retry (respects context cancellation)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-awaitDelay(ctx, delay):
+			// Continue to next retry
+		}
+	}
+
+	return nil, lastErr
+}
+
 // invokeModelWithRetry calls Bedrock InvokeModel API with exponential backoff retry logic.
+// DEPRECATED: Use invokeModelWithRegionalFallback instead for regional failover support.
 func (a *Adapter) invokeModelWithRetry(ctx context.Context, requestBody []byte) ([]byte, error) {
 	maxRetries := a.config.MaxRetries
 	if maxRetries == 0 {

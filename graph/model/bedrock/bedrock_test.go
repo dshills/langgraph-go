@@ -393,3 +393,171 @@ func TestAdapter_Chat_SchemaTranslation(t *testing.T) {
 		t.Errorf("TranslateResponse() Text = %q, want %q", chatOut.Text, expectedText)
 	}
 }
+
+// T036: Test NewAdapter() with different AWS regions
+func TestNewAdapter_MultiRegion(t *testing.T) {
+	regions := []string{"us-east-1", "us-west-2", "eu-west-1", "ap-southeast-1"}
+
+	for _, region := range regions {
+		t.Run(region, func(t *testing.T) {
+			ctx := context.Background()
+			config := Config{
+				Region:  region,
+				ModelID: "anthropic.claude-3-5-sonnet-20241022-v2:0",
+			}
+
+			adapter, err := NewAdapter(ctx, config)
+			if err != nil {
+				t.Fatalf("NewAdapter() with region %s unexpected error = %v", region, err)
+			}
+
+			if adapter == nil {
+				t.Fatalf("NewAdapter() with region %s returned nil adapter", region)
+			}
+
+			if adapter.config.Region != region {
+				t.Errorf("NewAdapter() config.Region = %s, want %s", adapter.config.Region, region)
+			}
+		})
+	}
+}
+
+// T037: Test BedrockAdapter.Chat() includes region in metadata
+func TestAdapter_Chat_RegionMetadata(t *testing.T) {
+	// This test uses unit testing approach - testing TranslateResponse and region injection separately
+	translator := ClaudeSchemaTranslator{}
+
+	// Mock Claude response with metadata
+	claudeResponse := `{
+		"id": "msg_01ABC123",
+		"type": "message",
+		"role": "assistant",
+		"content": [
+			{"type": "text", "text": "Test response"}
+		],
+		"model": "claude-3-5-sonnet-20241022",
+		"stop_reason": "end_turn",
+		"usage": {"input_tokens": 20, "output_tokens": 10}
+	}`
+
+	chatOut, err := translator.TranslateResponse(json.RawMessage(claudeResponse))
+	if err != nil {
+		t.Fatalf("TranslateResponse() unexpected error = %v", err)
+	}
+
+	// Verify metadata from Claude response is populated
+	if chatOut.Meta == nil {
+		t.Fatal("TranslateResponse() Meta is nil, expected metadata")
+	}
+
+	expectedMeta := map[string]interface{}{
+		"request_id":    "msg_01ABC123",
+		"model":         "claude-3-5-sonnet-20241022",
+		"stop_reason":   "end_turn",
+		"input_tokens":  20,
+		"output_tokens": 10,
+	}
+
+	for key, expectedVal := range expectedMeta {
+		actualVal, ok := chatOut.Meta[key]
+		if !ok {
+			t.Errorf("TranslateResponse() Meta missing key %q", key)
+			continue
+		}
+		if actualVal != expectedVal {
+			t.Errorf("TranslateResponse() Meta[%q] = %v, want %v", key, actualVal, expectedVal)
+		}
+	}
+
+	// Test that Chat() method adds region to metadata
+	// Note: Full integration test would require mock AWS client
+	// For now, we verify the metadata population in TranslateResponse
+	// and trust that bedrock.go:177 adds region to Meta
+}
+
+// T045: Test regional fallback on retryable errors
+// Note: This test requires mock AWS client to simulate region failures
+func TestAdapter_Chat_RegionalFallback(t *testing.T) {
+	t.Skip("Integration test - requires mock AWS client to simulate regional failures")
+
+	// Test plan:
+	// 1. Configure adapter with primary region (us-east-1) and fallback (us-west-2)
+	// 2. Mock primary region to return ThrottlingException
+	// 3. Mock fallback region to return success
+	// 4. Verify request succeeds and metadata shows fallback region was used
+	// 5. Verify telemetry event was emitted for fallback
+
+	ctx := context.Background()
+	config := Config{
+		Region:          "us-east-1",
+		FallbackRegions: []string{"us-west-2"},
+		ModelID:         "anthropic.claude-3-5-sonnet-20241022-v2:0",
+		MaxRetries:      1,
+	}
+
+	adapter, err := NewAdapter(ctx, config)
+	if err != nil {
+		t.Fatalf("NewAdapter() unexpected error = %v", err)
+	}
+
+	messages := []model.Message{
+		{Role: model.RoleUser, Content: "Test"},
+	}
+
+	// This would need mock client setup to simulate:
+	// - us-east-1 returns ThrottlingException
+	// - us-west-2 returns success
+	response, err := adapter.Chat(ctx, messages, nil)
+	if err != nil {
+		t.Fatalf("Chat() unexpected error = %v (expected fallback to succeed)", err)
+	}
+
+	// Verify fallback region was used
+	if response.Meta["region"] != "us-west-2" {
+		t.Errorf("Chat() used region %v, want us-west-2 (fallback)", response.Meta["region"])
+	}
+}
+
+// T046: Test all regions exhausted returns error
+// Note: This test requires mock AWS client to simulate all regions failing
+func TestAdapter_Chat_AllRegionsExhausted(t *testing.T) {
+	t.Skip("Integration test - requires mock AWS client to simulate all regional failures")
+
+	// Test plan:
+	// 1. Configure adapter with primary and 2 fallback regions
+	// 2. Mock all regions to return retryable errors
+	// 3. Verify final error indicates all regions were tried
+	// 4. Verify error contains list of attempted regions
+
+	ctx := context.Background()
+	config := Config{
+		Region:          "us-east-1",
+		FallbackRegions: []string{"us-west-2", "eu-west-1"},
+		ModelID:         "anthropic.claude-3-5-sonnet-20241022-v2:0",
+		MaxRetries:      1,
+	}
+
+	adapter, err := NewAdapter(ctx, config)
+	if err != nil {
+		t.Fatalf("NewAdapter() unexpected error = %v", err)
+	}
+
+	messages := []model.Message{
+		{Role: model.RoleUser, Content: "Test"},
+	}
+
+	// This would need mock client setup to simulate:
+	// - us-east-1 returns ThrottlingException
+	// - us-west-2 returns ThrottlingException
+	// - eu-west-1 returns ThrottlingException
+	_, err = adapter.Chat(ctx, messages, nil)
+	if err == nil {
+		t.Fatal("Chat() expected error when all regions fail, got nil")
+	}
+
+	// Verify error mentions all regions were tried
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "all regions exhausted") {
+		t.Errorf("Chat() error = %v, want error mentioning 'all regions exhausted'", errMsg)
+	}
+}

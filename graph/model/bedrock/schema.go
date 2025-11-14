@@ -297,7 +297,9 @@ func (t ClaudeSchemaTranslator) TranslateResponse(response json.RawMessage) (mod
 		return model.ChatOut{}, fmt.Errorf("failed to parse Claude response: %w", err)
 	}
 
-	out := model.ChatOut{}
+	out := model.ChatOut{
+		Meta: make(map[string]interface{}),
+	}
 
 	// Extract text content
 	var textParts []string
@@ -318,6 +320,23 @@ func (t ClaudeSchemaTranslator) TranslateResponse(response json.RawMessage) (mod
 				Input: block.Input,
 			})
 		}
+	}
+
+	// Populate metadata from Claude response
+	if resp.ID != "" {
+		out.Meta["request_id"] = resp.ID
+	}
+	if resp.Model != "" {
+		out.Meta["model"] = resp.Model
+	}
+	if resp.StopReason != "" {
+		out.Meta["stop_reason"] = resp.StopReason
+	}
+	if resp.Usage.InputTokens > 0 {
+		out.Meta["input_tokens"] = resp.Usage.InputTokens
+	}
+	if resp.Usage.OutputTokens > 0 {
+		out.Meta["output_tokens"] = resp.Usage.OutputTokens
 	}
 
 	return out, nil
