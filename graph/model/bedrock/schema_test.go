@@ -86,6 +86,32 @@ func TestDetectModelFamily(t *testing.T) {
 			modelID: "eu.mistral.mistral-large-2402-v1:0",
 			want:    ModelFamilyMistral,
 		},
+		// Amazon Nova models
+		{
+			name:    "Nova Lite",
+			modelID: "amazon.nova-lite-v1:0",
+			want:    ModelFamilyNova,
+		},
+		{
+			name:    "Nova Pro",
+			modelID: "amazon.nova-pro-v1:0",
+			want:    ModelFamilyNova,
+		},
+		{
+			name:    "Nova Micro",
+			modelID: "amazon.nova-micro-v1:0",
+			want:    ModelFamilyNova,
+		},
+		{
+			name:    "Nova Lite inference profile (US)",
+			modelID: "us.amazon.nova-lite-v1:0",
+			want:    ModelFamilyNova,
+		},
+		{
+			name:    "Nova Pro inference profile (EU)",
+			modelID: "eu.amazon.nova-pro-v1:0",
+			want:    ModelFamilyNova,
+		},
 		{
 			name:    "Unknown model",
 			modelID: "unknown.model-v1:0",

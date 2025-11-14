@@ -104,6 +104,9 @@ func NewAdapter(ctx context.Context, config Config) (*Adapter, error) {
 	switch family {
 	case ModelFamilyClaude:
 		translator = ClaudeSchemaTranslator{}
+	case ModelFamilyNova:
+		// Nova models use AWS Bedrock standard Messages API format
+		translator = NovaSchemaTranslator{}
 	case ModelFamilyLlama:
 		// Llama translator implementation in Phase 5
 		return nil, fmt.Errorf("llama model family not yet implemented")

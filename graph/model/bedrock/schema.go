@@ -41,6 +41,12 @@ const (
 	// Features: Text generation, limited tool support
 	// Examples: mistral.mistral-large-2402-v1:0
 	ModelFamilyMistral
+
+	// ModelFamilyNova represents Amazon Nova models.
+	// Format: Amazon Nova Messages API (Converse API compatible)
+	// Features: Text generation, multimodal support, tool calling
+	// Examples: amazon.nova-lite-v1:0, amazon.nova-pro-v1:0, amazon.nova-micro-v1:0
+	ModelFamilyNova
 )
 
 // String returns the string representation of the ModelFamily.
@@ -54,6 +60,8 @@ func (mf ModelFamily) String() string {
 		return "Titan"
 	case ModelFamilyMistral:
 		return "Mistral"
+	case ModelFamilyNova:
+		return "Nova"
 	default:
 		return "Unknown"
 	}
@@ -149,6 +157,7 @@ type ToolCallDelta struct {
 // - "anthropic.claude-*" or "us.anthropic.claude-*" → Claude
 // - "meta.llama*" or "us.meta.llama*" → Llama
 // - "amazon.titan-*" or "us.amazon.titan-*" → Titan
+// - "amazon.nova-*" or "us.amazon.nova-*" → Nova
 // - "mistral.*" or "us.mistral.*" → Mistral
 //
 // Inference profiles (e.g., "us.anthropic.claude-*") enable cross-region
@@ -167,6 +176,9 @@ func detectModelFamily(modelID string) ModelFamily {
 	if hasPrefix(modelID, "meta.llama") {
 		return ModelFamilyLlama
 	}
+	if hasPrefix(modelID, "amazon.nova") {
+		return ModelFamilyNova
+	}
 	if hasPrefix(modelID, "amazon.titan") {
 		return ModelFamilyTitan
 	}
@@ -180,6 +192,9 @@ func detectModelFamily(modelID string) ModelFamily {
 	}
 	if strings.Contains(modelID, "meta.llama") {
 		return ModelFamilyLlama
+	}
+	if strings.Contains(modelID, "amazon.nova") {
+		return ModelFamilyNova
 	}
 	if strings.Contains(modelID, "amazon.titan") {
 		return ModelFamilyTitan
