@@ -60,6 +60,32 @@ func TestDetectModelFamily(t *testing.T) {
 			modelID: "mistral.mistral-7b-instruct-v0:2",
 			want:    ModelFamilyMistral,
 		},
+		// Inference profile formats (cross-region)
+		{
+			name:    "Claude inference profile (US)",
+			modelID: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+			want:    ModelFamilyClaude,
+		},
+		{
+			name:    "Claude inference profile (EU)",
+			modelID: "eu.anthropic.claude-3-sonnet-20240229-v1:0",
+			want:    ModelFamilyClaude,
+		},
+		{
+			name:    "Llama inference profile",
+			modelID: "us.meta.llama3-1-70b-instruct-v1:0",
+			want:    ModelFamilyLlama,
+		},
+		{
+			name:    "Titan inference profile",
+			modelID: "us.amazon.titan-text-premier-v1:0",
+			want:    ModelFamilyTitan,
+		},
+		{
+			name:    "Mistral inference profile",
+			modelID: "eu.mistral.mistral-large-2402-v1:0",
+			want:    ModelFamilyMistral,
+		},
 		{
 			name:    "Unknown model",
 			modelID: "unknown.model-v1:0",

@@ -178,14 +178,12 @@ func TestNewAdapter_SchemaTranslatorSelection(t *testing.T) {
 // T021: Test BedrockAdapter.Chat() with Claude (using mock)
 // Note: This test will use a mock AWS client to avoid actual API calls
 func TestAdapter_Chat_BasicRequest(t *testing.T) {
-	// Skip if no AWS credentials available (integration test)
-	// This test structure prepares for mocking implementation
-	t.Skip("Integration test - requires AWS credentials or mock client")
-
+	// Integration test - requires AWS credentials
+	// Uses inference profile for cross-region routing
 	ctx := context.Background()
 	config := Config{
 		Region:    "us-east-1",
-		ModelID:   "anthropic.claude-3-5-sonnet-20241022-v2:0",
+		ModelID:   "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
 		MaxTokens: 100,
 	}
 
@@ -200,6 +198,10 @@ func TestAdapter_Chat_BasicRequest(t *testing.T) {
 
 	response, err := adapter.Chat(ctx, messages, nil)
 	if err != nil {
+		// Check if this is a model access error (requires use case form submission)
+		if isModelAccessError(err) {
+			t.Skipf("Model access not enabled for this AWS account: %v", err)
+		}
 		t.Fatalf("Chat() unexpected error = %v", err)
 	}
 
@@ -214,12 +216,12 @@ func TestAdapter_Chat_BasicRequest(t *testing.T) {
 
 // Test Chat() with tool specifications
 func TestAdapter_Chat_WithTools(t *testing.T) {
-	t.Skip("Integration test - requires AWS credentials or mock client")
-
+	// Integration test - requires AWS credentials
+	// Uses inference profile for cross-region routing
 	ctx := context.Background()
 	config := Config{
 		Region:    "us-east-1",
-		ModelID:   "anthropic.claude-3-5-sonnet-20241022-v2:0",
+		ModelID:   "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
 		MaxTokens: 200,
 	}
 
@@ -251,6 +253,10 @@ func TestAdapter_Chat_WithTools(t *testing.T) {
 
 	response, err := adapter.Chat(ctx, messages, tools)
 	if err != nil {
+		// Check if this is a model access error (requires use case form submission)
+		if isModelAccessError(err) {
+			t.Skipf("Model access not enabled for this AWS account: %v", err)
+		}
 		t.Fatalf("Chat() unexpected error = %v", err)
 	}
 

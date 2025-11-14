@@ -3,6 +3,7 @@ package bedrock
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/dshills/langgraph-go/graph/model"
 )
@@ -144,11 +145,14 @@ type ToolCallDelta struct {
 
 // detectModelFamily determines the model family from a Bedrock model ID.
 //
-// Uses prefix matching to identify the provider:
-// - "anthropic.claude-*" → Claude
-// - "meta.llama*" → Llama
-// - "amazon.titan-*" → Titan
-// - "mistral.*" → Mistral
+// Supports both direct model IDs and inference profile formats:
+// - "anthropic.claude-*" or "us.anthropic.claude-*" → Claude
+// - "meta.llama*" or "us.meta.llama*" → Llama
+// - "amazon.titan-*" or "us.amazon.titan-*" → Titan
+// - "mistral.*" or "us.mistral.*" → Mistral
+//
+// Inference profiles (e.g., "us.anthropic.claude-*") enable cross-region
+// routing and are required in some AWS accounts for on-demand throughput.
 //
 // Returns ModelFamilyUnknown for unsupported or malformed model IDs.
 func detectModelFamily(modelID string) ModelFamily {
@@ -156,7 +160,7 @@ func detectModelFamily(modelID string) ModelFamily {
 		return ModelFamilyUnknown
 	}
 
-	// Check prefixes
+	// Check prefixes for direct model IDs
 	if hasPrefix(modelID, "anthropic.claude") {
 		return ModelFamilyClaude
 	}
@@ -167,6 +171,20 @@ func detectModelFamily(modelID string) ModelFamily {
 		return ModelFamilyTitan
 	}
 	if hasPrefix(modelID, "mistral.") {
+		return ModelFamilyMistral
+	}
+
+	// Check for inference profile format: us.anthropic.claude-*, eu.anthropic.claude-*, etc.
+	if strings.Contains(modelID, "anthropic.claude") {
+		return ModelFamilyClaude
+	}
+	if strings.Contains(modelID, "meta.llama") {
+		return ModelFamilyLlama
+	}
+	if strings.Contains(modelID, "amazon.titan") {
+		return ModelFamilyTitan
+	}
+	if strings.Contains(modelID, "mistral.") {
 		return ModelFamilyMistral
 	}
 

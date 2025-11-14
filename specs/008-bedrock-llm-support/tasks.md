@@ -100,17 +100,17 @@ Single library project structure:
 
 ### Tests for User Story 2 (TDD - Write FIRST) ⚠️
 
-- [ ] T035 [P] [US2] Write failing test for BedrockConfig.Validate() in graph/model/bedrock/config_test.go (region string validation)
-- [ ] T036 [P] [US2] Write failing test for NewAdapter() with different regions in graph/model/bedrock/bedrock_test.go (endpoint configuration)
-- [ ] T037 [US2] Write failing test for BedrockAdapter.Chat() verifying region in metadata in graph/model/bedrock/bedrock_test.go
+- [X] T035 [P] [US2] Write failing test for BedrockConfig.Validate() in graph/model/bedrock/config_test.go (region string validation)
+- [X] T036 [P] [US2] Write failing test for NewAdapter() with different regions in graph/model/bedrock/bedrock_test.go (endpoint configuration)
+- [X] T037 [US2] Write failing test for BedrockAdapter.Chat() verifying region in metadata in graph/model/bedrock/bedrock_test.go
 
 ### Implementation for User Story 2
 
-- [ ] T038 [US2] Enhance BedrockConfig.Validate() in graph/model/bedrock/config.go (add AWS region validation against known regions list)
-- [ ] T039 [US2] Update NewAdapter() in graph/model/bedrock/bedrock.go to configure AWS SDK client with specified region
-- [ ] T040 [US2] Update BedrockAdapter.Chat() in graph/model/bedrock/bedrock.go to include region in ChatOut.Meta
-- [ ] T041 [US2] Add custom endpoint URL support (EndpointURL field) in graph/model/bedrock/config.go and bedrock.go
-- [ ] T042 [US2] Verify all T035-T037 tests now PASS
+- [X] T038 [US2] Enhance BedrockConfig.Validate() in graph/model/bedrock/config.go (add AWS region validation against known regions list)
+- [X] T039 [US2] Update NewAdapter() in graph/model/bedrock/bedrock.go to configure AWS SDK client with specified region
+- [X] T040 [US2] Update BedrockAdapter.Chat() in graph/model/bedrock/bedrock.go to include region in ChatOut.Meta
+- [X] T041 [US2] Add custom endpoint URL support (EndpointURL field) in graph/model/bedrock/config.go and bedrock.go
+- [X] T042 [US2] Verify all T035-T037 tests now PASS
 
 **Checkpoint**: User Story 1 AND 2 both work - single region (US1) and multi-region (US2) configurations functional
 
@@ -124,18 +124,18 @@ Single library project structure:
 
 ### Tests for User Story 3 (TDD - Write FIRST) ⚠️
 
-- [ ] T043 [P] [US3] Write failing test for BedrockConfig.Validate() in graph/model/bedrock/config_test.go (FallbackRegions validation - no duplicates)
-- [ ] T044 [P] [US3] Write failing test for BedrockConfig.Validate() in graph/model/bedrock/config_test.go (FallbackRegions don't include primary Region)
-- [ ] T045 [US3] Write failing test for retry with fallback regions in graph/model/bedrock/bedrock_test.go (mock throttling error → retry in fallback region)
-- [ ] T046 [US3] Write failing test for all regions exhausted in graph/model/bedrock/bedrock_test.go (return error after trying all fallback regions)
+- [X] T043 [P] [US3] Write failing test for BedrockConfig.Validate() in graph/model/bedrock/config_test.go (FallbackRegions validation - no duplicates)
+- [X] T044 [P] [US3] Write failing test for BedrockConfig.Validate() in graph/model/bedrock/config_test.go (FallbackRegions don't include primary Region)
+- [X] T045 [US3] Write failing test for retry with fallback regions in graph/model/bedrock/bedrock_test.go (mock throttling error → retry in fallback region)
+- [X] T046 [US3] Write failing test for all regions exhausted in graph/model/bedrock/bedrock_test.go (return error after trying all fallback regions)
 
 ### Implementation for User Story 3
 
-- [ ] T047 [US3] Enhance BedrockConfig.Validate() in graph/model/bedrock/config.go (add FallbackRegions validation - duplicates, primary region exclusion)
-- [ ] T048 [US3] Implement regional retry logic in graph/model/bedrock/bedrock.go (retry in FallbackRegions[0], then [1], etc. on retryable errors)
-- [ ] T049 [US3] Update wrapAWSError() in graph/model/bedrock/errors.go to include regional context
-- [ ] T050 [US3] Add telemetry/logging for region fallback events in graph/model/bedrock/bedrock.go
-- [ ] T051 [US3] Verify all T043-T046 tests now PASS
+- [X] T047 [US3] Enhance BedrockConfig.Validate() in graph/model/bedrock/config.go (add FallbackRegions validation - duplicates, primary region exclusion)
+- [X] T048 [US3] Implement regional retry logic in graph/model/bedrock/bedrock.go (retry in FallbackRegions[0], then [1], etc. on retryable errors)
+- [X] T049 [US3] Update wrapAWSError() in graph/model/bedrock/errors.go to include regional context
+- [X] T050 [US3] Add telemetry/logging for region fallback events in graph/model/bedrock/bedrock.go
+- [X] T051 [US3] Verify all T043-T046 tests now PASS
 
 **Checkpoint**: All 3 stories work - basic (US1), multi-region (US2), and cross-region fallback (US3)
 
@@ -149,21 +149,21 @@ Single library project structure:
 
 ### Tests for User Story 4 (TDD - Write FIRST) ⚠️
 
-- [ ] T052 [P] [US4] Write failing test for ClaudeSchemaTranslator.TranslateStreamEvent() in graph/model/bedrock/streaming_test.go (message_start event)
-- [ ] T053 [P] [US4] Write failing test for ClaudeSchemaTranslator.TranslateStreamEvent() in graph/model/bedrock/streaming_test.go (content_block_delta event)
-- [ ] T054 [P] [US4] Write failing test for ClaudeSchemaTranslator.TranslateStreamEvent() in graph/model/bedrock/streaming_test.go (message_delta event with stop_reason)
-- [ ] T055 [US4] Write failing test for BedrockAdapter.ChatStream() in graph/model/bedrock/streaming_test.go (full streaming lifecycle with callback)
-- [ ] T056 [US4] Write failing test for streaming error handling in graph/model/bedrock/streaming_test.go (connection interruption mid-stream)
+- [X] T052 [P] [US4] Write failing test for ClaudeSchemaTranslator.TranslateStreamEvent() in graph/model/bedrock/streaming_test.go (message_start event)
+- [X] T053 [P] [US4] Write failing test for ClaudeSchemaTranslator.TranslateStreamEvent() in graph/model/bedrock/streaming_test.go (content_block_delta event)
+- [X] T054 [P] [US4] Write failing test for ClaudeSchemaTranslator.TranslateStreamEvent() in graph/model/bedrock/streaming_test.go (message_delta event with stop_reason)
+- [X] T055 [US4] Write failing test for BedrockAdapter.ChatStream() in graph/model/bedrock/streaming_test.go (full streaming lifecycle with callback) (Integration test - requires AWS credentials)
+- [X] T056 [US4] Write failing test for streaming error handling in graph/model/bedrock/streaming_test.go (connection interruption mid-stream) (Integration test - requires AWS credentials)
 
 ### Implementation for User Story 4
 
-- [ ] T057 [US4] Create StreamChunk struct in graph/model/bedrock/streaming.go (Delta, ToolCallDelta, FinishReason, Metadata fields)
-- [ ] T058 [US4] Implement ClaudeSchemaTranslator.TranslateStreamEvent() in graph/model/bedrock/streaming.go (handle 7 event types per streaming-event.json schema)
-- [ ] T059 [US4] Implement BedrockAdapter.ChatStream() in graph/model/bedrock/streaming.go (InvokeModelWithResponseStream API, event channel processing)
-- [ ] T060 [US4] Add streaming callback mechanism in graph/model/bedrock/streaming.go (token-by-token delivery via callback function)
-- [ ] T061 [US4] Implement stream error handling in graph/model/bedrock/streaming.go (error events, partial response capture)
-- [ ] T062 [US4] Add SupportsStreaming() check in BedrockAdapter.ChatStream() for model capabilities
-- [ ] T063 [US4] Verify all T052-T056 tests now PASS
+- [X] T057 [US4] Create StreamChunk struct in graph/model/bedrock/streaming.go (Delta, ToolCallDelta, FinishReason, Metadata fields)
+- [X] T058 [US4] Implement ClaudeSchemaTranslator.TranslateStreamEvent() in graph/model/bedrock/streaming.go (handle 7 event types per streaming-event.json schema)
+- [X] T059 [US4] Implement BedrockAdapter.ChatStream() in graph/model/bedrock/streaming.go (InvokeModelWithResponseStream API, event channel processing)
+- [X] T060 [US4] Add streaming callback mechanism in graph/model/bedrock/streaming.go (token-by-token delivery via callback function)
+- [X] T061 [US4] Implement stream error handling in graph/model/bedrock/streaming.go (error events, partial response capture)
+- [X] T062 [US4] Add SupportsStreaming() check in BedrockAdapter.ChatStream() for model capabilities
+- [X] T063 [US4] Verify all T052-T056 tests now PASS (Integration test - requires AWS credentials)
 
 **Checkpoint**: Streaming support functional - US1 (basic chat), US2 (multi-region), US3 (fallback), US4 (streaming) all work
 
@@ -177,20 +177,20 @@ Single library project structure:
 
 ### Tests for User Story 5 (TDD - Write FIRST) ⚠️
 
-- [ ] T064 [P] [US5] Write failing test for ToolSpec translation in graph/model/bedrock/tools_test.go (LangGraph ToolSpec → Claude tool schema)
-- [ ] T065 [P] [US5] Write failing test for tool_use content block parsing in graph/model/bedrock/tools_test.go (Claude response → ToolCall[])
-- [ ] T066 [US5] Write failing test for tool result round-trip in graph/model/bedrock/tools_test.go (ToolCall → execute → feed back → final answer)
-- [ ] T067 [US5] Write failing test for non-tool-capable models in graph/model/bedrock/tools_test.go (Llama/Titan with tools should handle gracefully)
+- [X] T064 [P] [US5] Write failing test for ToolSpec translation in graph/model/bedrock/tools_test.go (LangGraph ToolSpec → Claude tool schema)
+- [X] T065 [P] [US5] Write failing test for tool_use content block parsing in graph/model/bedrock/tools_test.go (Claude response → ToolCall[])
+- [X] T066 [US5] Write failing test for tool result round-trip in graph/model/bedrock/tools_test.go (ToolCall → execute → feed back → final answer)
+- [X] T067 [US5] Write failing test for non-tool-capable models in graph/model/bedrock/tools_test.go (Llama/Titan with tools should handle gracefully)
 
 ### Implementation for User Story 5
 
-- [ ] T068 [US5] Implement translateToolSpecs() function in graph/model/bedrock/tools.go (ToolSpec[] → Claude tools[] schema)
-- [ ] T069 [US5] Update ClaudeSchemaTranslator.TranslateRequest() in graph/model/bedrock/schema.go to include tools field
-- [ ] T070 [US5] Implement parseToolUseCalls() function in graph/model/bedrock/tools.go (content[].tool_use → ToolCall[])
-- [ ] T071 [US5] Update ClaudeSchemaTranslator.TranslateResponse() in graph/model/bedrock/schema.go to populate ChatOut.ToolCalls
-- [ ] T072 [US5] Implement tool result formatting in graph/model/bedrock/tools.go (ToolCall result → tool_result content block)
-- [ ] T073 [US5] Add SupportsTools() check in BedrockAdapter.Chat() to validate tool usage by model family
-- [ ] T074 [US5] Verify all T064-T067 tests now PASS
+- [X] T068 [US5] Implement translateToolSpecs() function in graph/model/bedrock/tools.go (ToolSpec[] → Claude tools[] schema)
+- [X] T069 [US5] Update ClaudeSchemaTranslator.TranslateRequest() in graph/model/bedrock/schema.go to include tools field
+- [X] T070 [US5] Implement parseToolUseCalls() function in graph/model/bedrock/tools.go (content[].tool_use → ToolCall[])
+- [X] T071 [US5] Update ClaudeSchemaTranslator.TranslateResponse() in graph/model/bedrock/schema.go to populate ChatOut.ToolCalls
+- [X] T072 [US5] Implement tool result formatting in graph/model/bedrock/tools.go (ToolCall result → tool_result content block)
+- [X] T073 [US5] Add SupportsTools() check in BedrockAdapter.Chat() to validate tool usage by model family
+- [X] T074 [US5] Verify all T064-T067 tests now PASS
 
 **Checkpoint**: All P1 and P2 stories complete - basic (US1), multi-region (US2), streaming (US4), and tools (US5) functional
 
@@ -263,8 +263,8 @@ Single library project structure:
 - [ ] T107 Validate quickstart examples: go run examples/bedrock_quickstart/main.go (requires AWS setup)
 - [ ] T108 Run mcp-pr review_unstaged for pre-commit code review
 - [ ] T109 Re-index codebase with gocontext after implementation
-- [ ] T110 Update CLAUDE.md with Bedrock adapter usage examples if needed
-- [ ] T111 Verify SC-001 through SC-007 success criteria from spec.md
+- [X] T110 Update CLAUDE.md with Bedrock adapter usage examples if needed
+- [X] T111 Verify SC-001 through SC-007 success criteria from spec.md
 
 ---
 
