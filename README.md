@@ -18,7 +18,7 @@ LangGraph-Go enables you to build complex AI agent systems with:
 - **Deterministic replay** - Resume workflows from any checkpoint
 - **Type-safe state** - Strongly-typed state management using Go generics
 - **Flexible routing** - Conditional logic, loops, and parallel execution
-- **LLM integration** - Unified interface for OpenAI, Anthropic, Google, and local models
+- **LLM integration** - Unified interface for OpenAI, Anthropic, Google Gemini, AWS Bedrock, and Ollama
 - **Production-ready** - Built-in persistence, observability, and error handling
 
 ## Quick Start
@@ -97,6 +97,86 @@ go get github.com/dshills/langgraph-go
 ```
 
 **Note:** Since this is alpha software, we recommend pinning to a specific version in your `go.mod` to avoid unexpected breaking changes.
+
+## LLM Provider Support
+
+LangGraph-Go provides unified adapters for multiple LLM providers through the `ChatModel` interface:
+
+### AWS Bedrock
+
+Access Claude and Amazon Nova models through AWS Bedrock:
+
+```go
+import "github.com/dshills/langgraph-go/graph/model/bedrock"
+
+config := bedrock.Config{
+    Region:  "us-east-1",
+    ModelID: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+    MaxTokens: 4096,
+    FallbackRegions: []string{"us-west-2"}, // Multi-region failover
+}
+
+adapter, err := bedrock.NewAdapter(context.Background(), config)
+if err != nil {
+    log.Fatal(err)
+}
+
+messages := []model.Message{
+    {Role: model.RoleUser, Content: "Explain quantum computing"},
+}
+
+response, err := adapter.Chat(ctx, messages, nil)
+```
+
+**Features:**
+- Multi-region failover for high availability
+- Streaming responses via `ChatStream()`
+- Tool calling support
+- Inference profiles for cross-region routing
+- Support for Claude and Amazon Nova model families
+
+See [examples/bedrock_nova](./examples/bedrock_nova) for complete examples.
+
+### Ollama (Local Models)
+
+Run open-source models locally with Ollama:
+
+```go
+import "github.com/dshills/langgraph-go/graph/model/ollama"
+
+config := ollama.Config{
+    Endpoint: "http://localhost:11434", // Default local Ollama
+    Model:    "llama3.2",
+}
+
+adapter, err := ollama.NewChatModel(config)
+if err != nil {
+    log.Fatal(err)
+}
+
+messages := []model.Message{
+    {Role: model.RoleUser, Content: "What is Go programming?"},
+}
+
+response, err := adapter.Chat(ctx, messages, nil)
+```
+
+**Features:**
+- Local model execution (no API costs)
+- Support for all Ollama-compatible models
+- Deterministic generation with seed control
+- Tool calling support (model-dependent)
+- Custom temperature, TopP, and token limits
+
+See [examples/ollama](./examples/ollama) for complete examples.
+
+### Other Supported Providers
+
+- **OpenAI** - GPT-4, GPT-3.5-turbo (`graph/model/openai`)
+- **Anthropic** - Claude models via direct API (`graph/model/anthropic`)
+- **Google** - Gemini models (`graph/model/google`)
+
+All providers implement the same `ChatModel` interface, making it easy to switch between providers or use multiple providers in the same workflow.
 
 ## Core Concepts
 
@@ -228,6 +308,8 @@ See [Concurrency Guide](./docs/concurrency.md) and [Replay Guide](./docs/replay.
   │   ├── openai/    # OpenAI adapter
   │   ├── anthropic/ # Anthropic Claude adapter
   │   ├── google/    # Google Gemini adapter
+  │   ├── bedrock/   # AWS Bedrock adapter (Claude, Nova, etc.)
+  │   ├── ollama/    # Ollama local models adapter
   │   └── mock.go    # Mock for testing
   └── tool/          # Tool abstractions
       ├── tool.go    # Tool interface
@@ -241,7 +323,7 @@ See [Concurrency Guide](./docs/concurrency.md) and [Replay Guide](./docs/replay.
 - ✅ **Stateful Execution** - Checkpoint and resume workflows
 - ✅ **Conditional Routing** - Dynamic control flow based on state
 - ✅ **Parallel Execution** - Fan-out to concurrent nodes
-- ✅ **LLM Integration** - OpenAI, Anthropic, Google Gemini
+- ✅ **LLM Integration** - OpenAI, Anthropic, Google Gemini, AWS Bedrock, Ollama
 - ✅ **Tool Support** - HTTP tools and custom tool integration
 - ✅ **Type Safety** - Go generics for compile-time safety
 
@@ -270,6 +352,8 @@ See the [`examples/`](./examples) directory for complete, runnable examples:
 - **`routing/`** - Conditional routing based on state
 - **`parallel/`** - Parallel execution with fan-out/fan-in
 - **`llm/`** - Multi-provider LLM integration (OpenAI, Anthropic, Google)
+- **`bedrock_nova/`** - AWS Bedrock integration with Amazon Nova models
+- **`ollama/`** - Local LLM integration with Ollama
 - **`tools/`** - Tool calling and integration
 - **`data-pipeline/`** - Data processing pipeline
 - **`research-pipeline/`** - Multi-stage research workflow
