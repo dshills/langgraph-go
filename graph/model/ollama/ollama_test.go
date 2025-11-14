@@ -793,3 +793,688 @@ func TestChatModel_HTTPErrors(t *testing.T) {
 		})
 	}
 }
+
+// ============================================================================
+// Phase 5 (US3): Model Configuration Tests
+// ============================================================================
+
+// T041: Test for Seed parameter (deterministic generation)
+func TestChatModel_SeedParameter(t *testing.T) {
+	tests := []struct {
+		name     string
+		seed     *int
+		wantSeed bool
+	}{
+		{
+			name:     "with seed for deterministic generation",
+			seed:     IntPtr(42),
+			wantSeed: true,
+		},
+		{
+			name:     "without seed for non-deterministic generation",
+			seed:     nil,
+			wantSeed: false,
+		},
+		{
+			name:     "with zero seed",
+			seed:     IntPtr(0),
+			wantSeed: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Handler validates that seed is passed correctly
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				var req api.ChatRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					t.Fatalf("failed to decode request: %v", err)
+				}
+
+				// Verify seed in options
+				if tt.wantSeed {
+					seedVal, hasSeed := req.Options["seed"]
+					if !hasSeed {
+						t.Errorf("expected seed in options, but not found")
+					} else {
+						// Convert to int for comparison
+						seedInt, ok := seedVal.(float64)
+						if !ok {
+							t.Errorf("seed type = %T, want float64 (JSON number)", seedVal)
+						} else if int(seedInt) != *tt.seed {
+							t.Errorf("seed = %v, want %v", int(seedInt), *tt.seed)
+						}
+					}
+				} else {
+					if _, hasSeed := req.Options["seed"]; hasSeed {
+						t.Errorf("expected no seed in options, but found one")
+					}
+				}
+
+				// Return valid response
+				response := api.ChatResponse{
+					Model: "gpt-oss",
+					Message: api.Message{
+						Role:    "assistant",
+						Content: "Response",
+					},
+					Done: true,
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(response)
+			}
+
+			server := setupMockOllamaServer(t, handler)
+
+			config := Config{
+				Endpoint: server.URL,
+				Model:    "gpt-oss",
+				Seed:     tt.seed,
+			}
+			chatModel, err := NewChatModel(config)
+			if err != nil {
+				t.Fatalf("NewChatModel() error = %v", err)
+			}
+
+			messages := []model.Message{
+				{Role: model.RoleUser, Content: "Test"},
+			}
+
+			ctx := context.Background()
+			_, err = chatModel.Chat(ctx, messages, nil)
+			if err != nil {
+				t.Fatalf("Chat() unexpected error = %v", err)
+			}
+		})
+	}
+}
+
+// T042: Test for parameter transmission to Ollama API
+func TestChatModel_ParameterTransmission(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      Config
+		wantOptions map[string]interface{}
+	}{
+		{
+			name: "all parameters",
+			config: Config{
+				Model:       "gpt-oss",
+				Temperature: Float64Ptr(0.7),
+				TopP:        Float64Ptr(0.95),
+				NumPredict:  IntPtr(100),
+				Seed:        IntPtr(42),
+			},
+			wantOptions: map[string]interface{}{
+				"temperature": 0.7,
+				"top_p":       0.95,
+				"num_predict": 100.0, // JSON numbers are float64
+				"seed":        42.0,
+			},
+		},
+		{
+			name: "only temperature and topP",
+			config: Config{
+				Model:       "llama3.2",
+				Temperature: Float64Ptr(0.5),
+				TopP:        Float64Ptr(0.8),
+			},
+			wantOptions: map[string]interface{}{
+				"temperature": 0.5,
+				"top_p":       0.8,
+				"num_predict": -1.0, // Default
+			},
+		},
+		{
+			name: "zero temperature for deterministic output",
+			config: Config{
+				Model:       "mistral",
+				Temperature: Float64Ptr(0.0),
+				Seed:        IntPtr(123),
+			},
+			wantOptions: map[string]interface{}{
+				"temperature": 0.0,
+				"seed":        123.0,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Handler validates that all parameters are transmitted correctly
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				var req api.ChatRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					t.Fatalf("failed to decode request: %v", err)
+				}
+
+				// Verify all expected options are present
+				for key, expectedVal := range tt.wantOptions {
+					actualVal, exists := req.Options[key]
+					if !exists {
+						t.Errorf("expected option %q not found in request", key)
+						continue
+					}
+
+					// Compare as float64 (JSON numbers)
+					expectedFloat, _ := expectedVal.(float64)
+					actualFloat, ok := actualVal.(float64)
+					if !ok {
+						t.Errorf("option %q type = %T, want float64", key, actualVal)
+					} else if actualFloat != expectedFloat {
+						t.Errorf("option %q = %v, want %v", key, actualFloat, expectedFloat)
+					}
+				}
+
+				// Return valid response
+				response := api.ChatResponse{
+					Model: "gpt-oss",
+					Message: api.Message{
+						Role:    "assistant",
+						Content: "Response",
+					},
+					Done: true,
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(response)
+			}
+
+			server := setupMockOllamaServer(t, handler)
+			tt.config.Endpoint = server.URL
+
+			chatModel, err := NewChatModel(tt.config)
+			if err != nil {
+				t.Fatalf("NewChatModel() error = %v", err)
+			}
+
+			messages := []model.Message{
+				{Role: model.RoleUser, Content: "Test"},
+			}
+
+			ctx := context.Background()
+			_, err = chatModel.Chat(ctx, messages, nil)
+			if err != nil {
+				t.Fatalf("Chat() unexpected error = %v", err)
+			}
+		})
+	}
+}
+
+// T043: Test for model name in request
+func TestChatModel_ModelNameInRequest(t *testing.T) {
+	tests := []struct {
+		name      string
+		modelName string
+	}{
+		{
+			name:      "gpt-oss model",
+			modelName: "gpt-oss",
+		},
+		{
+			name:      "llama3.2 model",
+			modelName: "llama3.2",
+		},
+		{
+			name:      "mistral model",
+			modelName: "mistral",
+		},
+		{
+			name:      "codellama model",
+			modelName: "codellama",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Handler validates that model name is transmitted correctly
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				var req api.ChatRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					t.Fatalf("failed to decode request: %v", err)
+				}
+
+				// Verify model name
+				if req.Model != tt.modelName {
+					t.Errorf("request Model = %q, want %q", req.Model, tt.modelName)
+				}
+
+				// Return valid response
+				response := api.ChatResponse{
+					Model: tt.modelName,
+					Message: api.Message{
+						Role:    "assistant",
+						Content: "Response",
+					},
+					Done: true,
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(response)
+			}
+
+			server := setupMockOllamaServer(t, handler)
+
+			config := Config{
+				Endpoint: server.URL,
+				Model:    tt.modelName,
+			}
+			chatModel, err := NewChatModel(config)
+			if err != nil {
+				t.Fatalf("NewChatModel() error = %v", err)
+			}
+
+			messages := []model.Message{
+				{Role: model.RoleUser, Content: "Test"},
+			}
+
+			ctx := context.Background()
+			_, err = chatModel.Chat(ctx, messages, nil)
+			if err != nil {
+				t.Fatalf("Chat() unexpected error = %v", err)
+			}
+		})
+	}
+}
+
+// ============================================================================
+// Phase 6 (US4): Tool Calling Tests
+// ============================================================================
+
+// T049: Test for tool spec translation (model.ToolSpec → api.Tool)
+func TestChatModel_ToolSpecTranslation(t *testing.T) {
+	tests := []struct {
+		name      string
+		tools     []model.ToolSpec
+		wantTools int
+		validate  func(t *testing.T, reqTools []api.Tool)
+	}{
+		{
+			name: "single tool with simple schema",
+			tools: []model.ToolSpec{
+				{
+					Name:        "get_weather",
+					Description: "Get current weather",
+					Schema: map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"location": map[string]interface{}{
+								"type":        "string",
+								"description": "City name",
+							},
+						},
+						"required": []string{"location"},
+					},
+				},
+			},
+			wantTools: 1,
+			validate: func(t *testing.T, reqTools []api.Tool) {
+				if len(reqTools) != 1 {
+					t.Fatalf("expected 1 tool, got %d", len(reqTools))
+				}
+
+				tool := reqTools[0]
+				if tool.Type != "function" {
+					t.Errorf("tool.Type = %q, want 'function'", tool.Type)
+				}
+				if tool.Function.Name != "get_weather" {
+					t.Errorf("tool.Function.Name = %q, want 'get_weather'", tool.Function.Name)
+				}
+				if tool.Function.Description != "Get current weather" {
+					t.Errorf("tool.Function.Description = %q, want 'Get current weather'", tool.Function.Description)
+				}
+
+				// Verify parameters structure
+				params := tool.Function.Parameters
+				if params.Type != "object" {
+					t.Errorf("params.Type = %q, want 'object'", params.Type)
+				}
+				if len(params.Properties) != 1 {
+					t.Errorf("params.Properties length = %d, want 1", len(params.Properties))
+				}
+				if len(params.Required) != 1 || params.Required[0] != "location" {
+					t.Errorf("params.Required = %v, want ['location']", params.Required)
+				}
+			},
+		},
+		{
+			name: "multiple tools",
+			tools: []model.ToolSpec{
+				{
+					Name:        "search",
+					Description: "Search the web",
+					Schema: map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"query": map[string]interface{}{
+								"type": "string",
+							},
+						},
+					},
+				},
+				{
+					Name:        "calculate",
+					Description: "Calculate expression",
+					Schema: map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"expression": map[string]interface{}{
+								"type": "string",
+							},
+						},
+					},
+				},
+			},
+			wantTools: 2,
+			validate: func(t *testing.T, reqTools []api.Tool) {
+				if len(reqTools) != 2 {
+					t.Fatalf("expected 2 tools, got %d", len(reqTools))
+				}
+
+				toolNames := []string{reqTools[0].Function.Name, reqTools[1].Function.Name}
+				expectedNames := []string{"search", "calculate"}
+
+				for i, expectedName := range expectedNames {
+					if toolNames[i] != expectedName {
+						t.Errorf("tool[%d].Function.Name = %q, want %q", i, toolNames[i], expectedName)
+					}
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Handler validates tool translation
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				var req api.ChatRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					t.Fatalf("failed to decode request: %v", err)
+				}
+
+				// Validate tools
+				if len(req.Tools) != tt.wantTools {
+					t.Errorf("request has %d tools, want %d", len(req.Tools), tt.wantTools)
+				}
+
+				if tt.validate != nil {
+					tt.validate(t, req.Tools)
+				}
+
+				// Return valid response
+				response := api.ChatResponse{
+					Model: "gpt-oss",
+					Message: api.Message{
+						Role:    "assistant",
+						Content: "Response",
+					},
+					Done: true,
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(response)
+			}
+
+			server := setupMockOllamaServer(t, handler)
+
+			config := Config{
+				Endpoint: server.URL,
+				Model:    "gpt-oss",
+			}
+			chatModel, err := NewChatModel(config)
+			if err != nil {
+				t.Fatalf("NewChatModel() error = %v", err)
+			}
+
+			messages := []model.Message{
+				{Role: model.RoleUser, Content: "Test"},
+			}
+
+			ctx := context.Background()
+			_, err = chatModel.Chat(ctx, messages, tt.tools)
+			if err != nil {
+				t.Fatalf("Chat() unexpected error = %v", err)
+			}
+		})
+	}
+}
+
+// T051: Test for JSON schema pass-through in tool definitions
+func TestChatModel_ToolSchemaPassThrough(t *testing.T) {
+	tests := []struct {
+		name   string
+		schema map[string]interface{}
+	}{
+		{
+			name: "schema with enum",
+			schema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"unit": map[string]interface{}{
+						"type":        "string",
+						"description": "Temperature unit",
+						"enum":        []interface{}{"celsius", "fahrenheit"},
+					},
+				},
+			},
+		},
+		{
+			name: "schema with array type",
+			schema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"tags": map[string]interface{}{
+						"type": "array",
+						"items": map[string]interface{}{
+							"type": "string",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "schema with $defs",
+			schema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"address": map[string]interface{}{
+						"type": "object",
+					},
+				},
+				"$defs": map[string]interface{}{
+					"Address": map[string]interface{}{
+						"type": "object",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tools := []model.ToolSpec{
+				{
+					Name:        "test_tool",
+					Description: "Test tool",
+					Schema:      tt.schema,
+				},
+			}
+
+			// Handler validates schema pass-through
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				var req api.ChatRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					t.Fatalf("failed to decode request: %v", err)
+				}
+
+				if len(req.Tools) != 1 {
+					t.Fatalf("expected 1 tool, got %d", len(req.Tools))
+				}
+
+				tool := req.Tools[0]
+				params := tool.Function.Parameters
+
+				// Verify schema type preserved
+				if schemaType, ok := tt.schema["type"].(string); ok {
+					if params.Type != schemaType {
+						t.Errorf("params.Type = %q, want %q", params.Type, schemaType)
+					}
+				}
+
+				// Verify $defs passed through
+				if _, hasDefs := tt.schema["$defs"]; hasDefs {
+					if params.Defs == nil {
+						t.Error("expected $defs in params, but not found")
+					}
+				}
+
+				// Return valid response
+				response := api.ChatResponse{
+					Model: "gpt-oss",
+					Message: api.Message{
+						Role:    "assistant",
+						Content: "Response",
+					},
+					Done: true,
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(response)
+			}
+
+			server := setupMockOllamaServer(t, handler)
+
+			config := Config{
+				Endpoint: server.URL,
+				Model:    "gpt-oss",
+			}
+			chatModel, err := NewChatModel(config)
+			if err != nil {
+				t.Fatalf("NewChatModel() error = %v", err)
+			}
+
+			messages := []model.Message{
+				{Role: model.RoleUser, Content: "Test"},
+			}
+
+			ctx := context.Background()
+			_, err = chatModel.Chat(ctx, messages, tools)
+			if err != nil {
+				t.Fatalf("Chat() unexpected error = %v", err)
+			}
+		})
+	}
+}
+
+// T053: Test for tool call with invalid JSON arguments (error handling)
+func TestChatModel_ToolCallInvalidJSON(t *testing.T) {
+	// Note: The Ollama API returns structured data, so we test graceful handling
+	// of missing or nil arguments rather than malformed JSON
+	mockResponse := api.ChatResponse{
+		Model: "gpt-oss",
+		Message: api.Message{
+			Role:    "assistant",
+			Content: "Let me help with that.",
+			ToolCalls: []api.ToolCall{
+				{
+					Function: api.ToolCallFunction{
+						Name:      "get_weather",
+						Arguments: nil, // No arguments provided
+					},
+				},
+			},
+		},
+		Done: true,
+	}
+
+	server := setupMockOllamaServer(t, mockOllamaHandler(mockResponse))
+
+	config := Config{
+		Endpoint: server.URL,
+		Model:    "gpt-oss",
+	}
+	chatModel, err := NewChatModel(config)
+	if err != nil {
+		t.Fatalf("NewChatModel() error = %v", err)
+	}
+
+	messages := []model.Message{
+		{Role: model.RoleUser, Content: "What's the weather?"},
+	}
+
+	ctx := context.Background()
+	out, err := chatModel.Chat(ctx, messages, nil)
+	if err != nil {
+		t.Fatalf("Chat() unexpected error = %v", err)
+	}
+
+	// Should still parse tool call even with nil/empty arguments
+	if len(out.ToolCalls) != 1 {
+		t.Errorf("expected 1 tool call, got %d", len(out.ToolCalls))
+	}
+
+	if out.ToolCalls[0].Name != "get_weather" {
+		t.Errorf("ToolCall.Name = %q, want 'get_weather'", out.ToolCalls[0].Name)
+	}
+
+	// Input should be empty map, not nil
+	if out.ToolCalls[0].Input == nil {
+		t.Error("ToolCall.Input is nil, want empty map")
+	}
+}
+
+// T054: Test for model without tool support (graceful degradation)
+func TestChatModel_NoToolSupport(t *testing.T) {
+	// Simulates a model that doesn't support tools by returning regular text response
+	mockResponse := api.ChatResponse{
+		Model: "gpt-oss",
+		Message: api.Message{
+			Role:    "assistant",
+			Content: "I can help with the weather, but I need more information.",
+			// No ToolCalls in response
+		},
+		Done: true,
+	}
+
+	server := setupMockOllamaServer(t, mockOllamaHandler(mockResponse))
+
+	config := Config{
+		Endpoint: server.URL,
+		Model:    "gpt-oss",
+	}
+	chatModel, err := NewChatModel(config)
+	if err != nil {
+		t.Fatalf("NewChatModel() error = %v", err)
+	}
+
+	// Provide tools even though model may not support them
+	tools := []model.ToolSpec{
+		{
+			Name:        "get_weather",
+			Description: "Get weather",
+			Schema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"location": map[string]interface{}{
+						"type": "string",
+					},
+				},
+			},
+		},
+	}
+
+	messages := []model.Message{
+		{Role: model.RoleUser, Content: "What's the weather in Paris?"},
+	}
+
+	ctx := context.Background()
+	out, err := chatModel.Chat(ctx, messages, tools)
+	if err != nil {
+		t.Fatalf("Chat() unexpected error = %v", err)
+	}
+
+	// Should gracefully degrade to text response
+	if out.Text == "" {
+		t.Error("expected text response, got empty")
+	}
+
+	if len(out.ToolCalls) != 0 {
+		t.Errorf("expected 0 tool calls (graceful degradation), got %d", len(out.ToolCalls))
+	}
+}

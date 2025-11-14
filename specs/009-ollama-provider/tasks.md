@@ -120,12 +120,12 @@ Example code in `examples/ollama/` directory.
 
 ### Tests for User Story 3 (TDD - Write First)
 
-- [ ] T038 [P] [US3] Write test for Temperature validation (must be in [0.0, 2.0]) in `graph/model/ollama/config_test.go`
-- [ ] T039 [P] [US3] Write test for TopP validation (must be in [0.0, 1.0]) in `graph/model/ollama/config_test.go`
-- [ ] T040 [P] [US3] Write test for NumPredict validation (must be >= -1) in `graph/model/ollama/config_test.go`
-- [ ] T041 [P] [US3] Write test for Seed parameter (deterministic generation) in `graph/model/ollama/ollama_test.go`
-- [ ] T042 [P] [US3] Write test for parameter transmission to Ollama API in `graph/model/ollama/ollama_test.go`
-- [ ] T043 [P] [US3] Write test for model name in request in `graph/model/ollama/ollama_test.go`
+- [X] T038 [P] [US3] Write test for Temperature validation (must be in [0.0, 2.0]) in `graph/model/ollama/config_test.go`
+- [X] T039 [P] [US3] Write test for TopP validation (must be in [0.0, 1.0]) in `graph/model/ollama/config_test.go`
+- [X] T040 [P] [US3] Write test for NumPredict validation (must be >= -1) in `graph/model/ollama/config_test.go`
+- [X] T041 [P] [US3] Write test for Seed parameter (deterministic generation) in `graph/model/ollama/ollama_test.go`
+- [X] T042 [P] [US3] Write test for parameter transmission to Ollama API in `graph/model/ollama/ollama_test.go`
+- [X] T043 [P] [US3] Write test for model name in request in `graph/model/ollama/ollama_test.go`
 
 ### Implementation for User Story 3
 
@@ -147,12 +147,12 @@ Example code in `examples/ollama/` directory.
 
 ### Tests for User Story 4 (TDD - Write First)
 
-- [ ] T049 [P] [US4] Write test for tool spec translation (model.ToolSpec → api.Tool) in `graph/model/ollama/ollama_test.go`
-- [ ] T050 [P] [US4] Write test for tool call parsing (api.ToolCall → model.ToolCall) in `graph/model/ollama/ollama_test.go`
-- [ ] T051 [P] [US4] Write test for JSON schema pass-through in tool definitions in `graph/model/ollama/ollama_test.go`
-- [ ] T052 [P] [US4] Write test for multiple tool calls in single response in `graph/model/ollama/ollama_test.go`
-- [ ] T053 [P] [US4] Write test for tool call with invalid JSON arguments (error handling) in `graph/model/ollama/ollama_test.go`
-- [ ] T054 [P] [US4] Write test for model without tool support (graceful degradation) in `graph/model/ollama/ollama_test.go`
+- [X] T049 [P] [US4] Write test for tool spec translation (model.ToolSpec → api.Tool) in `graph/model/ollama/ollama_test.go`
+- [X] T050 [P] [US4] Write test for tool call parsing (api.ToolCall → model.ToolCall) in `graph/model/ollama/ollama_test.go`
+- [X] T051 [P] [US4] Write test for JSON schema pass-through in tool definitions in `graph/model/ollama/ollama_test.go`
+- [X] T052 [P] [US4] Write test for multiple tool calls in single response in `graph/model/ollama/ollama_test.go`
+- [X] T053 [P] [US4] Write test for tool call with invalid JSON arguments (error handling) in `graph/model/ollama/ollama_test.go`
+- [X] T054 [P] [US4] Write test for model without tool support (graceful degradation) in `graph/model/ollama/ollama_test.go`
 
 ### Implementation for User Story 4
 
