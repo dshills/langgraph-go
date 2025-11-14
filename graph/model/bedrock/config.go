@@ -1,4 +1,3 @@
-// Package bedrock provides AWS Bedrock LLM integration for LangGraph-Go.
 package bedrock
 
 import (
