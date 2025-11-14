@@ -106,7 +106,7 @@ func TestWrapAWSError(t *testing.T) {
 				t.Errorf("wrapAWSError() Message = %q, want to contain %q", bedrockErr.Message, tt.wantMsg)
 			}
 
-			if bedrockErr.OriginalError != tt.awsErr {
+			if !errors.Is(bedrockErr.OriginalError, tt.awsErr) {
 				t.Errorf("wrapAWSError() OriginalError = %v, want %v", bedrockErr.OriginalError, tt.awsErr)
 			}
 		})

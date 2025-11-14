@@ -2,6 +2,7 @@ package bedrock
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -105,13 +106,13 @@ func NewAdapter(ctx context.Context, config Config) (*Adapter, error) {
 		translator = ClaudeSchemaTranslator{}
 	case ModelFamilyLlama:
 		// Llama translator implementation in Phase 5
-		return nil, fmt.Errorf("Llama model family not yet implemented")
+		return nil, fmt.Errorf("llama model family not yet implemented")
 	case ModelFamilyTitan:
 		// Titan translator implementation in Phase 5
-		return nil, fmt.Errorf("Titan model family not yet implemented")
+		return nil, fmt.Errorf("titan model family not yet implemented")
 	case ModelFamilyMistral:
 		// Mistral translator implementation in Phase 5
-		return nil, fmt.Errorf("Mistral model family not yet implemented")
+		return nil, fmt.Errorf("mistral model family not yet implemented")
 	default:
 		return nil, fmt.Errorf("unsupported model family: %v", family)
 	}
@@ -197,7 +198,7 @@ func (a *Adapter) invokeModelWithRegionalFallback(ctx context.Context, requestBo
 	regions = append(regions, a.config.FallbackRegions...)
 
 	var lastErr error
-	var attemptedRegions []string
+	attemptedRegions := make([]string, 0, len(regions))
 
 	for _, region := range regions {
 		attemptedRegions = append(attemptedRegions, region)
@@ -229,19 +230,16 @@ func (a *Adapter) invokeModelWithRegionalFallback(ctx context.Context, requestBo
 		response, err := a.invokeModelInRegion(ctx, client, region, requestBody)
 		if err == nil {
 			// Success! Return response and region used
-			if region != a.config.Region {
-				// Log successful fallback to secondary region (T050)
-				// In production, this would emit telemetry event
-				// For now, we just track it in error context
-			}
+			// Note: region fallback telemetry should be emitted here (T050)
+			// In production, emit event if region != a.config.Region
 			return response, region, nil
 		}
 
 		lastErr = err
 
 		// Check if error is retryable
-		bedrockErr, ok := err.(*BedrockError)
-		if !ok || !bedrockErr.Retryable {
+		var bedrockErr *BedrockError
+		if !errors.As(err, &bedrockErr) || !bedrockErr.Retryable {
 			// Non-retryable error, don't try other regions
 			return nil, "", err
 		}
@@ -328,64 +326,6 @@ func (a *Adapter) invokeModelInRegion(ctx context.Context, client *bedrockruntim
 		}
 
 		// Calculate backoff delay: baseDelay * 2^attempt
-		baseDelay := 100 // milliseconds
-		delay := baseDelay * (1 << attempt)
-		if delay > 5000 {
-			delay = 5000 // Cap at 5 seconds
-		}
-
-		// Wait before retry (respects context cancellation)
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-awaitDelay(ctx, delay):
-			// Continue to next retry
-		}
-	}
-
-	return nil, lastErr
-}
-
-// invokeModelWithRetry calls Bedrock InvokeModel API with exponential backoff retry logic.
-// DEPRECATED: Use invokeModelWithRegionalFallback instead for regional failover support.
-func (a *Adapter) invokeModelWithRetry(ctx context.Context, requestBody []byte) ([]byte, error) {
-	maxRetries := a.config.MaxRetries
-	if maxRetries == 0 {
-		maxRetries = 3 // Default retries
-	}
-
-	var lastErr error
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		// Check context cancellation
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
-		// Invoke Bedrock model
-		output, err := a.client.InvokeModel(ctx, &bedrockruntime.InvokeModelInput{
-			ModelId:     aws.String(a.config.ModelID),
-			Body:        requestBody,
-			ContentType: aws.String("application/json"),
-			Accept:      aws.String("application/json"),
-		})
-
-		if err == nil {
-			return output.Body, nil
-		}
-
-		// Wrap error
-		bedrockErr := wrapAWSError(err, a.config.Region)
-		lastErr = bedrockErr
-
-		// Check if error is retryable
-		if !bedrockErr.Retryable || attempt == maxRetries {
-			return nil, bedrockErr
-		}
-
-		// Calculate backoff delay: baseDelay * 2^attempt
-		// Using exponential backoff with jitter
 		baseDelay := 100 // milliseconds
 		delay := baseDelay * (1 << attempt)
 		if delay > 5000 {

@@ -359,7 +359,7 @@ func joinStrings(parts []string, sep string) string {
 }
 
 // TranslateStreamEvent parses Claude streaming events.
-func (t ClaudeSchemaTranslator) TranslateStreamEvent(event json.RawMessage) (StreamChunk, error) {
+func (t ClaudeSchemaTranslator) TranslateStreamEvent(_ json.RawMessage) (StreamChunk, error) {
 	// Implementation in Phase 6 (User Story 4)
 	return StreamChunk{}, nil
 }
