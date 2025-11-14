@@ -202,6 +202,11 @@ type ChatOut struct {
 	// ToolCalls contains tools the LLM wants to invoke.
 	// Empty if the LLM provided a direct text response.
 	ToolCalls []ToolCall
+
+	// Meta contains provider-specific metadata about the response.
+	// Optional. May include: request_id, model, region, stop_reason, token counts, etc.
+	// Structure varies by provider - use type assertions to access specific fields.
+	Meta map[string]interface{}
 }
 
 // ToolCall represents a request from the LLM to invoke a specific tool.

@@ -200,6 +200,112 @@ The project depends on official SDK clients:
 
 Adapters implement the `ChatModel` interface to provide a unified API across providers.
 
+## AWS Bedrock LLM Integration
+
+The AWS Bedrock adapter provides seamless integration with AWS Bedrock's LLM offerings, including Claude models via Amazon Bedrock. The adapter supports standard chat operations, streaming responses, multi-region failover, and tool calling.
+
+### Basic Setup Example
+
+```go
+import "github.com/dshills/langgraph-go/graph/model/bedrock"
+
+config := bedrock.Config{
+    Region:  "us-east-1",
+    ModelID: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",  // Use inference profile
+    MaxTokens: 4096,
+}
+
+adapter, err := bedrock.NewAdapter(context.Background(), config)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### Model Access Requirements
+
+**Important**: AWS Bedrock requires accounts to request model access before invoking models:
+
+1. **Request Model Access**: Navigate to AWS Bedrock console → Model access → Request access
+2. **Fill Use Case Form**: For Claude models, complete the Anthropic use case details form
+3. **Wait for Approval**: Model access typically granted within 15 minutes
+
+Without model access, API calls will fail with `ResourceNotFoundException`.
+
+### Inference Profiles
+
+AWS Bedrock supports two model ID formats:
+
+**Direct Model ID** (region-specific):
+```go
+ModelID: "anthropic.claude-3-5-sonnet-20241022-v2:0"
+```
+
+**Inference Profile** (cross-region routing, recommended):
+```go
+ModelID: "us.anthropic.claude-3-5-sonnet-20241022-v2:0"  // US regions
+ModelID: "eu.anthropic.claude-3-5-sonnet-20241022-v2:0"  // EU regions
+```
+
+Inference profiles enable cross-region request routing and are **required** in some AWS accounts for on-demand throughput. The adapter automatically detects both formats.
+
+### Multi-Region Failover
+
+The adapter supports automatic failover to backup regions if the primary region is unavailable:
+
+```go
+config := bedrock.Config{
+    Region: "us-east-1",
+    FallbackRegions: []string{"us-west-2", "eu-west-1"},
+    ModelID: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+}
+```
+
+When a request fails in the primary region with a retryable error (e.g., throttling, service unavailable), the adapter automatically retries the request in the next available fallback region.
+
+### Streaming Responses
+
+Enable streaming to receive tokens as they are generated:
+
+```go
+callback := func(chunk bedrock.StreamChunk) error {
+    fmt.Print(chunk.Delta)  // Print tokens as they arrive
+    return nil
+}
+
+response, err := adapter.ChatStream(ctx, messages, nil, callback)
+```
+
+The callback function is invoked for each token chunk. Return an error from the callback to abort streaming early.
+
+### Tool Calling
+
+The adapter supports Bedrock's tool calling capabilities:
+
+```go
+tools := []model.ToolSpec{
+    {
+        Name: "get_weather",
+        Description: "Get current weather",
+        Schema: map[string]interface{}{
+            "type": "object",
+            "properties": map[string]interface{}{
+                "location": map[string]interface{}{
+                    "type": "string",
+                },
+            },
+            "required": []string{"location"},
+        },
+    },
+}
+
+response, err := adapter.Chat(ctx, messages, tools)
+for _, call := range response.ToolCalls {
+    fmt.Printf("Tool: %s, Input: %v\n", call.Name, call.Input)
+}
+```
+
+Tool calls are returned in the `ChatOut.ToolCalls` slice with parsed `Name` and `Input` fields.
+
 ## Concurrency Model
 
 Nodes can return multiple next hops via `Next{Many: []string{...}}` to enable parallel execution. Branches execute concurrently with isolated state copies and merge at a join node using the reducer function.
@@ -630,6 +736,8 @@ engine := New(
 - Store interface supports in-memory (testing) and MySQL/Aurora (production) implementations (002-concurrency-spec)
 - Go 1.21+ (requires generics, math/rand, sync/atomic) (005-critical-bug-fixes)
 - N/A (bug fixes in execution engine, not persistence layer) (005-critical-bug-fixes)
+- Go 1.21+ (requires generics support for ChatModel interface compatibility) (008-bedrock-llm-support)
+- N/A (adapter is stateless, uses existing Engine state management) (008-bedrock-llm-support)
 
 ## Recent Changes
 - 002-concurrency-spec: Added Go 1.21+ (requires generics support) + Go standard library only (core framework), optional adapters for OpenTelemetry SDK, MySQL driver

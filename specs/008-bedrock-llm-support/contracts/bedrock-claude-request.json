@@ -1,0 +1,192 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Bedrock Claude Request Schema",
+  "description": "Request schema for Anthropic Claude models via AWS Bedrock InvokeModel API",
+  "type": "object",
+  "required": ["anthropic_version", "max_tokens", "messages"],
+  "properties": {
+    "anthropic_version": {
+      "type": "string",
+      "description": "Anthropic API version for Bedrock",
+      "enum": ["bedrock-2023-05-31"],
+      "default": "bedrock-2023-05-31"
+    },
+    "max_tokens": {
+      "type": "integer",
+      "description": "Maximum tokens to generate",
+      "minimum": 1,
+      "maximum": 200000,
+      "default": 4096
+    },
+    "messages": {
+      "type": "array",
+      "description": "Conversation history",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["role", "content"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["user", "assistant"],
+            "description": "Message role (user or assistant, system goes in separate field)"
+          },
+          "content": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Text content"
+              },
+              {
+                "type": "array",
+                "description": "Multimodal content blocks",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": ["type", "text"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "text"
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": ["type", "source"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "image"
+                        },
+                        "source": {
+                          "type": "object",
+                          "required": ["type", "media_type", "data"],
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "const": "base64"
+                            },
+                            "media_type": {
+                              "type": "string",
+                              "enum": ["image/jpeg", "image/png", "image/gif", "image/webp"]
+                            },
+                            "data": {
+                              "type": "string",
+                              "description": "Base64-encoded image data"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": ["type", "tool_use_id", "content"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "tool_result"
+                        },
+                        "tool_use_id": {
+                          "type": "string",
+                          "description": "ID from previous tool_use content block"
+                        },
+                        "content": {
+                          "type": "string",
+                          "description": "Tool execution result"
+                        },
+                        "is_error": {
+                          "type": "boolean",
+                          "description": "Whether tool execution failed",
+                          "default": false
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "system": {
+      "type": "string",
+      "description": "System prompt (optional)"
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Sampling temperature",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 1.0
+    },
+    "top_p": {
+      "type": "number",
+      "description": "Nucleus sampling parameter",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "top_k": {
+      "type": "integer",
+      "description": "Top-k sampling parameter",
+      "minimum": 0,
+      "maximum": 500
+    },
+    "stop_sequences": {
+      "type": "array",
+      "description": "Sequences that stop generation",
+      "maxItems": 4,
+      "items": {
+        "type": "string"
+      }
+    },
+    "tools": {
+      "type": "array",
+      "description": "Tool/function definitions for tool calling",
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "input_schema"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Tool name (letters, numbers, underscores, hyphens only)",
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "maxLength": 64
+          },
+          "description": {
+            "type": "string",
+            "description": "Tool description for model",
+            "maxLength": 1024
+          },
+          "input_schema": {
+            "type": "object",
+            "description": "JSON Schema for tool parameters",
+            "required": ["type", "properties"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "object"
+              },
+              "properties": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "required": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,253 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Bedrock Streaming Event Schema",
+  "description": "Event schema for AWS Bedrock InvokeModelWithResponseStream API (Claude streaming format)",
+  "oneOf": [
+    {
+      "type": "object",
+      "title": "Content Block Start Event",
+      "required": ["type", "index", "content_block"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "content_block_start"
+        },
+        "index": {
+          "type": "integer",
+          "description": "Index of content block in response"
+        },
+        "content_block": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["type", "text"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "text"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Initial text (usually empty)"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": ["type", "id", "name", "input"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "tool_use"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Tool use identifier"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Tool name"
+                },
+                "input": {
+                  "type": "object",
+                  "description": "Tool input (initially empty, populated in deltas)"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "title": "Content Block Delta Event",
+      "required": ["type", "index", "delta"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "content_block_delta"
+        },
+        "index": {
+          "type": "integer",
+          "description": "Index of content block being updated"
+        },
+        "delta": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["type", "text"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "text_delta"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Incremental text content"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": ["type", "partial_json"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "input_json_delta"
+                },
+                "partial_json": {
+                  "type": "string",
+                  "description": "Incremental JSON for tool input"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "title": "Content Block Stop Event",
+      "required": ["type", "index"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "content_block_stop"
+        },
+        "index": {
+          "type": "integer",
+          "description": "Index of content block that completed"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "title": "Message Start Event",
+      "required": ["type", "message"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "message_start"
+        },
+        "message": {
+          "type": "object",
+          "required": ["id", "type", "role", "content", "model", "usage"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Message identifier"
+            },
+            "type": {
+              "type": "string",
+              "const": "message"
+            },
+            "role": {
+              "type": "string",
+              "const": "assistant"
+            },
+            "content": {
+              "type": "array",
+              "description": "Initially empty content array"
+            },
+            "model": {
+              "type": "string",
+              "description": "Model identifier"
+            },
+            "usage": {
+              "type": "object",
+              "required": ["input_tokens", "output_tokens"],
+              "properties": {
+                "input_tokens": {
+                  "type": "integer"
+                },
+                "output_tokens": {
+                  "type": "integer",
+                  "description": "Initially 0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "title": "Message Delta Event",
+      "required": ["type", "delta", "usage"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "message_delta"
+        },
+        "delta": {
+          "type": "object",
+          "required": ["stop_reason"],
+          "properties": {
+            "stop_reason": {
+              "type": "string",
+              "enum": ["end_turn", "max_tokens", "stop_sequence", "tool_use"],
+              "description": "Reason generation stopped"
+            },
+            "stop_sequence": {
+              "type": "string",
+              "description": "Stop sequence that triggered completion (if applicable)"
+            }
+          }
+        },
+        "usage": {
+          "type": "object",
+          "required": ["output_tokens"],
+          "properties": {
+            "output_tokens": {
+              "type": "integer",
+              "description": "Total output tokens generated"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "title": "Message Stop Event",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "message_stop"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "title": "Error Event",
+      "required": ["type", "error"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "error"
+        },
+        "error": {
+          "type": "object",
+          "required": ["type", "message"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Error type (e.g., overloaded_error, api_error)"
+            },
+            "message": {
+              "type": "string",
+              "description": "Human-readable error message"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Events are streamed in sequence: message_start → content_block_start → content_block_delta (multiple) → content_block_stop → message_delta → message_stop",
+    "For tool calls, delta events contain partial_json that must be accumulated and parsed",
+    "Error events can occur at any point and terminate the stream",
+    "Llama models use a different streaming format (simpler, single generation field)",
+    "Titan models use a different streaming format (outputText chunks)"
+  ]
+}

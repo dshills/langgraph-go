@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Bedrock Titan Request Schema",
+  "description": "Request schema for Amazon Titan Text models via AWS Bedrock InvokeModel API",
+  "type": "object",
+  "required": ["inputText"],
+  "properties": {
+    "inputText": {
+      "type": "string",
+      "description": "Input text for generation. Conversation history should be formatted as: User: {msg}\\nBot: {msg}",
+      "minLength": 1,
+      "maxLength": 25000
+    },
+    "textGenerationConfig": {
+      "type": "object",
+      "description": "Text generation configuration",
+      "properties": {
+        "maxTokenCount": {
+          "type": "integer",
+          "description": "Maximum tokens to generate",
+          "minimum": 1,
+          "maximum": 8192,
+          "default": 512
+        },
+        "temperature": {
+          "type": "number",
+          "description": "Sampling temperature",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.7
+        },
+        "topP": {
+          "type": "number",
+          "description": "Nucleus sampling parameter",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.9
+        },
+        "stopSequences": {
+          "type": "array",
+          "description": "Sequences that stop generation",
+          "maxItems": 4,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "notes": [
+    "Titan models do NOT support tool calling",
+    "Titan models do NOT support structured conversation history (format as single text string)",
+    "Titan Text Premier supports up to 25,000 characters of input text"
+  ]
+}
