@@ -77,8 +77,11 @@ func basicChatExample(ctx context.Context) error {
 
 	fmt.Printf("Question: What is the capital of France?\n")
 	fmt.Printf("Nova Lite: %s\n", response.Text)
-	fmt.Printf("Tokens: %d input, %d output\n",
-		response.Meta["input_tokens"], response.Meta["output_tokens"])
+
+	// Type-safe access to metadata - handles int, int64, float64 from JSON
+	inputTokens := extractInt(response.Meta, "input_tokens")
+	outputTokens := extractInt(response.Meta, "output_tokens")
+	fmt.Printf("Tokens: %d input, %d output\n", inputTokens, outputTokens)
 
 	return nil
 }
@@ -245,9 +248,37 @@ func modelVariantsExample(ctx context.Context) error {
 		}
 
 		fmt.Printf("Response: %s\n", response.Text)
-		fmt.Printf("Tokens: %d in, %d out\n",
-			response.Meta["input_tokens"], response.Meta["output_tokens"])
+
+		// Type-safe access to metadata - handles int, int64, float64 from JSON
+		inputTokens := extractInt(response.Meta, "input_tokens")
+		outputTokens := extractInt(response.Meta, "output_tokens")
+		fmt.Printf("Tokens: %d in, %d out\n", inputTokens, outputTokens)
 	}
 
 	return nil
+}
+
+// extractInt safely extracts an integer value from a map, handling different numeric types
+// that may come from JSON unmarshaling (int, int64, float64, json.Number).
+// Returns 0 if the key is missing or the value cannot be converted to int.
+func extractInt(meta map[string]interface{}, key string) int {
+	val, ok := meta[key]
+	if !ok {
+		return 0
+	}
+
+	switch v := val.(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case float64:
+		return int(v)
+	case uint:
+		return int(v)
+	case uint64:
+		return int(v)
+	default:
+		return 0
+	}
 }

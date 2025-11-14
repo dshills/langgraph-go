@@ -170,45 +170,49 @@ func detectModelFamily(modelID string) ModelFamily {
 	}
 
 	// Check prefixes for direct model IDs
-	if hasPrefix(modelID, "anthropic.claude") {
+	if strings.HasPrefix(modelID, "anthropic.claude") {
 		return ModelFamilyClaude
 	}
-	if hasPrefix(modelID, "meta.llama") {
+	if strings.HasPrefix(modelID, "meta.llama") {
 		return ModelFamilyLlama
 	}
-	if hasPrefix(modelID, "amazon.nova") {
+	if strings.HasPrefix(modelID, "amazon.nova") {
 		return ModelFamilyNova
 	}
-	if hasPrefix(modelID, "amazon.titan") {
+	if strings.HasPrefix(modelID, "amazon.titan") {
 		return ModelFamilyTitan
 	}
-	if hasPrefix(modelID, "mistral.") {
+	if strings.HasPrefix(modelID, "mistral.") {
 		return ModelFamilyMistral
 	}
 
-	// Check for inference profile format: us.anthropic.claude-*, eu.anthropic.claude-*, etc.
-	if strings.Contains(modelID, "anthropic.claude") {
-		return ModelFamilyClaude
-	}
-	if strings.Contains(modelID, "meta.llama") {
-		return ModelFamilyLlama
-	}
-	if strings.Contains(modelID, "amazon.nova") {
-		return ModelFamilyNova
-	}
-	if strings.Contains(modelID, "amazon.titan") {
-		return ModelFamilyTitan
-	}
-	if strings.Contains(modelID, "mistral.") {
-		return ModelFamilyMistral
+	// Check for inference profile format: region.provider.model
+	// Parse model ID components to avoid false positives
+	parts := strings.Split(modelID, ".")
+	if len(parts) >= 3 {
+		// Format: <region>.<provider>.<model>
+		// e.g., "us.anthropic.claude-3-sonnet-20240229-v1:0"
+		provider := parts[1]
+		modelName := parts[2]
+
+		if provider == "anthropic" && strings.HasPrefix(modelName, "claude") {
+			return ModelFamilyClaude
+		}
+		if provider == "meta" && strings.HasPrefix(modelName, "llama") {
+			return ModelFamilyLlama
+		}
+		if provider == "amazon" && strings.HasPrefix(modelName, "nova") {
+			return ModelFamilyNova
+		}
+		if provider == "amazon" && strings.HasPrefix(modelName, "titan") {
+			return ModelFamilyTitan
+		}
+		if provider == "mistral" {
+			return ModelFamilyMistral
+		}
 	}
 
 	return ModelFamilyUnknown
-}
-
-// hasPrefix is a helper to check string prefix.
-func hasPrefix(s, prefix string) bool {
-	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
 }
 
 // ClaudeSchemaTranslator implements SchemaTranslator for Anthropic Claude models.
@@ -478,6 +482,9 @@ func (t ClaudeSchemaTranslator) TranslateStreamEvent(event json.RawMessage) (Str
 				Index:       blockDelta.Index,
 				PartialJSON: blockDelta.Delta.PartialJSON,
 			}
+		default:
+			// Unknown delta type - return error to surface unexpected API changes
+			return StreamChunk{}, fmt.Errorf("unknown delta type: %s", blockDelta.Delta.Type)
 		}
 
 	case "content_block_stop":

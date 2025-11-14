@@ -109,10 +109,13 @@ func (a *Adapter) ChatStream(ctx context.Context, messages []model.Message, tool
 	// Process event stream
 	stream := output.GetStream()
 	defer func() {
-		if err := stream.Close(); err != nil {
-			// Log stream close error (non-fatal)
-			_ = err
-		}
+		// Close stream on exit. Errors are intentionally ignored as they are typically
+		// non-fatal resource cleanup issues. The response is already complete by this point.
+		// In production environments, consider using structured logging to track patterns:
+		//   if closeErr := stream.Close(); closeErr != nil {
+		//       log.Printf("stream close error: %v", closeErr)
+		//   }
+		_ = stream.Close()
 	}()
 
 	// Accumulate response chunks

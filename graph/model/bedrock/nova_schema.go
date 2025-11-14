@@ -233,9 +233,10 @@ func (t NovaSchemaTranslator) TranslateStreamEvent(rawEvent json.RawMessage) (St
 	return chunk, nil
 }
 
-// SupportsStreaming returns true as Nova models support streaming
+// SupportsStreaming returns false as Nova streaming is not yet implemented.
+// TODO: Implement Nova streaming support and verify event format against AWS API documentation.
 func (t NovaSchemaTranslator) SupportsStreaming() bool {
-	return true
+	return false
 }
 
 // SupportsTools returns true as Nova models support tool calling
