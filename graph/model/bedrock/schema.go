@@ -359,9 +359,139 @@ func joinStrings(parts []string, sep string) string {
 }
 
 // TranslateStreamEvent parses Claude streaming events.
-func (t ClaudeSchemaTranslator) TranslateStreamEvent(_ json.RawMessage) (StreamChunk, error) {
-	// Implementation in Phase 6 (User Story 4)
-	return StreamChunk{}, nil
+//
+// Handles 7 Claude streaming event types:
+//   - message_start: Initial metadata (request_id, model, input_tokens)
+//   - content_block_start: Start of text or tool_use block
+//   - content_block_delta: Incremental content (text_delta or input_json_delta)
+//   - content_block_stop: End of content block (no-op)
+//   - message_delta: Final metadata with stop_reason and output_tokens
+//   - message_stop: Stream complete (no-op)
+//   - error: Error event (returns error)
+//
+// Returns StreamChunk with populated fields based on event type.
+func (t ClaudeSchemaTranslator) TranslateStreamEvent(event json.RawMessage) (StreamChunk, error) {
+	// Parse event to determine type
+	var baseEvent struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(event, &baseEvent); err != nil {
+		return StreamChunk{}, fmt.Errorf("failed to parse streaming event: %w", err)
+	}
+
+	chunk := StreamChunk{
+		Metadata: make(map[string]interface{}),
+	}
+
+	switch baseEvent.Type {
+	case "message_start":
+		// Extract initial metadata
+		var msgStart struct {
+			Message struct {
+				ID    string `json:"id"`
+				Model string `json:"model"`
+				Usage struct {
+					InputTokens int `json:"input_tokens"`
+				} `json:"usage"`
+			} `json:"message"`
+		}
+		if err := json.Unmarshal(event, &msgStart); err != nil {
+			return StreamChunk{}, fmt.Errorf("failed to parse message_start event: %w", err)
+		}
+
+		chunk.Metadata["request_id"] = msgStart.Message.ID
+		chunk.Metadata["model"] = msgStart.Message.Model
+		chunk.Metadata["input_tokens"] = msgStart.Message.Usage.InputTokens
+
+	case "content_block_start":
+		// Extract tool name if this is a tool_use block
+		var blockStart struct {
+			Index        int `json:"index"`
+			ContentBlock struct {
+				Type string `json:"type"`
+				Name string `json:"name,omitempty"`
+			} `json:"content_block"`
+		}
+		if err := json.Unmarshal(event, &blockStart); err != nil {
+			return StreamChunk{}, fmt.Errorf("failed to parse content_block_start event: %w", err)
+		}
+
+		if blockStart.ContentBlock.Type == "tool_use" {
+			chunk.ToolCallDelta = &ToolCallDelta{
+				Index: blockStart.Index,
+				Name:  blockStart.ContentBlock.Name,
+			}
+		}
+
+	case "content_block_delta":
+		// Extract text delta or tool input delta
+		var blockDelta struct {
+			Index int `json:"index"`
+			Delta struct {
+				Type        string `json:"type"`
+				Text        string `json:"text,omitempty"`
+				PartialJSON string `json:"partial_json,omitempty"`
+			} `json:"delta"`
+		}
+		if err := json.Unmarshal(event, &blockDelta); err != nil {
+			return StreamChunk{}, fmt.Errorf("failed to parse content_block_delta event: %w", err)
+		}
+
+		if blockDelta.Delta.Type == "text_delta" {
+			chunk.Delta = blockDelta.Delta.Text
+		} else if blockDelta.Delta.Type == "input_json_delta" {
+			chunk.ToolCallDelta = &ToolCallDelta{
+				Index:       blockDelta.Index,
+				PartialJSON: blockDelta.Delta.PartialJSON,
+			}
+		}
+
+	case "content_block_stop":
+		// No-op: content block finished, no additional data needed
+		return chunk, nil
+
+	case "message_delta":
+		// Extract stop reason and output token count
+		var msgDelta struct {
+			Delta struct {
+				StopReason string `json:"stop_reason"`
+			} `json:"delta"`
+			Usage struct {
+				OutputTokens int `json:"output_tokens"`
+			} `json:"usage"`
+		}
+		if err := json.Unmarshal(event, &msgDelta); err != nil {
+			return StreamChunk{}, fmt.Errorf("failed to parse message_delta event: %w", err)
+		}
+
+		chunk.FinishReason = msgDelta.Delta.StopReason
+		chunk.Metadata["output_tokens"] = msgDelta.Usage.OutputTokens
+
+	case "message_stop":
+		// No-op: stream complete, no additional data needed
+		return chunk, nil
+
+	case "error":
+		// Extract error and return as error
+		var errEvent struct {
+			Error struct {
+				Type    string `json:"type"`
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if err := json.Unmarshal(event, &errEvent); err != nil {
+			return StreamChunk{}, fmt.Errorf("failed to parse error event: %w", err)
+		}
+
+		return StreamChunk{}, fmt.Errorf("streaming error [%s]: %s",
+			errEvent.Error.Type, errEvent.Error.Message)
+
+	default:
+		// Unknown event type - return empty chunk (graceful degradation)
+		return chunk, nil
+	}
+
+	return chunk, nil
 }
 
 // SupportsStreaming returns true (Claude supports streaming).
