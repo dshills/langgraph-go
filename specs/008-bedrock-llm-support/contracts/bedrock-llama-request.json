@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Bedrock Llama Request Schema",
+  "description": "Request schema for Meta Llama models via AWS Bedrock InvokeModel API",
+  "type": "object",
+  "required": ["prompt"],
+  "properties": {
+    "prompt": {
+      "type": "string",
+      "description": "Formatted prompt using Llama instruction template tags. Example: <|begin_of_text|><|start_header_id|>user<|end_header_id|>\\n\\nHello<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
+      "minLength": 1
+    },
+    "max_gen_len": {
+      "type": "integer",
+      "description": "Maximum tokens to generate",
+      "minimum": 1,
+      "maximum": 8192,
+      "default": 512
+    },
+    "temperature": {
+      "type": "number",
+      "description": "Sampling temperature",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.5
+    },
+    "top_p": {
+      "type": "number",
+      "description": "Nucleus sampling parameter",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.9
+    }
+  },
+  "additionalProperties": false,
+  "notes": [
+    "Llama models do NOT support tool calling",
+    "Llama models do NOT support system messages (prepend system instructions to first user message)",
+    "Llama 4 Instruct does NOT support streaming",
+    "Llama 3.2+ supports multimodal inputs (images)"
+  ]
+}

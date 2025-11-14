@@ -630,6 +630,8 @@ engine := New(
 - Store interface supports in-memory (testing) and MySQL/Aurora (production) implementations (002-concurrency-spec)
 - Go 1.21+ (requires generics, math/rand, sync/atomic) (005-critical-bug-fixes)
 - N/A (bug fixes in execution engine, not persistence layer) (005-critical-bug-fixes)
+- Go 1.21+ (requires generics support for ChatModel interface compatibility) (008-bedrock-llm-support)
+- N/A (adapter is stateless, uses existing Engine state management) (008-bedrock-llm-support)
 
 ## Recent Changes
 - 002-concurrency-spec: Added Go 1.21+ (requires generics support) + Go standard library only (core framework), optional adapters for OpenTelemetry SDK, MySQL driver

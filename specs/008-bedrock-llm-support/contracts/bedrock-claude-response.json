@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Bedrock Claude Response Schema",
+  "description": "Response schema from Anthropic Claude models via AWS Bedrock InvokeModel API",
+  "type": "object",
+  "required": ["id", "type", "role", "content", "model", "stop_reason", "usage"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique message identifier",
+      "pattern": "^msg_[a-zA-Z0-9]+$"
+    },
+    "type": {
+      "type": "string",
+      "const": "message",
+      "description": "Response type"
+    },
+    "role": {
+      "type": "string",
+      "const": "assistant",
+      "description": "Response role"
+    },
+    "content": {
+      "type": "array",
+      "description": "Response content blocks",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "text"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "text"
+              },
+              "text": {
+                "type": "string",
+                "description": "Generated text content"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "id", "name", "input"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "tool_use"
+              },
+              "id": {
+                "type": "string",
+                "description": "Tool use identifier for tracking",
+                "pattern": "^toolu_[a-zA-Z0-9]+$"
+              },
+              "name": {
+                "type": "string",
+                "description": "Tool name that model wants to invoke"
+              },
+              "input": {
+                "type": "object",
+                "description": "Tool arguments as JSON object",
+                "additionalProperties": true
+              }
+            }
+          }
+        ]
+      }
+    },
+    "model": {
+      "type": "string",
+      "description": "Model identifier used for inference"
+    },
+    "stop_reason": {
+      "type": "string",
+      "enum": ["end_turn", "max_tokens", "stop_sequence", "tool_use"],
+      "description": "Reason generation stopped"
+    },
+    "stop_sequence": {
+      "type": "string",
+      "description": "The stop sequence that triggered completion (if stop_reason is stop_sequence)"
+    },
+    "usage": {
+      "type": "object",
+      "required": ["input_tokens", "output_tokens"],
+      "properties": {
+        "input_tokens": {
+          "type": "integer",
+          "description": "Tokens in input prompt",
+          "minimum": 0
+        },
+        "output_tokens": {
+          "type": "integer",
+          "description": "Tokens in generated response",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
