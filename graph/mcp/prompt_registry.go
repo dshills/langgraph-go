@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strings"
 	"sync"
 )
 
@@ -123,14 +122,20 @@ type Content struct {
 // Pattern: ^[a-z][a-z0-9_]*$ (lowercase, underscores)
 var promptNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
+// placeholderPattern extracts placeholders from templates.
+// Pattern: {{\s*([a-z][a-z0-9_]*)\s*}} (allows whitespace around parameter name)
+var placeholderPattern = regexp.MustCompile(`{{\s*([a-z][a-z0-9_]*)\s*}}`)
+
 // Errors returned by PromptRegistry operations
 var (
-	ErrPromptNotFound       = errors.New("prompt not found")
-	ErrPromptAlreadyExists  = errors.New("prompt already registered")
-	ErrInvalidPromptName    = errors.New("prompt name must match pattern ^[a-z][a-z0-9_]*$")
-	ErrEmptyTemplate        = errors.New("prompt template cannot be empty")
-	ErrMissingParameter     = errors.New("missing required parameter")
-	ErrInvalidParameterType = errors.New("parameter value must be string")
+	ErrPromptNotFound         = errors.New("prompt not found")
+	ErrPromptAlreadyExists    = errors.New("prompt already registered")
+	ErrInvalidPromptName      = errors.New("prompt name must match pattern ^[a-z][a-z0-9_]*$")
+	ErrInvalidParameterName   = errors.New("parameter name must match pattern ^[a-z][a-z0-9_]*$")
+	ErrDuplicateParameterName = errors.New("duplicate parameter name")
+	ErrEmptyTemplate          = errors.New("prompt template cannot be empty")
+	ErrMissingParameter       = errors.New("missing required parameter")
+	ErrUndefinedPlaceholder   = errors.New("template contains placeholder with no matching parameter")
 	// Note: ErrEmptyDescription is defined in tool_adapter.go and reused here
 )
 
@@ -150,6 +155,8 @@ func NewPromptRegistry() *PromptRegistry {
 // - Prompt name MUST be unique (no duplicates)
 // - Description MUST be non-empty
 // - Template MUST be non-empty
+// - Parameter names MUST match pattern ^[a-z][a-z0-9_]*$
+// - Parameter names MUST be unique (no duplicates)
 // - All placeholders in template MUST have corresponding parameters
 //
 // Returns error if validation fails.
@@ -168,6 +175,32 @@ func (r *PromptRegistry) Register(template PromptTemplate) error {
 	// Validate template
 	if template.Template == "" {
 		return ErrEmptyTemplate
+	}
+
+	// Validate parameters: check names and detect duplicates
+	paramNames := make(map[string]bool)
+	for _, param := range template.Parameters {
+		// Validate parameter name pattern
+		if param.Name != "" && !promptNamePattern.MatchString(param.Name) {
+			return fmt.Errorf("%w: %s", ErrInvalidParameterName, param.Name)
+		}
+
+		// Check for duplicate parameter names
+		if paramNames[param.Name] {
+			return fmt.Errorf("%w: %s", ErrDuplicateParameterName, param.Name)
+		}
+		paramNames[param.Name] = true
+	}
+
+	// Extract all placeholders from template and verify they have matching parameters
+	matches := placeholderPattern.FindAllStringSubmatch(template.Template, -1)
+	for _, match := range matches {
+		if len(match) > 1 {
+			placeholderName := match[1] // First capture group contains parameter name
+			if !paramNames[placeholderName] {
+				return fmt.Errorf("%w: {{%s}}", ErrUndefinedPlaceholder, placeholderName)
+			}
+		}
 	}
 
 	// Acquire write lock
@@ -233,10 +266,14 @@ func (r *PromptRegistry) List() []PromptInfo {
 
 	infos := make([]PromptInfo, 0, len(r.prompts))
 	for _, template := range r.prompts {
+		// Deep copy Parameters slice to prevent external mutations
+		paramsCopy := make([]PromptParameter, len(template.Parameters))
+		copy(paramsCopy, template.Parameters)
+
 		infos = append(infos, PromptInfo{
 			Name:        template.Name,
 			Description: template.Description,
-			Arguments:   template.Parameters,
+			Arguments:   paramsCopy,
 		})
 	}
 
@@ -252,7 +289,7 @@ func (r *PromptRegistry) List() []PromptInfo {
 //
 // Render generates a fully rendered prompt by substituting template placeholders.
 //
-// Placeholder syntax: {{parameter_name}}
+// Placeholder syntax: {{parameter_name}} or {{ parameter_name }} (whitespace allowed)
 //
 // Parameter substitution rules:
 // 1. Required parameters MUST be present in arguments
@@ -260,9 +297,8 @@ func (r *PromptRegistry) List() []PromptInfo {
 // 3. Extra arguments (not in parameters) are ignored
 // 4. All parameter values MUST be strings
 //
-// Note: Placeholder replacement is order-dependent. If parameter values contain
-// placeholder syntax (e.g., "{{other_param}}"), cascading substitution may occur.
-// To avoid this, ensure parameter values do not contain "{{" and "}}" sequences.
+// Placeholders are matched using regex to support whitespace variants.
+// Substitution is performed in a single pass using strings.Replacer for efficiency.
 //
 // Returns:
 // - *RenderedPrompt: Rendered prompt with messages
@@ -291,12 +327,21 @@ func (r *PromptRegistry) Render(name string, arguments map[string]string) (*Rend
 		argMap[param.Name] = value
 	}
 
-	// Substitute placeholders in template using standard library
-	rendered := template.Template
-	for paramName, paramValue := range argMap {
-		placeholder := "{{" + paramName + "}}"
-		rendered = strings.ReplaceAll(rendered, placeholder, paramValue)
-	}
+	// Substitute placeholders using regex replacement function
+	// This supports whitespace variants like {{param}}, {{ param }}, etc.
+	rendered := placeholderPattern.ReplaceAllStringFunc(template.Template, func(match string) string {
+		// Extract parameter name from match (e.g., "{{ param }}" -> "param")
+		submatches := placeholderPattern.FindStringSubmatch(match)
+		if len(submatches) > 1 {
+			paramName := submatches[1]
+			if value, ok := argMap[paramName]; ok {
+				return value
+			}
+		}
+		// If parameter not found in argMap, return original match
+		// (This shouldn't happen due to validation in Register(), but be defensive)
+		return match
+	})
 
 	// Create rendered prompt with single user message (text content)
 	return &RenderedPrompt{
