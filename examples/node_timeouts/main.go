@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/dshills/langgraph-go/graph"
@@ -145,7 +146,7 @@ func main() {
 
 	// Create engine with DefaultNodeTimeout
 	st := store.NewMemStore[WorkflowState]()
-	emitter := emit.NewLogEmitter()
+	emitter := emit.NewLogEmitter(os.Stdout, false)
 	opts := graph.Options{
 		MaxSteps:           10,
 		MaxConcurrentNodes: 1,                      // Sequential execution for clarity
