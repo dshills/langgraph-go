@@ -738,6 +738,8 @@ engine := New(
 - N/A (bug fixes in execution engine, not persistence layer) (005-critical-bug-fixes)
 - Go 1.21+ (requires generics support for ChatModel interface compatibility) (008-bedrock-llm-support)
 - N/A (adapter is stateless, uses existing Engine state management) (008-bedrock-llm-support)
+- Go 1.21+ (requires generics support for type-safe state management) (010-mcp-server-support)
+- N/A for MCP server itself (leverages existing LangGraph Store interface for accessing workflow state/checkpoints) (010-mcp-server-support)
 
 ## Recent Changes
 - 002-concurrency-spec: Added Go 1.21+ (requires generics support) + Go standard library only (core framework), optional adapters for OpenTelemetry SDK, MySQL driver
